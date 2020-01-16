@@ -1,0 +1,6 @@
+name: CS6200
+dependencies:
+  - python=3.6
+  - pip
+  - pip:
+      - numpy==1.18.1
