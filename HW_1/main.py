@@ -1,8 +1,9 @@
 import logging
 import os
 
+from HW_1.es_utils import bulk_add_document_to_ap_data_index
 from HW_1.parser import TRECParser
-from utils.utils import get_ap89_collection_abs_path, configure_logging
+from utils.utils import get_ap89_collection_abs_path, configure_logging, delete_ap_data_index, create_ap_data_index
 
 
 def get_file_paths_to_parse(dir_path: str) -> list:
@@ -19,12 +20,16 @@ def get_parsed_documents(file_paths: list):
     return parsed_documents
 
 
-def demo_hw_1():
+def create_ap_data_index_and_insert_documents():
     dir_path = get_ap89_collection_abs_path()
     file_paths = get_file_paths_to_parse(dir_path)
     parsed_documents = get_parsed_documents(file_paths)
 
+    delete_ap_data_index(ignore_unavailable=True)
+    create_ap_data_index()
+    bulk_add_document_to_ap_data_index(parsed_documents)
+
 
 if __name__ == '__main__':
     configure_logging()
-    demo_hw_1()
+    # create_ap_data_index_and_insert_documents()

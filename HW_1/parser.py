@@ -68,18 +68,18 @@ class TRECParser:
 
     @staticmethod
     def _document_sanity_check(document):
-        for attr in ['doc_no', 'text']:
+        for attr in ['id', 'text']:
             if attr not in document:
                 raise RuntimeError('Document does not have the "{}"'.format(attr))
 
     def parse(self, file_path: str) -> list:
         documents = []
         with open(file_path, encoding=self.file_encoding) as file:
-            logging.info('Parsing file: {}'.format(file_path))
+            logging.debug('Parsing file: {}'.format(file_path))
             while True:
                 line = file.readline()
                 if not line:
-                    logging.info('{} documents parsed from file: {}'.format(len(documents), file_path))
+                    logging.debug('{} documents parsed from file: {}'.format(len(documents), file_path))
                     break
 
                 if self.is_doc_start(line):
