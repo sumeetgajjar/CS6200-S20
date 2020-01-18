@@ -53,10 +53,18 @@ class TRECParser:
 
             if self.is_text_end(line):
                 text = ''.join(lines)
-                document['text'] = text
-                return
+                break
 
             lines.append(line)
+
+        old_text = document.get('text', '')
+        if old_text:
+            text = '{}\n{}'.format(old_text, text)
+        document['text'] = text
+
+    @staticmethod
+    def _add_extra_info(document):
+        document['doc_length'] = document['text'].count(' ')
 
     @staticmethod
     def _document_sanity_check(document):
@@ -81,6 +89,7 @@ class TRECParser:
                 elif self.is_text_start(line):
                     self._parse_text(file, document)
                 elif self.is_doc_end(line):
+                    self._add_extra_info(document)
                     self._document_sanity_check(document)
                     documents.append(document)
 
