@@ -42,7 +42,7 @@ class TRECParser:
         doc_no = doc_no.strip()
         if not doc_no:
             raise RuntimeError('Empty doc_no in line: {}'.format(line))
-        document['doc_no'] = doc_no
+        document['id'] = doc_no
 
     def _parse_text(self, file, document):
         lines = []
@@ -64,7 +64,7 @@ class TRECParser:
 
     @staticmethod
     def _add_extra_info(document):
-        document['doc_length'] = document['text'].count(' ')
+        document['length'] = document['text'].count(' ')
 
     @staticmethod
     def _document_sanity_check(document):
