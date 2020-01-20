@@ -5,3 +5,4 @@ dependencies:
   - pip:
       - numpy==1.18.1
       - elasticsearch==7.1.0
+      - elasticsearch-dsl==7.1.0
