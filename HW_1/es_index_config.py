@@ -4,7 +4,7 @@ class EsIndexConfig:
     def get_ap_data_index_config(cls):
         return {
             "settings": {
-                "number_of_shards": 1,
+                "number_of_shards": 8,
                 "number_of_replicas": 1,
                 "analysis": {
                     "filter": {

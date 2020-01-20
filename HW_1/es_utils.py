@@ -13,11 +13,11 @@ ES_CLIENT = None
 class EsUtils:
 
     @classmethod
-    def get_es_client(cls):
+    def get_es_client(cls, timeout: int = Constants.TIMEOUT):
         global ES_CLIENT
-        if not ES_CLIENT:
+        if True:  # not ES_CLIENT:
             logging.info("Creating the ES client")
-            ES_CLIENT = Elasticsearch(hosts=ES_HOSTS)
+            ES_CLIENT = Elasticsearch(hosts=ES_HOSTS, send_get_body_as='POST', timeout=timeout)
             logging.info("ES client created")
 
         return ES_CLIENT
@@ -73,3 +73,25 @@ class EsUtils:
         document_ids = [result['_id'] for result in response]
         logging.info("{} total docs in index: {}".format(len(document_ids), index_name))
         return document_ids
+
+    @classmethod
+    def get_mtermvector_query(cls, document_ids: list):
+        return {
+            "ids": document_ids,
+            "parameters": {
+                "fields": ["text"],
+                "term_statistics": True,
+                "positions": False,
+                "offsets": False,
+                "field_statistics": False,
+                "payloads": False
+            }
+        }
+
+    @classmethod
+    @timing
+    def get_termvectors(cls, index_name: str, document_ids: list, timeout: int = Constants.TIMEOUT) -> dict:
+        es_client = cls.get_es_client(timeout)
+        # response = scan(es_client, query=cls.get_mtermvector_query(document_ids), index=index_name, size=chunk_size)
+        response = es_client.mtermvectors(index=index_name, body=cls.get_mtermvector_query(document_ids))
+        logging.info(response)
