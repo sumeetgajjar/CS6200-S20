@@ -4,6 +4,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
 from HW_1.constants import Constants
+from utils.decorators import timing
 
 ES_HOSTS = [{"host": "localhost", "port": 9200}]
 ES_CLIENT = None
@@ -38,6 +39,7 @@ class EsUtils:
         logging.info('"{}" index deleted'.format(name))
 
     @classmethod
+    @timing
     def bulk_add_document_to_ap_data_index(cls, documents: list, chunk_size=10000):
         def get_document_generator():
             for document in documents:

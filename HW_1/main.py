@@ -3,6 +3,7 @@ import os
 
 from HW_1.es_utils import EsUtils
 from HW_1.parser import TRECParser
+from utils.decorators import timing
 from utils.utils import Utils
 
 
@@ -10,6 +11,7 @@ def get_file_paths_to_parse(dir_path: str) -> list:
     return list(map(lambda file: '{}/{}'.format(dir_path, file), os.listdir(dir_path)))
 
 
+@timing
 def get_parsed_documents(file_paths: list):
     logging.info("Parsing documents")
     parsed_documents = []
