@@ -1,6 +1,7 @@
 import logging
 import os
 
+from HW_1.constants import Constants
 from HW_1.es_utils import EsUtils
 from HW_1.parser import TRECParser
 from utils.decorators import timing
@@ -36,4 +37,6 @@ def create_ap_data_index_and_insert_documents():
 
 if __name__ == '__main__':
     Utils.configure_logging()
-    create_ap_data_index_and_insert_documents()
+    # create_ap_data_index_and_insert_documents()
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+

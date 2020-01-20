@@ -1,4 +1,5 @@
 class Constants:
+    CHUNK_SIZE = 10000
     PROJECT_ROOT = '/home/sumeet/PycharmProjects/CS6200-S20/'
     DATA_DIR = 'data'
     AP89_COLLECTION = 'AP_DATA/ap89_collection'

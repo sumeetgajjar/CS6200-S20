@@ -1,7 +1,7 @@
 import logging
 
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk
+from elasticsearch.helpers import bulk, scan
 
 from HW_1.constants import Constants
 from utils.decorators import timing
@@ -40,7 +40,7 @@ class EsUtils:
 
     @classmethod
     @timing
-    def bulk_add_document_to_ap_data_index(cls, documents: list, chunk_size=10000):
+    def bulk_add_document_to_ap_data_index(cls, documents: list, chunk_size: int = Constants.CHUNK_SIZE):
         def get_document_generator():
             for document in documents:
                 yield {
@@ -56,5 +56,20 @@ class EsUtils:
         response = bulk(client=es_client, actions=get_document_generator(), chunk_size=chunk_size)
         logging.info(response)
 
-    def get_all_document_ids(cls, index_name: str) -> list:
-        pass
+    @classmethod
+    def get_match_all_query(cls):
+        return {
+            "query": {
+                "match_all": {}
+            },
+            "stored_fields": []
+        }
+
+    @classmethod
+    @timing
+    def get_all_document_ids(cls, index_name: str, chunk_size: int = Constants.CHUNK_SIZE) -> list:
+        es_client = cls.get_es_client()
+        response = scan(es_client, query=cls.get_match_all_query(), index=index_name, size=chunk_size)
+        document_ids = [result['_id'] for result in response]
+        logging.info("{} total docs in index: {}".format(len(document_ids), index_name))
+        return document_ids
