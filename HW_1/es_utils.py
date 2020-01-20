@@ -94,4 +94,6 @@ class EsUtils:
         es_client = cls.get_es_client(timeout)
         # response = scan(es_client, query=cls.get_mtermvector_query(document_ids), index=index_name, size=chunk_size)
         response = es_client.mtermvectors(index=index_name, body=cls.get_mtermvector_query(document_ids))
-        logging.info(response)
+        return {
+            doc['_id']: doc for doc in response['docs']
+        }
