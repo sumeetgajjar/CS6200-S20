@@ -38,5 +38,6 @@ def create_ap_data_index_and_insert_documents():
 if __name__ == '__main__':
     Utils.configure_logging()
     # create_ap_data_index_and_insert_documents()
-    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)[:100]
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
     term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, all_document_ids, 10000)
+    logging.info(len(term_vectors))

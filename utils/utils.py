@@ -1,4 +1,6 @@
+import concurrent.futures
 import logging
+import math
 import sys
 
 from HW_1.constants import Constants
@@ -28,3 +30,22 @@ class Utils:
     @classmethod
     def configure_logging(cls, level=logging.INFO):
         logging.basicConfig(stream=sys.stdout, level=level)
+
+    @classmethod
+    def split_list_into_sub_lists(cls, list_to_split, no_of_sub_lists):
+        sub_list_size = math.ceil(len(list_to_split) / no_of_sub_lists)
+        for i in range(0, len(list_to_split), sub_list_size):
+            yield list_to_split[i:i + sub_list_size]
+
+    @classmethod
+    def run_task_parallelly(cls, func, tasks: list, no_of_parallel_tasks: int, **kwargs):
+        with concurrent.futures.ProcessPoolExecutor(no_of_parallel_tasks) as pool:
+            futures = []
+            for sub_tasks in cls.split_list_into_sub_lists(tasks, no_of_parallel_tasks):
+                futures.append(pool.submit(func, sub_tasks, **kwargs))
+
+            results = []
+            for future in futures:
+                results.append(future.result())
+
+        return results
