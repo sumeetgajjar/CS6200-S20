@@ -16,8 +16,12 @@ class Utils:
         return '{}/{}'.format(Constants.PROJECT_ROOT, Constants.DATA_DIR)
 
     @classmethod
+    def get_ap_data_path(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.AP_DATA_PATH)
+
+    @classmethod
     def get_ap89_collection_abs_path(cls, ):
-        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.AP89_COLLECTION)
+        return '{}/{}'.format(cls.get_ap_data_path(), Constants.AP89_COLLECTION)
 
     @classmethod
     def create_ap_data_index(cls, ):

@@ -1,7 +1,6 @@
 import logging
 import os
 
-from HW_1.constants import Constants
 from HW_1.es_utils import EsUtils
 from HW_1.parser import TRECParser
 from utils.decorators import timing
@@ -35,9 +34,35 @@ def create_ap_data_index_and_insert_documents():
     EsUtils.bulk_add_document_to_ap_data_index(parsed_documents)
 
 
+def parse_queries():
+    dir_path = Utils.get_ap_data_path()
+    queries_file_path = '{}/query_desc.51-100.short.txt'.format(dir_path)
+    queries = {}
+    with open(queries_file_path, 'r') as file:
+        for line in file:
+            line = line.strip().lower()
+            if line:
+                splits = line.split(".   ")
+                query_id = splits[0]
+                raw_query = splits[1]
+                queries[query_id] = {'raw_query': raw_query}
+
+    return queries
+
+
+def clean_queries(queries):
+    for query_id, query in queries.items():
+        raw_query: str = query['raw_query']
+        cleaned_query = raw_query.replace("document", "").replace("will", "")
+        query['cleaned_query'] = cleaned_query.strip()
+
+    return queries
+
+
 if __name__ == '__main__':
     Utils.configure_logging()
     # create_ap_data_index_and_insert_documents()
-    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
-    term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, all_document_ids, 10000)
-    logging.info(len(term_vectors))
+    # all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    # term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, all_document_ids, 10000)
+    # logging.info(len(term_vectors))
+    print(clean_queries(parse_queries()))
