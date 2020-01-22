@@ -6,6 +6,7 @@ import sys
 from HW_1.constants import Constants
 from HW_1.es_index_config import EsIndexConfig
 from HW_1.es_utils import EsUtils
+from utils.decorators import timing
 
 
 class Utils:
@@ -38,6 +39,7 @@ class Utils:
             yield list_to_split[i:i + sub_list_size]
 
     @classmethod
+    @timing
     def run_task_parallelly(cls, func, tasks: list, no_of_parallel_tasks: int, **kwargs):
         with concurrent.futures.ProcessPoolExecutor(no_of_parallel_tasks) as pool:
             futures = []

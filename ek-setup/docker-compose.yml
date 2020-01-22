@@ -11,7 +11,7 @@ services:
       - "ES_JAVA_OPTS=-Xms2g -Xmx8g"
     volumes:
       # - es-data:/usr/share/elasticsearch/data
-      - /media/sumeet/147A710C7A70EBBC/es-docker-volume:/usr/share/elasticsearch/data
+      - /media/sumeet/147A710C7A70EBBC1/es-docker-volume:/usr/share/elasticsearch/data
       - /home/sumeet/PycharmProjects/CS6200-S20/data/AP_DATA/stoplist.txt:/usr/share/elasticsearch/config/my_stoplist.txt
       - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
     networks:
