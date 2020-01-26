@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 
 from HW_1.constants import Constants
@@ -72,8 +73,9 @@ def clean_queries(queries):
 
 
 def get_queries():
+    import sys
     queries = parse_queries()
-    # queries = [queries[24]]
+    # queries = [queries[int(sys.argv[1])]]
     queries = clean_queries(queries)
     return queries
 
@@ -149,8 +151,51 @@ def find_scores_using_okapi_tf():
     Utils.write_results_to_file('results/okapi_tf.txt', temp)
 
 
+def calculate_okapi_tf_idf_scores(document_ids, query, total_documents):
+    term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, document_ids, 10000)
+    avg_doc_len = EsUtils.get_average_doc_length(Constants.AP_DATA_INDEX_NAME)
+    scores = []
+    for term_vector in term_vectors:
+        if term_vector['term_vectors']:
+            score = 0.0
+            for token in query['tokens']:
+                if token in term_vector['term_vectors']['text']['terms']:
+                    tf = term_vector['term_vectors']['text']['terms'][token]['term_freq']
+                    temp = tf / (tf + 0.5 + (
+                            1.5 * (len(term_vector['term_vectors']['text']['terms']) / avg_doc_len)))
+                    doc_freq = term_vector['term_vectors']['text']['terms'][token]['doc_freq']
+                    score += (temp * math.log(total_documents / doc_freq))
+            scores.append((score, term_vector['_id']))
+    return scores
+
+
+@timing
+def find_scores_using_okapi_tf_idf():
+    temp = []
+    queries = get_queries()
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    for query in queries:
+        results = Utils.run_task_parallelly(calculate_okapi_tf_idf_scores, all_document_ids, 8,
+                                            query=query,
+                                            total_documents=len(all_document_ids))
+        scores = []
+        for result in results:
+            scores.extend(result)
+        scores.sort(reverse=True)
+        for ix, score in enumerate(scores[:1000]):
+            temp.append({
+                'doc_no': score[1],
+                'rank': ix + 1,
+                'score': score[0],
+                'query_number': query['id']
+            })
+
+    Utils.write_results_to_file('results/okapi_tf_idf.txt', temp)
+
+
 if __name__ == '__main__':
     Utils.configure_logging()
     # create_ap_data_index_and_insert_documents()
-    # find_scores_using_es_builtin()
+    find_scores_using_es_builtin()
     find_scores_using_okapi_tf()
+    find_scores_using_okapi_tf_idf()

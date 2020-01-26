@@ -11,6 +11,10 @@ class EsIndexConfig:
                         "english_stop": {
                             "type": "stop",
                             "stopwords_path": "my_stoplist.txt"
+                        },
+                        "snowball_stemmer": {
+                            "type": "snowball",
+                            "language": "English"
                         }
                     },
                     "analyzer": {
@@ -19,7 +23,8 @@ class EsIndexConfig:
                             "tokenizer": "standard",
                             "filter": [
                                 "lowercase",
-                                "english_stop"
+                                "english_stop",
+                                "snowball_stemmer"
                             ]
                         }
                     }

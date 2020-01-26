@@ -104,7 +104,6 @@ class EsUtils:
         return response['docs']
 
     @classmethod
-    @timing
     def get_average_doc_length(cls, index_name: str):
         es_client = cls.get_es_client()
         response = es_client.search(index=index_name, body={
