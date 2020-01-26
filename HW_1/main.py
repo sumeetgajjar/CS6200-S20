@@ -66,6 +66,7 @@ def clean_queries(queries):
 
         analyzed_query = " ".join([token['token'] for token in response['tokens']])
         query['cleaned'] = analyzed_query.strip()
+        query['tokens'] = [token['token'] for token in response['tokens']]
 
     return queries
 
@@ -99,6 +100,7 @@ def query_es(query):
     return results
 
 
+@timing
 def find_scores_using_es_builtin():
     results = []
     queries = get_queries()
@@ -108,15 +110,47 @@ def find_scores_using_es_builtin():
     Utils.write_results_to_file('results/es_builtin.txt', results)
 
 
+def calculate_okapi_tf_scores(document_ids, query):
+    term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, document_ids, 10000)
+    avg_doc_len = EsUtils.get_average_doc_length(Constants.AP_DATA_INDEX_NAME)
+    scores = []
+    for term_vector in term_vectors:
+        if term_vector['term_vectors']:
+            score = 0.0
+            for token in query['tokens']:
+                if token in term_vector['term_vectors']['text']['terms']:
+                    tf = term_vector['term_vectors']['text']['terms'][token]['term_freq']
+                    temp = tf / (tf + 0.5 + (
+                            1.5 * (len(term_vector['term_vectors']['text']['terms']) / avg_doc_len)))
+                    score += temp
+            scores.append((score, term_vector['_id']))
+    return scores
+
+
+@timing
 def find_scores_using_okapi_tf():
+    temp = []
     queries = get_queries()
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    for query in queries:
+        results = Utils.run_task_parallelly(calculate_okapi_tf_scores, all_document_ids, 8, query=query)
+        scores = []
+        for result in results:
+            scores.extend(result)
+        scores.sort(reverse=True)
+        for ix, score in enumerate(scores):
+            temp.append({
+                'doc_no': score[1],
+                'rank': ix + 1,
+                'score': score[0],
+                'query_number': query['id']
+            })
+
+    Utils.write_results_to_file('results/okapi_tf.txt', temp)
 
 
 if __name__ == '__main__':
     Utils.configure_logging()
     # create_ap_data_index_and_insert_documents()
-    # all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
-    # term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, all_document_ids, 10000)
-    # logging.info(len(term_vectors))
-    # print(clean_queries(parse_queries()))
-    find_scores_using_es_builtin()
+    # find_scores_using_es_builtin()
+    find_scores_using_okapi_tf()

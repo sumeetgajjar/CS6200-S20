@@ -17,17 +17,17 @@ class EsUtils:
     def get_es_client(cls, timeout: int = Constants.TIMEOUT):
         global ES_CLIENT
         if True:  # not ES_CLIENT:
-            logging.info("Creating the ES client")
+            logging.debug("Creating the ES client")
             ES_CLIENT = Elasticsearch(hosts=ES_HOSTS, send_get_body_as='POST', timeout=timeout)
-            logging.info("ES client created")
+            logging.debug("ES client created")
 
         return ES_CLIENT
 
     @classmethod
     def get_indices_client(cls):
-        logging.info("Creating ES Indices Client")
+        logging.debug("Creating ES Indices Client")
         client = IndicesClient(cls.get_es_client())
-        logging.info("Indices Client created")
+        logging.debug("Indices Client created")
         return client
 
     @classmethod
@@ -101,6 +101,21 @@ class EsUtils:
     def get_termvectors(cls, index_name: str, document_ids: list, timeout: int = Constants.TIMEOUT) -> dict:
         es_client = cls.get_es_client(timeout)
         response = es_client.mtermvectors(index=index_name, body=cls.get_mtermvector_query(document_ids))
-        return {
-            doc['_id']: doc for doc in response['docs']
-        }
+        return response['docs']
+
+    @classmethod
+    @timing
+    def get_average_doc_length(cls, index_name: str):
+        es_client = cls.get_es_client()
+        response = es_client.search(index=index_name, body={
+            "aggs": {
+                "avg_doc_length": {
+                    "avg": {
+                        "field": "length"
+                    }
+                }
+            },
+            "stored_fields": [],
+            "size": 0
+        })
+        return response['aggregations']['avg_doc_length']['value']
