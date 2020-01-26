@@ -138,7 +138,7 @@ def find_scores_using_okapi_tf():
         for result in results:
             scores.extend(result)
         scores.sort(reverse=True)
-        for ix, score in enumerate(scores):
+        for ix, score in enumerate(scores[:1000]):
             temp.append({
                 'doc_no': score[1],
                 'rank': ix + 1,
