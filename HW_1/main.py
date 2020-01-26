@@ -37,7 +37,7 @@ def create_ap_data_index_and_insert_documents():
 
 def parse_queries():
     dir_path = Utils.get_ap_data_path()
-    queries_file_path = '{}/query_desc.51-100.short.txt'.format(dir_path)
+    queries_file_path = '{}/query_desc.51-100.short-edited.txt'.format(dir_path)
     queries = []
     with open(queries_file_path, 'r') as file:
         for line in file:
@@ -55,16 +55,24 @@ def parse_queries():
 
 
 def clean_queries(queries):
+    es_indices_client = EsUtils.get_indices_client()
+
     for query in queries:
         raw_query = query['raw']
-        cleaned_query = raw_query.replace("document", "").replace("will", "")
-        query['cleaned'] = cleaned_query.strip()
+        response = es_indices_client.analyze(index=Constants.AP_DATA_INDEX_NAME, body={
+            'text': raw_query,
+            'analyzer': 'stopped'
+        })
+
+        analyzed_query = " ".join([token['token'] for token in response['tokens']])
+        query['cleaned'] = analyzed_query.strip()
 
     return queries
 
 
 def get_queries():
     queries = parse_queries()
+    # queries = [queries[24]]
     queries = clean_queries(queries)
     return queries
 

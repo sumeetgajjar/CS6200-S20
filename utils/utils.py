@@ -58,6 +58,8 @@ class Utils:
 
     @classmethod
     def write_results_to_file(cls, file_path, results):
+        logging.info("Writing results to: {}".format(file_path))
         lines = ["{query_number} Q0 {doc_no} {rank} {score} Exp\n".format(**result) for result in results]
         with open(file_path, 'w') as file:
             file.writelines(lines)
+        logging.info("Results written")

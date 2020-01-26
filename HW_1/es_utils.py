@@ -1,6 +1,7 @@
 import logging
 
 from elasticsearch import Elasticsearch
+from elasticsearch.client import IndicesClient
 from elasticsearch.helpers import bulk, scan
 
 from HW_1.constants import Constants
@@ -21,6 +22,13 @@ class EsUtils:
             logging.info("ES client created")
 
         return ES_CLIENT
+
+    @classmethod
+    def get_indices_client(cls):
+        logging.info("Creating ES Indices Client")
+        client = IndicesClient(cls.get_es_client())
+        logging.info("Indices Client created")
+        return client
 
     @classmethod
     def create_es_index(cls, name, index_config):
