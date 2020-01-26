@@ -118,3 +118,18 @@ class EsUtils:
             "size": 0
         })
         return response['aggregations']['avg_doc_length']['value']
+
+    @classmethod
+    def get_vocabulary_size(cls, index_name: str):
+        es_client = cls.get_es_client()
+        response = es_client.search(index=index_name, body={
+            "aggs": {
+                "vocab_size": {
+                    "cardinality": {
+                        "field": "text"
+                    }
+                }
+            },
+            "size": 0
+        })
+        return response['aggregations']['vocab_size']['value']

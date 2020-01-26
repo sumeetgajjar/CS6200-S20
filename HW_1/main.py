@@ -238,11 +238,56 @@ def find_scores_using_okapi_bm25(queries):
     Utils.write_results_to_file('results/okapi_bm25.txt', temp)
 
 
+def calculate_unigram_lm_with_laplace_smoothing_scores(document_ids, query, vocabulary_size):
+    term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, document_ids, 10000)
+    scores = []
+    for term_vector in term_vectors:
+        if term_vector['term_vectors']:
+            score = 0.0
+            valid = False
+            for token in query['tokens']:
+                if token in term_vector['term_vectors']['text']['terms']:
+                    tf = term_vector['term_vectors']['text']['terms'][token]['term_freq']
+                    doc_length = len(term_vector['term_vectors']['text']['terms'])
+                    temp = (tf + 1.0) / (doc_length + vocabulary_size)
+                    score += math.log(temp)
+                    valid = True
+
+            if valid:
+                scores.append((score, term_vector['_id']))
+    return scores
+
+
+@timing
+def find_scores_using_unigram_lm_with_laplace_smoothing(queries):
+    temp = []
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
+    for query in queries:
+        results = Utils.run_task_parallelly(calculate_unigram_lm_with_laplace_smoothing_scores, all_document_ids, 8,
+                                            query=query,
+                                            vocabulary_size=vocabulary_size)
+        scores = []
+        for result in results:
+            scores.extend(result)
+        scores.sort(reverse=True)
+        for ix, score in enumerate(scores[:1000]):
+            temp.append({
+                'doc_no': score[1],
+                'rank': ix + 1,
+                'score': score[0],
+                'query_number': query['id']
+            })
+
+    Utils.write_results_to_file('results/unigram_lm_with_laplace_smoothing.txt', temp)
+
+
 if __name__ == '__main__':
     Utils.configure_logging()
     # create_ap_data_index_and_insert_documents()
     _queries = get_queries()
-    find_scores_using_es_builtin(_queries)
-    find_scores_using_okapi_tf(_queries)
-    find_scores_using_okapi_tf_idf(_queries)
-    find_scores_using_okapi_bm25(_queries)
+    # find_scores_using_es_builtin(_queries)
+    # find_scores_using_okapi_tf(_queries)
+    # find_scores_using_okapi_tf_idf(_queries)
+    # find_scores_using_okapi_bm25(_queries)
+    find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
