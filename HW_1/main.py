@@ -81,6 +81,18 @@ def get_queries():
     return queries
 
 
+def transform_scores_for_writing_to_file(scores, query):
+    results = []
+    for ix, score in enumerate(scores[:1000]):
+        results.append({
+            'doc_no': score[1],
+            'rank': ix + 1,
+            'score': score[0],
+            'query_number': query['id']
+        })
+    return results
+
+
 def query_es(query):
     es_client = EsUtils.get_es_client()
     response = es_client.search(index=Constants.AP_DATA_INDEX_NAME, body={
@@ -142,13 +154,7 @@ def find_scores_parallelly_and_write_to_file(queries,
         for result in results:
             scores.extend(result)
         scores.sort(reverse=True)
-        for ix, score in enumerate(scores[:1000]):
-            results_to_write.append({
-                'doc_no': score[1],
-                'rank': ix + 1,
-                'score': score[0],
-                'query_number': query['id']
-            })
+        results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
 
     Utils.write_results_to_file('results/{}.txt'.format(file_name), results_to_write)
 
@@ -158,16 +164,18 @@ def find_scores_parallelly_apply_feedback_and_write_to_file(queries,
                                                             file_name,
                                                             k,
                                                             **kwargs):
-    results_to_write = []
+    results_to_write_before_feedback = []
+    results_to_write_after_feedback = []
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
     for query in queries:
         results = Utils.run_task_parallelly(score_calculator, all_document_ids, 8, query=query, **kwargs)
-        scores = []
+        old_scores = []
         for result in results:
-            scores.extend(result)
-        scores.sort(reverse=True)
+            old_scores.extend(result)
+        old_scores.sort(reverse=True)
+        results_to_write_before_feedback.extend(transform_scores_for_writing_to_file(old_scores, query))
 
-        top_doc_ids = [tup[1] for tup in scores[:k]]
+        top_doc_ids = [tup[1] for tup in old_scores[:k]]
         termvectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, top_doc_ids)
         ttf = Counter()
         doc_freq = Counter()
@@ -185,20 +193,16 @@ def find_scores_parallelly_apply_feedback_and_write_to_file(queries,
         query['tokens'].extend(temp_tokens)
 
         results = Utils.run_task_parallelly(score_calculator, all_document_ids, 8, query=query, **kwargs)
-        scores = []
+        new_scores = []
         for result in results:
-            scores.extend(result)
-        scores.sort(reverse=True)
+            new_scores.extend(result)
+        new_scores.sort(reverse=True)
 
-        for ix, score in enumerate(scores[:1000]):
-            results_to_write.append({
-                'doc_no': score[1],
-                'rank': ix + 1,
-                'score': score[0],
-                'query_number': query['id']
-            })
+        results_to_write_after_feedback.extend(transform_scores_for_writing_to_file(new_scores, query))
 
-    Utils.write_results_to_file('results/pseudo-relevance-feedback/{}.txt'.format(file_name), results_to_write)
+    Utils.write_results_to_file('results/{}.txt'.format(file_name), results_to_write_before_feedback)
+    Utils.write_results_to_file('results/pseudo-relevance-feedback/{}.txt'.format(file_name),
+                                results_to_write_after_feedback)
 
 
 @timing
