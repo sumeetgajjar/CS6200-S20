@@ -243,6 +243,16 @@ def find_scores_using_okapi_tf_idf(queries):
                                              total_documents=len(all_document_ids))
 
 
+@timing
+def find_scores_using_okapi_tf_idf_with_feedback(queries):
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
+                                                            calculate_okapi_tf_idf_scores,
+                                                            'okapi_tf_idf',
+                                                            10,
+                                                            total_documents=len(all_document_ids))
+
+
 def calculate_okapi_bm25_scores(document_ids, query, total_documents, k_1=1.2, k_2=500, b=0.75):
     term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, document_ids, 10000)
     avg_doc_len = EsUtils.get_average_doc_length(Constants.AP_DATA_INDEX_NAME)
@@ -275,6 +285,16 @@ def find_scores_using_okapi_bm25(queries):
                                              total_documents=len(all_document_ids))
 
 
+@timing
+def find_scores_using_okapi_bm25_with_feedback(queries):
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
+                                                            calculate_okapi_bm25_scores,
+                                                            'okapi_bm25',
+                                                            10,
+                                                            total_documents=len(all_document_ids))
+
+
 def calculate_unigram_lm_with_laplace_smoothing_scores(document_ids, query, vocabulary_size):
     term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, document_ids, 10000)
     scores = []
@@ -302,6 +322,16 @@ def find_scores_using_unigram_lm_with_laplace_smoothing(queries):
                                              calculate_unigram_lm_with_laplace_smoothing_scores,
                                              'unigram_lm_with_laplace_smoothing',
                                              vocabulary_size=vocabulary_size)
+
+
+@timing
+def find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(queries):
+    vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
+    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
+                                                            calculate_unigram_lm_with_laplace_smoothing_scores,
+                                                            'unigram_lm_with_laplace_smoothing',
+                                                            10,
+                                                            vocabulary_size=vocabulary_size)
 
 
 def calculate_unigram_lm_with_jelinek_mercer_smoothing_scores(document_ids, query, vocabulary_size, lam=0.8):
@@ -336,6 +366,16 @@ def find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(queries):
                                              vocabulary_size=vocabulary_size)
 
 
+@timing
+def find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(queries):
+    vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
+    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
+                                                            calculate_unigram_lm_with_jelinek_mercer_smoothing_scores,
+                                                            'unigram_lm_with_jelinek_mercer_smoothing',
+                                                            10,
+                                                            vocabulary_size=vocabulary_size)
+
+
 if __name__ == '__main__':
     Utils.configure_logging()
     # create_ap_data_index_and_insert_documents()
@@ -346,4 +386,9 @@ if __name__ == '__main__':
     # find_scores_using_okapi_bm25(_queries)
     # find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
     # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(_queries)
-    find_scores_using_okapi_tf_with_feedback(_queries)
+
+    # find_scores_using_okapi_tf_with_feedback(_queries)
+    find_scores_using_okapi_tf_idf_with_feedback(_queries)
+    find_scores_using_okapi_bm25_with_feedback(_queries)
+    find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(_queries)
+    find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(_queries)
