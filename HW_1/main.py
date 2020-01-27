@@ -75,6 +75,7 @@ def clean_queries(queries):
 
 def get_queries():
     queries = parse_queries()
+    # import sys
     # queries = [queries[int(sys.argv[1])]]
     queries = clean_queries(queries)
     return queries
@@ -301,17 +302,17 @@ def calculate_unigram_lm_with_laplace_smoothing_scores(document_ids, query, voca
     for term_vector in term_vectors:
         if term_vector['term_vectors']:
             score = 0.0
-            valid = False
             for token in query['tokens']:
                 if token in term_vector['term_vectors']['text']['terms']:
                     tf = term_vector['term_vectors']['text']['terms'][token]['term_freq']
-                    doc_length = len(term_vector['term_vectors']['text']['terms'])
-                    temp = (tf + 1.0) / (doc_length + vocabulary_size)
-                    score += math.log(temp)
-                    valid = True
+                else:
+                    tf = 0
 
-            if valid:
-                scores.append((score, term_vector['_id']))
+                doc_length = len(term_vector['term_vectors']['text']['terms'])
+                temp = (tf + 1.0) / (doc_length + vocabulary_size)
+                score += math.log(temp)
+
+            scores.append((score, term_vector['_id']))
     return scores
 
 
@@ -384,11 +385,11 @@ if __name__ == '__main__':
     # find_scores_using_okapi_tf(_queries)
     # find_scores_using_okapi_tf_idf(_queries)
     # find_scores_using_okapi_bm25(_queries)
-    # find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
+    find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
     # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(_queries)
 
     # find_scores_using_okapi_tf_with_feedback(_queries)
-    find_scores_using_okapi_tf_idf_with_feedback(_queries)
-    find_scores_using_okapi_bm25_with_feedback(_queries)
-    find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(_queries)
-    find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(_queries)
+    # find_scores_using_okapi_tf_idf_with_feedback(_queries)
+    # find_scores_using_okapi_bm25_with_feedback(_queries)
+    # find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(_queries)
+    # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(_queries)
