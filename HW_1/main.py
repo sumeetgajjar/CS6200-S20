@@ -342,23 +342,33 @@ def find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(queries):
 def calculate_unigram_lm_with_jelinek_mercer_smoothing_scores(document_ids, query, vocabulary_size, lam=0.8):
     term_vectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, document_ids, 10000)
     scores = []
+
+    ttf = {}
+    for term_vector in term_vectors:
+        if term_vector['term_vectors']:
+            for term, value in term_vector['term_vectors']['text']['terms'].items():
+                ttf[term] = value['ttf']
+
     for term_vector in term_vectors:
         if term_vector['term_vectors']:
             score = 0.0
-            valid = False
             for token in query['tokens']:
                 if token in term_vector['term_vectors']['text']['terms']:
                     tf = term_vector['term_vectors']['text']['terms'][token]['term_freq']
-                    ttf = term_vector['term_vectors']['text']['terms'][token]['ttf']
-                    doc_length = len(term_vector['term_vectors']['text']['terms'])
-                    temp_1 = lam * (tf / doc_length)
-                    temp_2 = (1 - lam) * (ttf / vocabulary_size)
+                    token_ttf = term_vector['term_vectors']['text']['terms'][token]['ttf']
+                else:
+                    tf = 0
+                    token_ttf = ttf.get(token, 0)
 
+                doc_length = len(term_vector['term_vectors']['text']['terms'])
+                temp_1 = lam * (tf / doc_length)
+                temp_2 = (1 - lam) * (token_ttf / vocabulary_size)
+                try:
                     score += math.log(temp_1 + temp_2)
-                    valid = True
+                except:
+                    pass
 
-            if valid:
-                scores.append((score, term_vector['_id']))
+            scores.append((score, term_vector['_id']))
     return scores
 
 
@@ -389,11 +399,11 @@ if __name__ == '__main__':
     # find_scores_using_okapi_tf(_queries)
     # find_scores_using_okapi_tf_idf(_queries)
     # find_scores_using_okapi_bm25(_queries)
-    find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
+    # find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
     # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(_queries)
 
-    # find_scores_using_okapi_tf_with_feedback(_queries)
-    # find_scores_using_okapi_tf_idf_with_feedback(_queries)
-    # find_scores_using_okapi_bm25_with_feedback(_queries)
-    # find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(_queries)
-    # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(_queries)
+    find_scores_using_okapi_tf_with_feedback(_queries)
+    find_scores_using_okapi_tf_idf_with_feedback(_queries)
+    find_scores_using_okapi_bm25_with_feedback(_queries)
+    find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(_queries)
+    find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(_queries)
