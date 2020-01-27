@@ -129,25 +129,90 @@ def calculate_okapi_tf_scores(document_ids, query):
     return scores
 
 
-@timing
-def find_scores_using_okapi_tf(queries):
-    temp = []
+def find_scores_parallelly_and_write_to_file(queries,
+                                             score_calculator,
+                                             file_name,
+                                             **kwargs):
+    results_to_write = []
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
     for query in queries:
-        results = Utils.run_task_parallelly(calculate_okapi_tf_scores, all_document_ids, 8, query=query)
+        results = Utils.run_task_parallelly(score_calculator, all_document_ids, 8, query=query, **kwargs)
         scores = []
         for result in results:
             scores.extend(result)
         scores.sort(reverse=True)
         for ix, score in enumerate(scores[:1000]):
-            temp.append({
+            results_to_write.append({
                 'doc_no': score[1],
                 'rank': ix + 1,
                 'score': score[0],
                 'query_number': query['id']
             })
 
-    Utils.write_results_to_file('results/okapi_tf.txt', temp)
+    Utils.write_results_to_file('results/{}.txt'.format(file_name), results_to_write)
+
+
+def find_scores_parallelly_apply_feedback_and_write_to_file(queries,
+                                                            score_calculator,
+                                                            file_name,
+                                                            k,
+                                                            **kwargs):
+    results_to_write = []
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    for query in queries:
+        results = Utils.run_task_parallelly(score_calculator, all_document_ids, 8, query=query, **kwargs)
+        scores = []
+        for result in results:
+            scores.extend(result)
+        scores.sort(reverse=True)
+
+        top_doc_ids = [tup[1] for tup in scores[:k]]
+        termvectors = EsUtils.get_termvectors(Constants.AP_DATA_INDEX_NAME, top_doc_ids)
+        ttf = Counter()
+        doc_freq = Counter()
+        for termvector in termvectors:
+            if termvector['term_vectors']:
+                for term, value in termvector['term_vectors']['text']['terms'].items():
+                    ttf[term] += value['term_freq']
+                    doc_freq[term] += value['doc_freq']
+
+        tf_idf = Counter()
+        for term, tf in ttf.items():
+            tf_idf[term] = tf * math.log(len(all_document_ids) / doc_freq[term])
+
+        temp_tokens = [tup[0] for tup in tf_idf.most_common(10)]
+        query['tokens'].extend(temp_tokens)
+
+        results = Utils.run_task_parallelly(score_calculator, all_document_ids, 8, query=query, **kwargs)
+        scores = []
+        for result in results:
+            scores.extend(result)
+        scores.sort(reverse=True)
+
+        for ix, score in enumerate(scores[:1000]):
+            results_to_write.append({
+                'doc_no': score[1],
+                'rank': ix + 1,
+                'score': score[0],
+                'query_number': query['id']
+            })
+
+    Utils.write_results_to_file('results/pseudo-relevance-feedback/{}.txt'.format(file_name), results_to_write)
+
+
+@timing
+def find_scores_using_okapi_tf(queries):
+    find_scores_parallelly_and_write_to_file(queries,
+                                             calculate_okapi_tf_scores,
+                                             'okapi_tf')
+
+
+@timing
+def find_scores_using_okapi_tf_with_feedback(queries):
+    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
+                                                            calculate_okapi_tf_scores,
+                                                            'okapi_tf',
+                                                            10)
 
 
 def calculate_okapi_tf_idf_scores(document_ids, query, total_documents):
@@ -171,25 +236,11 @@ def calculate_okapi_tf_idf_scores(document_ids, query, total_documents):
 
 @timing
 def find_scores_using_okapi_tf_idf(queries):
-    temp = []
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
-    for query in queries:
-        results = Utils.run_task_parallelly(calculate_okapi_tf_idf_scores, all_document_ids, 8,
-                                            query=query,
-                                            total_documents=len(all_document_ids))
-        scores = []
-        for result in results:
-            scores.extend(result)
-        scores.sort(reverse=True)
-        for ix, score in enumerate(scores[:1000]):
-            temp.append({
-                'doc_no': score[1],
-                'rank': ix + 1,
-                'score': score[0],
-                'query_number': query['id']
-            })
-
-    Utils.write_results_to_file('results/okapi_tf_idf.txt', temp)
+    find_scores_parallelly_and_write_to_file(queries,
+                                             calculate_okapi_tf_idf_scores,
+                                             'okapi_tf_idf',
+                                             total_documents=len(all_document_ids))
 
 
 def calculate_okapi_bm25_scores(document_ids, query, total_documents, k_1=1.2, k_2=500, b=0.75):
@@ -217,25 +268,11 @@ def calculate_okapi_bm25_scores(document_ids, query, total_documents, k_1=1.2, k
 
 @timing
 def find_scores_using_okapi_bm25(queries):
-    temp = []
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
-    for query in queries:
-        results = Utils.run_task_parallelly(calculate_okapi_bm25_scores, all_document_ids, 8,
-                                            query=query,
-                                            total_documents=len(all_document_ids))
-        scores = []
-        for result in results:
-            scores.extend(result)
-        scores.sort(reverse=True)
-        for ix, score in enumerate(scores[:1000]):
-            temp.append({
-                'doc_no': score[1],
-                'rank': ix + 1,
-                'score': score[0],
-                'query_number': query['id']
-            })
-
-    Utils.write_results_to_file('results/okapi_bm25.txt', temp)
+    find_scores_parallelly_and_write_to_file(queries,
+                                             calculate_okapi_bm25_scores,
+                                             'okapi_bm25',
+                                             total_documents=len(all_document_ids))
 
 
 def calculate_unigram_lm_with_laplace_smoothing_scores(document_ids, query, vocabulary_size):
@@ -260,26 +297,11 @@ def calculate_unigram_lm_with_laplace_smoothing_scores(document_ids, query, voca
 
 @timing
 def find_scores_using_unigram_lm_with_laplace_smoothing(queries):
-    temp = []
-    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
     vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
-    for query in queries:
-        results = Utils.run_task_parallelly(calculate_unigram_lm_with_laplace_smoothing_scores, all_document_ids, 8,
-                                            query=query,
-                                            vocabulary_size=vocabulary_size)
-        scores = []
-        for result in results:
-            scores.extend(result)
-        scores.sort(reverse=True)
-        for ix, score in enumerate(scores[:1000]):
-            temp.append({
-                'doc_no': score[1],
-                'rank': ix + 1,
-                'score': score[0],
-                'query_number': query['id']
-            })
-
-    Utils.write_results_to_file('results/unigram_lm_with_laplace_smoothing.txt', temp)
+    find_scores_parallelly_and_write_to_file(queries,
+                                             calculate_unigram_lm_with_laplace_smoothing_scores,
+                                             'unigram_lm_with_laplace_smoothing',
+                                             vocabulary_size=vocabulary_size)
 
 
 def calculate_unigram_lm_with_jelinek_mercer_smoothing_scores(document_ids, query, vocabulary_size, lam=0.8):
@@ -307,27 +329,11 @@ def calculate_unigram_lm_with_jelinek_mercer_smoothing_scores(document_ids, quer
 
 @timing
 def find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(queries):
-    temp = []
-    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
     vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
-    for query in queries:
-        results = Utils.run_task_parallelly(calculate_unigram_lm_with_jelinek_mercer_smoothing_scores,
-                                            all_document_ids, 8,
-                                            query=query,
-                                            vocabulary_size=vocabulary_size)
-        scores = []
-        for result in results:
-            scores.extend(result)
-        scores.sort(reverse=True)
-        for ix, score in enumerate(scores[:1000]):
-            temp.append({
-                'doc_no': score[1],
-                'rank': ix + 1,
-                'score': score[0],
-                'query_number': query['id']
-            })
-
-    Utils.write_results_to_file('results/unigram_lm_with_jelinek_mercer_smoothing.txt', temp)
+    find_scores_parallelly_and_write_to_file(queries,
+                                             calculate_unigram_lm_with_jelinek_mercer_smoothing_scores,
+                                             'unigram_lm_with_jelinek_mercer_smoothing',
+                                             vocabulary_size=vocabulary_size)
 
 
 if __name__ == '__main__':
@@ -339,4 +345,5 @@ if __name__ == '__main__':
     # find_scores_using_okapi_tf_idf(_queries)
     # find_scores_using_okapi_bm25(_queries)
     # find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
-    find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(_queries)
+    # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(_queries)
+    find_scores_using_okapi_tf_with_feedback(_queries)
