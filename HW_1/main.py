@@ -492,7 +492,7 @@ if __name__ == '__main__':
     # find_scores_using_unigram_lm_with_laplace_smoothing_with_custom_feedback(_queries)
     # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_custom_feedback(_queries)
 
-    find_scores_using_okapi_tf_with_es_significant_feedback(_queries)
+    # find_scores_using_okapi_tf_with_es_significant_feedback(_queries)
     # find_scores_using_okapi_tf_idf_with_es_significant_feedback(_queries)
     # find_scores_using_okapi_bm25_with_es_significant_feedback(_queries)
     # find_scores_using_unigram_lm_with_laplace_smoothing_with_es_significant_feedback(_queries)
