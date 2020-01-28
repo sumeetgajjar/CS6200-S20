@@ -69,7 +69,6 @@ def clean_queries(queries):
         analyzed_query = " ".join([token['token'] for token in response['tokens']])
         query['cleaned'] = analyzed_query.strip()
         query['tokens'] = [token['token'] for token in response['tokens']]
-        print(analyzed_query)
 
     return queries
 
@@ -167,6 +166,25 @@ def find_scores_parallelly_and_write_to_file(queries,
 
 
 def add_es_significant_terms_to_queries(queries):
+    for query in queries:
+        token_set = set(query['tokens'])
+        related_query_tokens = []
+        for token in query['tokens']:
+            related_tokens = []
+            significant_terms = EsUtils.get_significant_terms(Constants.AP_DATA_INDEX_NAME, token)
+            for term in significant_terms:
+                if term['key'] in token_set:
+                    continue
+                if term['score'] < 0.7:
+                    continue
+                if len(related_tokens) == 2:
+                    break
+
+                related_tokens.append(term['key'])
+            related_query_tokens.extend(related_tokens)
+
+        query['tokens'].extend(related_query_tokens)
+
     return queries
 
 
@@ -460,7 +478,7 @@ def find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_es_significa
 if __name__ == '__main__':
     Utils.configure_logging()
     # create_ap_data_index_and_insert_documents()
-    _queries = get_queries()[:1]
+    _queries = get_queries()
     # find_scores_using_es_builtin(_queries)
     # find_scores_using_okapi_tf(_queries)
     # find_scores_using_okapi_tf_idf(_queries)
@@ -475,7 +493,7 @@ if __name__ == '__main__':
     # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_custom_feedback(_queries)
 
     find_scores_using_okapi_tf_with_es_significant_feedback(_queries)
-    find_scores_using_okapi_tf_idf_with_es_significant_feedback(_queries)
-    find_scores_using_okapi_bm25_with_es_significant_feedback(_queries)
-    find_scores_using_unigram_lm_with_laplace_smoothing_with_es_significant_feedback(_queries)
-    find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_es_significant_feedback(_queries)
+    # find_scores_using_okapi_tf_idf_with_es_significant_feedback(_queries)
+    # find_scores_using_okapi_bm25_with_es_significant_feedback(_queries)
+    # find_scores_using_unigram_lm_with_laplace_smoothing_with_es_significant_feedback(_queries)
+    # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_es_significant_feedback(_queries)
