@@ -69,6 +69,7 @@ def clean_queries(queries):
         analyzed_query = " ".join([token['token'] for token in response['tokens']])
         query['cleaned'] = analyzed_query.strip()
         query['tokens'] = [token['token'] for token in response['tokens']]
+        print(analyzed_query)
 
     return queries
 
@@ -201,7 +202,7 @@ def find_scores_parallelly_apply_feedback_and_write_to_file(queries,
         results_to_write_after_feedback.extend(transform_scores_for_writing_to_file(new_scores, query))
 
     Utils.write_results_to_file('results/{}.txt'.format(file_name), results_to_write_before_feedback)
-    Utils.write_results_to_file('results/pseudo-relevance-feedback/{}.txt'.format(file_name),
+    Utils.write_results_to_file('results/pseudo-relevance-feedback/custom-heuristic/{}.txt'.format(file_name),
                                 results_to_write_after_feedback)
 
 
@@ -402,8 +403,8 @@ if __name__ == '__main__':
     # find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
     # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(_queries)
 
-    find_scores_using_okapi_tf_with_feedback(_queries)
-    find_scores_using_okapi_tf_idf_with_feedback(_queries)
-    find_scores_using_okapi_bm25_with_feedback(_queries)
-    find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(_queries)
-    find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(_queries)
+    # find_scores_using_okapi_tf_with_feedback(_queries)
+    # find_scores_using_okapi_tf_idf_with_feedback(_queries)
+    # find_scores_using_okapi_bm25_with_feedback(_queries)
+    # find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(_queries)
+    # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(_queries)
