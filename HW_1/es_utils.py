@@ -133,3 +133,22 @@ class EsUtils:
             "size": 0
         })
         return response['aggregations']['vocab_size']['value']
+
+    @classmethod
+    def get_significant_terms(cls, index_name: str, term: str):
+        es_client = cls.get_es_client()
+        response = es_client.search(index=index_name, body={
+            "query": {
+                "terms": {"text": [term]}
+            },
+            "aggregations": {
+                "significant_text_types": {
+                    "significant_terms": {
+                        "field": "text",
+                        "gnd": {}
+                    }
+                }
+            },
+            "size": 0
+        })
+        return response['aggregations']['significant_text_types']['buckets']
