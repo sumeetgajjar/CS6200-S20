@@ -146,6 +146,7 @@ def calculate_okapi_tf_scores(document_ids, query):
 def find_scores_parallelly_and_write_to_file(queries,
                                              score_calculator,
                                              file_name,
+                                             result_sub_dir=None,
                                              **kwargs):
     results_to_write = []
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
@@ -157,14 +158,35 @@ def find_scores_parallelly_and_write_to_file(queries,
         scores.sort(reverse=True)
         results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
 
-    Utils.write_results_to_file('results/{}.txt'.format(file_name), results_to_write)
+    file_path = 'results'
+    if result_sub_dir:
+        file_path = '{}/{}'.format(file_path, result_sub_dir)
+    file_path = '{}/{}.txt'.format(file_path, file_name)
+
+    Utils.write_results_to_file(file_path, results_to_write)
 
 
-def find_scores_parallelly_apply_feedback_and_write_to_file(queries,
-                                                            score_calculator,
-                                                            file_name,
-                                                            k,
-                                                            **kwargs):
+def add_es_significant_terms_to_queries(queries):
+    return queries
+
+
+def find_scores_parallelly_apply_es_significant_terms_feedback_and_write_to_file(queries,
+                                                                                 score_calculator,
+                                                                                 file_name,
+                                                                                 **kwargs):
+    queries = add_es_significant_terms_to_queries(queries)
+    find_scores_parallelly_and_write_to_file(queries,
+                                             score_calculator,
+                                             file_name,
+                                             result_sub_dir='pseudo-relevance-feedback/es-significant',
+                                             **kwargs)
+
+
+def find_scores_parallelly_apply_custom_feedback_and_write_to_file(queries,
+                                                                   score_calculator,
+                                                                   file_name,
+                                                                   k,
+                                                                   **kwargs):
     results_to_write_before_feedback = []
     results_to_write_after_feedback = []
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
@@ -214,11 +236,18 @@ def find_scores_using_okapi_tf(queries):
 
 
 @timing
-def find_scores_using_okapi_tf_with_feedback(queries):
-    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
-                                                            calculate_okapi_tf_scores,
-                                                            'okapi_tf',
-                                                            10)
+def find_scores_using_okapi_tf_with_custom_feedback(queries):
+    find_scores_parallelly_apply_custom_feedback_and_write_to_file(queries,
+                                                                   calculate_okapi_tf_scores,
+                                                                   'okapi_tf',
+                                                                   10)
+
+
+@timing
+def find_scores_using_okapi_tf_with_es_significant_feedback(queries):
+    find_scores_parallelly_apply_es_significant_terms_feedback_and_write_to_file(queries,
+                                                                                 calculate_okapi_tf_scores,
+                                                                                 'okapi_tf')
 
 
 def calculate_okapi_tf_idf_scores(document_ids, query, total_documents):
@@ -250,13 +279,22 @@ def find_scores_using_okapi_tf_idf(queries):
 
 
 @timing
-def find_scores_using_okapi_tf_idf_with_feedback(queries):
+def find_scores_using_okapi_tf_idf_with_custom_feedback(queries):
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
-    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
-                                                            calculate_okapi_tf_idf_scores,
-                                                            'okapi_tf_idf',
-                                                            10,
-                                                            total_documents=len(all_document_ids))
+    find_scores_parallelly_apply_custom_feedback_and_write_to_file(queries,
+                                                                   calculate_okapi_tf_idf_scores,
+                                                                   'okapi_tf_idf',
+                                                                   10,
+                                                                   total_documents=len(all_document_ids))
+
+
+@timing
+def find_scores_using_okapi_tf_idf_with_es_significant_feedback(queries):
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    find_scores_parallelly_apply_es_significant_terms_feedback_and_write_to_file(queries,
+                                                                                 calculate_okapi_tf_idf_scores,
+                                                                                 'okapi_tf_idf',
+                                                                                 total_documents=len(all_document_ids))
 
 
 def calculate_okapi_bm25_scores(document_ids, query, total_documents, k_1=1.2, k_2=500, b=0.75):
@@ -292,13 +330,22 @@ def find_scores_using_okapi_bm25(queries):
 
 
 @timing
-def find_scores_using_okapi_bm25_with_feedback(queries):
+def find_scores_using_okapi_bm25_with_custom_feedback(queries):
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
-    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
-                                                            calculate_okapi_bm25_scores,
-                                                            'okapi_bm25',
-                                                            10,
-                                                            total_documents=len(all_document_ids))
+    find_scores_parallelly_apply_custom_feedback_and_write_to_file(queries,
+                                                                   calculate_okapi_bm25_scores,
+                                                                   'okapi_bm25',
+                                                                   10,
+                                                                   total_documents=len(all_document_ids))
+
+
+@timing
+def find_scores_using_okapi_bm25_with_es_significant_feedback(queries):
+    all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
+    find_scores_parallelly_apply_es_significant_terms_feedback_and_write_to_file(queries,
+                                                                                 calculate_okapi_bm25_scores,
+                                                                                 'okapi_bm25',
+                                                                                 total_documents=len(all_document_ids))
 
 
 def calculate_unigram_lm_with_laplace_smoothing_scores(document_ids, query, vocabulary_size):
@@ -331,13 +378,22 @@ def find_scores_using_unigram_lm_with_laplace_smoothing(queries):
 
 
 @timing
-def find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(queries):
+def find_scores_using_unigram_lm_with_laplace_smoothing_with_custom_feedback(queries):
     vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
-    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
-                                                            calculate_unigram_lm_with_laplace_smoothing_scores,
-                                                            'unigram_lm_with_laplace_smoothing',
-                                                            10,
-                                                            vocabulary_size=vocabulary_size)
+    find_scores_parallelly_apply_custom_feedback_and_write_to_file(queries,
+                                                                   calculate_unigram_lm_with_laplace_smoothing_scores,
+                                                                   'unigram_lm_with_laplace_smoothing',
+                                                                   10,
+                                                                   vocabulary_size=vocabulary_size)
+
+
+@timing
+def find_scores_using_unigram_lm_with_laplace_smoothing_with_es_significant_feedback(queries):
+    vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
+    find_scores_parallelly_apply_es_significant_terms_feedback_and_write_to_file(queries,
+                                                                                 calculate_unigram_lm_with_laplace_smoothing_scores,
+                                                                                 'unigram_lm_with_laplace_smoothing',
+                                                                                 vocabulary_size=vocabulary_size)
 
 
 def calculate_unigram_lm_with_jelinek_mercer_smoothing_scores(document_ids, query, vocabulary_size, lam=0.8):
@@ -383,19 +439,28 @@ def find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(queries):
 
 
 @timing
-def find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(queries):
+def find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_custom_feedback(queries):
     vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
-    find_scores_parallelly_apply_feedback_and_write_to_file(queries,
-                                                            calculate_unigram_lm_with_jelinek_mercer_smoothing_scores,
-                                                            'unigram_lm_with_jelinek_mercer_smoothing',
-                                                            10,
-                                                            vocabulary_size=vocabulary_size)
+    find_scores_parallelly_apply_custom_feedback_and_write_to_file(queries,
+                                                                   calculate_unigram_lm_with_jelinek_mercer_smoothing_scores,
+                                                                   'unigram_lm_with_jelinek_mercer_smoothing',
+                                                                   10,
+                                                                   vocabulary_size=vocabulary_size)
+
+
+@timing
+def find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_es_significant_feedback(queries):
+    vocabulary_size = EsUtils.get_vocabulary_size(index_name=Constants.AP_DATA_INDEX_NAME)
+    find_scores_parallelly_apply_es_significant_terms_feedback_and_write_to_file(queries,
+                                                                                 calculate_unigram_lm_with_jelinek_mercer_smoothing_scores,
+                                                                                 'unigram_lm_with_jelinek_mercer_smoothing',
+                                                                                 vocabulary_size=vocabulary_size)
 
 
 if __name__ == '__main__':
     Utils.configure_logging()
     # create_ap_data_index_and_insert_documents()
-    _queries = get_queries()
+    _queries = get_queries()[:1]
     # find_scores_using_es_builtin(_queries)
     # find_scores_using_okapi_tf(_queries)
     # find_scores_using_okapi_tf_idf(_queries)
@@ -403,8 +468,14 @@ if __name__ == '__main__':
     # find_scores_using_unigram_lm_with_laplace_smoothing(_queries)
     # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing(_queries)
 
-    # find_scores_using_okapi_tf_with_feedback(_queries)
-    # find_scores_using_okapi_tf_idf_with_feedback(_queries)
-    # find_scores_using_okapi_bm25_with_feedback(_queries)
-    # find_scores_using_unigram_lm_with_laplace_smoothing_with_feedback(_queries)
-    # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_feedback(_queries)
+    # find_scores_using_okapi_tf_with_custom_feedback(_queries)
+    # find_scores_using_okapi_tf_idf_with_custom_feedback(_queries)
+    # find_scores_using_okapi_bm25_with_custom_feedback(_queries)
+    # find_scores_using_unigram_lm_with_laplace_smoothing_with_custom_feedback(_queries)
+    # find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_custom_feedback(_queries)
+
+    find_scores_using_okapi_tf_with_es_significant_feedback(_queries)
+    find_scores_using_okapi_tf_idf_with_es_significant_feedback(_queries)
+    find_scores_using_okapi_bm25_with_es_significant_feedback(_queries)
+    find_scores_using_unigram_lm_with_laplace_smoothing_with_es_significant_feedback(_queries)
+    find_scores_using_unigram_lm_with_jelinek_mercer_smoothing_with_es_significant_feedback(_queries)
