@@ -8,7 +8,11 @@ class TRECParser:
         self.doc = {'start': '<DOC>', 'end': '</DOC>'}
         self.doc_no = {'start': '<DOCNO>', 'end': '</DOCNO>'}
         self.text = {'start': '<TEXT>', 'end': '</TEXT>'}
+        self.head = {'start': '<HEAD>', 'end': '</HEAD>'}
         self.doc_no_regex = re.compile('<DOCNO>(.*)</DOCNO>')
+        self.head_regex = re.compile('<HEAD>(.*)</HEAD>')
+        self.head_start_regex = re.compile('<HEAD>(.*)')
+        self.head_end_regex = re.compile('(.*)</HEAD>')
 
     def _is_tag_start(self, tag: str, line: str) -> bool:
         return line.startswith(getattr(self, tag)['start'])
@@ -33,6 +37,12 @@ class TRECParser:
 
     def is_text_end(self, line: str) -> bool:
         return self._is_tag_end('text', line)
+
+    def is_head_start(self, line: str) -> bool:
+        return self._is_tag_start('head', line)
+
+    def is_head_end(self, line: str) -> bool:
+        return self._is_tag_end('head', line)
 
     def _parse_doc_no(self, line, document):
         if not self.is_doc_no_end(line):
@@ -62,6 +72,28 @@ class TRECParser:
             text = '{}\n{}'.format(old_text, text)
         document['text'] = text
 
+    def _parse_head(self, file, line, document):
+        if self.is_head_end(line):
+            head = self.head_regex.match(line).group(1)
+        else:
+            lines = [self.head_start_regex.match(line).group(1)]
+            while True:
+                line = file.readline()
+                if not line:
+                    raise RuntimeError('unexpected EOF while parsing head')
+
+                if self.is_head_end(line):
+                    lines.append(self.head_end_regex.match(line).group(1))
+                    head = ''.join(lines)
+                    break
+
+                lines.append(line)
+
+        old_head = document.get('head', '')
+        if old_head:
+            head = '{}\n{}'.format(old_head, head)
+        document['head'] = head
+
     @staticmethod
     def _add_extra_info(document):
         document['length'] = document['text'].count(' ')
@@ -88,6 +120,8 @@ class TRECParser:
                     self._parse_doc_no(line, document)
                 elif self.is_text_start(line):
                     self._parse_text(file, document)
+                elif self.is_head_start(line):
+                    self._parse_head(file, line, document)
                 elif self.is_doc_end(line):
                     self._add_extra_info(document)
                     self._document_sanity_check(document)
