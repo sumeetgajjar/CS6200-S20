@@ -37,8 +37,16 @@ class Utils:
         logging.basicConfig(stream=sys.stdout, level=level)
 
     @classmethod
-    def split_list_into_sub_lists(cls, list_to_split, no_of_sub_lists):
-        sub_list_size = math.ceil(len(list_to_split) / no_of_sub_lists)
+    def split_list_into_sub_lists(cls, list_to_split, no_of_sub_lists: int = None, sub_list_size: int = None):
+        if no_of_sub_lists is not None and sub_list_size is not None:
+            raise ValueError("Both no_of_sub_lists and no_of_items_per_list should be passed as argument")
+
+        if no_of_sub_lists is None and sub_list_size is None:
+            raise ValueError("Both no_of_sub_lists and no_of_items_per_list cannot be passed as argument")
+
+        if no_of_sub_lists is not None:
+            sub_list_size = math.ceil(len(list_to_split) / no_of_sub_lists)
+
         for i in range(0, len(list_to_split), sub_list_size):
             yield list_to_split[i:i + sub_list_size]
 
