@@ -63,3 +63,7 @@ class Utils:
         with open(file_path, 'w') as file:
             file.writelines(lines)
         logging.info("Results written")
+
+    @classmethod
+    def get_stopwords_file_path(cls):
+        return "{}/{}".format(cls.get_ap_data_path(), 'stoplist.txt')
