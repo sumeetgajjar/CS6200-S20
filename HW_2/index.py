@@ -9,8 +9,7 @@ class CustomIndex:
         for token in tokens:
             term = token[0]
             if term not in tf_info:
-                tf_info[term]['ttf'] = 0
-                tf_info[term]['tf'] = {}
+                tf_info[term] = {'ttf': 0, 'tf': {}}
 
             term_tf_info = tf_info[term]['tf']
             if document_id not in term:
