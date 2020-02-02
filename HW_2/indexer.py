@@ -1,15 +1,59 @@
+import gzip
 import json
 import uuid
+from io import BytesIO
 
 from constants.constants import Constants
 from utils.utils import Utils
 
 
+class GzipCompressor:
+
+    def __init__(self, bytes_to_read_at_once) -> None:
+        self.bytes_to_read_at_once = bytes_to_read_at_once
+
+    def compress_string_to_bytes(self, string_to_compress: str):
+        bio = BytesIO()
+        bio.write(string_to_compress.encode("utf-8"))
+        bio.seek(0)
+        stream = BytesIO()
+        compressor = gzip.GzipFile(fileobj=stream, mode='w')
+        while True:  # until EOF
+            chunk = bio.read(self.bytes_to_read_at_once)
+            if not chunk:  # EOF?
+                compressor.close()
+                return stream.getvalue()
+            compressor.write(chunk)
+
+    def decompress_bytes_to_string(self, bytes_to_decompress) -> str:
+        bio = BytesIO()
+        stream = BytesIO(bytes_to_decompress)
+        decompressor = gzip.GzipFile(fileobj=stream, mode='r')
+        while True:  # until EOF
+            chunk = decompressor.read(self.bytes_to_read_at_once)
+            if not chunk:
+                decompressor.close()
+                bio.seek(0)
+                return bio.read().decode("utf-8")
+            bio.write(chunk)
+
+
+class JsonSerializer:
+
+    def serialize(self, dictionary):
+        return json.dumps(dictionary)
+
+    def deserialize(self, serialized_string: str) -> dict:
+        return json.loads(serialized_string)
+
+
 class CustomIndex:
-    def __init__(self, tokenizer, stopwords_filter, stemmer) -> None:
+    def __init__(self, tokenizer, stopwords_filter, stemmer, compressor, serializer) -> None:
         self.tokenizer = tokenizer
         self.stopwords_filter = stopwords_filter
         self.stemmer = stemmer
+        self.compressor = compressor
+        self.serializer = serializer
 
     @classmethod
     def _calculate_and_update_tf_info(cls, document_id, tokens, tf_info):
@@ -44,15 +88,11 @@ class CustomIndex:
 
     @classmethod
     def _get_index_file_path(cls):
-        return '{}/{}/{}/{}'.format(Utils.get_ap_data_path(), 'custom-index', 'index', uuid.uuid4())
+        return '{}/{}/{}/{}.txt'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'index', uuid.uuid4())
 
     @classmethod
     def _get_catalog_file_path(cls):
-        return '{}/{}/{}/{}'.format(Utils.get_ap_data_path(), 'custom-index', 'catalog', uuid.uuid4())
-
-    @classmethod
-    def _convert_dict_to_bytes(cls, tf_info):
-        return bytearray(json.dumps(tf_info), encoding=Constants.AP_DATA_FILE_ENCODING)
+        return '{}/{}/{}/{}.txt'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'catalog', uuid.uuid4())
 
     def _write_tf_info_to_index_file(self, tf_info):
         catalog = {}
@@ -61,8 +101,14 @@ class CustomIndex:
         with open(index_file_path, 'wb') as file:
             for batch in self._create_tf_info_batches(tf_info):
                 current_pos = file.tell()
-                size = file.write(self._convert_dict_to_bytes(batch))
 
+                serialized_tf_info = self.serializer.serialize(batch)
+                compressed_tf_info = self.compressor.compress_string_to_bytes(serialized_tf_info)
+
+                size = file.write(compressed_tf_info)
+                file.write(b"\n")
+
+                # optimization since all the terms in the same batch will have same pos and size
                 temp = {'pos': current_pos, 'size': size}
                 for term in batch.keys():
                     catalog[term] = temp
