@@ -3,7 +3,7 @@ import logging
 import math
 import sys
 
-from HW_1.constants import Constants
+from constants.constants import Constants
 from HW_1.es_index_config import EsIndexConfig
 from HW_1.es_utils import EsUtils
 from utils.decorators import timing

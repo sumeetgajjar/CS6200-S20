@@ -1,3 +1,10 @@
+import json
+import uuid
+
+from constants.constants import Constants
+from utils.utils import Utils
+
+
 class CustomIndex:
     def __init__(self, tokenizer, stopwords_filter, stemmer) -> None:
         self.tokenizer = tokenizer
@@ -19,13 +26,54 @@ class CustomIndex:
             termvector['tf'] += 1
             termvector['pos'].append(token[1])
 
+    @classmethod
+    def _create_tf_info_batches(cls, tf_info: dict):
+        i = 0
+        tf_info_batch = {}
+        for term, info in tf_info.items():
+            tf_info_batch[term] = info
+            i += 1
+
+            if i % Constants.TERMS_IN_SINGLE_WRITE == 0:
+                temp = tf_info_batch
+                tf_info_batch = {}
+                yield temp
+
+        if tf_info_batch:
+            yield tf_info_batch
+
+    @classmethod
+    def _get_index_file_path(cls):
+        return '{}/{}/{}/{}'.format(Utils.get_ap_data_path(), 'custom-index', 'index', uuid.uuid4())
+
+    @classmethod
+    def _get_catalog_file_path(cls):
+        return '{}/{}/{}/{}'.format(Utils.get_ap_data_path(), 'custom-index', 'catalog', uuid.uuid4())
+
+    @classmethod
+    def _convert_dict_to_bytes(cls, tf_info):
+        return bytearray(json.dumps(tf_info), encoding=Constants.AP_DATA_FILE_ENCODING)
+
     def _write_tf_info_to_index_file(self, tf_info):
         catalog = {}
-        index_file_path = ''
+        index_file_path = self._get_index_file_path()
+
+        with open(index_file_path, 'wb') as file:
+            for batch in self._create_tf_info_batches(tf_info):
+                current_pos = file.tell()
+                size = file.write(self._convert_dict_to_bytes(batch))
+
+                temp = {'pos': current_pos, 'size': size}
+                for term in batch.keys():
+                    catalog[term] = temp
+
         return catalog, index_file_path
 
     def _write_catalog_to_file(self, catalog):
-        catalog_file_path = ''
+        catalog_file_path = self._get_catalog_file_path()
+        with open(catalog_file_path, 'w') as file:
+            file.write(json.dumps(catalog))
+
         return catalog_file_path
 
     def add_documents(self, documents, index_head, enable_stemming):

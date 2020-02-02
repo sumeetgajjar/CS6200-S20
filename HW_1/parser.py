@@ -3,7 +3,7 @@ import re
 
 
 class TRECParser:
-    def __init__(self, file_encoding='latin-1') -> None:
+    def __init__(self, file_encoding) -> None:
         self.file_encoding = file_encoding
         self.doc = {'start': '<DOC>', 'end': '</DOC>'}
         self.doc_no = {'start': '<DOCNO>', 'end': '</DOCNO>'}

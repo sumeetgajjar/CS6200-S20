@@ -4,7 +4,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.client import IndicesClient
 from elasticsearch.helpers import bulk, scan
 
-from HW_1.constants import Constants
+from constants.constants import Constants
 from utils.decorators import timing
 
 ES_HOSTS = [{"host": "localhost", "port": 9200}]

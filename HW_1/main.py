@@ -3,9 +3,9 @@ import math
 import os
 from collections import Counter
 
-from HW_1.constants import Constants
 from HW_1.es_utils import EsUtils
 from HW_1.parser import TRECParser
+from constants.constants import Constants
 from utils.decorators import timing
 from utils.utils import Utils
 
@@ -18,7 +18,7 @@ def get_file_paths_to_parse(dir_path: str) -> list:
 def get_parsed_documents(file_paths: list):
     logging.info("Parsing documents")
     parsed_documents = []
-    parser = TRECParser()
+    parser = TRECParser(Constants.AP_DATA_FILE_ENCODING)
     for file_path in file_paths:
         parsed_documents.extend(parser.parse(file_path))
 
