@@ -4,6 +4,7 @@ import uuid
 from io import BytesIO
 
 from constants.constants import Constants
+from utils.decorators import timing
 from utils.utils import Utils
 
 
@@ -36,6 +37,18 @@ class GzipCompressor:
                 bio.seek(0)
                 return bio.read().decode("utf-8")
             bio.write(chunk)
+
+
+class NoHopCompressor:
+
+    def __init__(self, string_encoding) -> None:
+        self.string_encoding = string_encoding
+
+    def compress_string_to_bytes(self, string_to_compress: str):
+        return bytearray(string_to_compress, encoding=self.string_encoding)
+
+    def decompress_bytes_to_string(self, bytes_to_decompress) -> str:
+        return bytes_to_decompress.decode(self.string_encoding)
 
 
 class JsonSerializer:
@@ -103,9 +116,9 @@ class CustomIndex:
                 current_pos = file.tell()
 
                 serialized_tf_info = self.serializer.serialize(batch)
-                compressed_tf_info = self.compressor.compress_string_to_bytes(serialized_tf_info)
+                compressed_tf_info_bytes = self.compressor.compress_string_to_bytes(serialized_tf_info)
 
-                size = file.write(compressed_tf_info)
+                size = file.write(compressed_tf_info_bytes)
                 file.write(b"\n")
 
                 # optimization since all the terms in the same batch will have same pos and size
@@ -117,11 +130,22 @@ class CustomIndex:
 
     def _write_catalog_to_file(self, catalog):
         catalog_file_path = self._get_catalog_file_path()
-        with open(catalog_file_path, 'w') as file:
-            file.write(json.dumps(catalog))
+        with open(catalog_file_path, 'wb') as file:
+            serialized_catalog = self.serializer.serialize(catalog)
+            compressed_catalog_bytes = self.compressor.compress_string_to_bytes(serialized_catalog)
+            file.write(compressed_catalog_bytes)
 
         return catalog_file_path
 
+    def _read_catalog_to_file(self, catalog_file_path):
+        with open(catalog_file_path, 'rb') as file:
+            compressed_catalog_bytes = file.read()
+            serialized_catalog = self.compressor.decompress_bytes_to_string(compressed_catalog_bytes)
+            catalog = self.serializer.deserialize(serialized_catalog)
+
+        return catalog
+
+    @timing
     def add_documents(self, documents, index_head, enable_stemming):
 
         tf_info = {}
