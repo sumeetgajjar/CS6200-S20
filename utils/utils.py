@@ -1,11 +1,11 @@
 import concurrent.futures
 import logging
 import math
-import sys
+from logging import getLogger, Formatter, StreamHandler
 
-from constants.constants import Constants
 from HW_1.es_index_config import EsIndexConfig
 from HW_1.es_utils import EsUtils
+from constants.constants import Constants
 from utils.decorators import timing
 
 
@@ -34,7 +34,14 @@ class Utils:
 
     @classmethod
     def configure_logging(cls, level=logging.INFO):
-        logging.basicConfig(stream=sys.stdout, level=level)
+        log = getLogger()
+        log.setLevel(level)
+
+        log_formatter = Formatter("[%(process)d] %(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+        console_handler = StreamHandler()
+        console_handler.setFormatter(log_formatter)
+        log.addHandler(console_handler)
 
     @classmethod
     def split_list_into_sub_lists(cls, list_to_split, no_of_sub_lists: int = None, sub_list_size: int = None):

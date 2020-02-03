@@ -10,7 +10,7 @@ class Constants:
     CHUNK_SIZE = 10000
     TIMEOUT = 10
 
-    TERMS_IN_SINGLE_WRITE = 100
+    TERMS_IN_SINGLE_WRITE = 200
     BYES_TO_PROCESS_AT_ONCE_FOR_COMPRESSION = 8192
 
     # Compressor configs
