@@ -22,12 +22,18 @@ class CustomIndex:
             if term not in tf_info:
                 tf_info[term] = {'ttf': 0, 'tf': {}}
 
+            # updating the ttf
+            tf_info[term]['ttf'] += 1
+
             term_tf_info = tf_info[term]['tf']
             if document_id not in term:
                 term_tf_info[document_id] = {'tf': 0, 'pos': []}
 
             termvector = term_tf_info[document_id]
+            # updating the tf
             termvector['tf'] += 1
+
+            # updating the position information
             termvector['pos'].append(token[1])
 
     @classmethod
