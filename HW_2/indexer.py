@@ -50,33 +50,21 @@ class CustomIndex:
             termvector['pos'].append(token[1])
 
     @classmethod
-    def _create_tf_info_batches(cls, tf_info: dict):
-        i = 0
-        tf_info_batch = {}
-        for term, info in tf_info.items():
-            tf_info_batch[term] = info
-            i += 1
-
-            if i % Constants.TERMS_IN_SINGLE_WRITE == 0:
-                temp = tf_info_batch
-                tf_info_batch = {}
-                yield temp
-
-        if tf_info_batch:
-            yield tf_info_batch
+    def _merge_tf_infos(cls, tf_info_1, tf_info_2):
+        pass
 
     @classmethod
     def _get_index_data_dir(cls):
         return '{}/{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'data', 'index')
 
-    def _get_index_file_path(self):
+    def _get_new_index_file_path(self):
         return '{}/{}.txt'.format(self._get_index_data_dir(), uuid.uuid4())
 
     @classmethod
     def _get_catalog_data_dir(cls):
         return '{}/{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'data', 'catalog')
 
-    def _get_catalog_file_path(self):
+    def _get_new_catalog_file_path(self):
         return '{}/{}.txt'.format(self._get_catalog_data_dir(), uuid.uuid4())
 
     @classmethod
@@ -88,39 +76,31 @@ class CustomIndex:
 
     def _write_tf_info_to_index_file(self, tf_info):
         catalog = {}
-        index_file_path = self._get_index_file_path()
+        index_file_path = self._get_new_index_file_path()
 
         with open(index_file_path, 'wb') as file:
-            for batch in self._create_tf_info_batches(tf_info):
+            for term, info in tf_info.items():
+                data = {term: info}
+
                 current_pos = file.tell()
+                size = self._write_bytes(file, data)
 
-                serialized_tf_info = self.serializer.serialize(batch)
-                compressed_tf_info_bytes = self.compressor.compress_string_to_bytes(serialized_tf_info)
-
-                size = file.write(compressed_tf_info_bytes)
                 file.write(b"\n")
 
-                # optimization since all the terms in the same batch will have same pos and size
-                temp = {'pos': current_pos, 'size': size}
-                for term in batch.keys():
-                    catalog[term] = temp
+                catalog[term] = {'pos': current_pos, 'size': size}
 
         return catalog, index_file_path
 
     def _write_catalog_to_file(self, catalog):
-        catalog_file_path = self._get_catalog_file_path()
+        catalog_file_path = self._get_new_catalog_file_path()
         with open(catalog_file_path, 'wb') as file:
-            serialized_catalog = self.serializer.serialize(catalog)
-            compressed_catalog_bytes = self.compressor.compress_string_to_bytes(serialized_catalog)
-            file.write(compressed_catalog_bytes)
+            self._write_bytes(file, catalog)
 
         return catalog_file_path
 
     def _read_catalog_to_file(self, catalog_file_path):
         with open(catalog_file_path, 'rb') as file:
-            compressed_catalog_bytes = file.read()
-            serialized_catalog = self.compressor.decompress_bytes_to_string(compressed_catalog_bytes)
-            catalog = self.serializer.deserialize(serialized_catalog)
+            catalog = self._read_bytes(file)
 
         return catalog
 
@@ -167,6 +147,50 @@ class CustomIndex:
         metadata = self._create_metadata(catalog_file_path, index_file_path)
         self._write_metadata_to_file(metadata)
         return metadata
+
+    def _read_bytes(self, file, start=0, size=-1):
+        file.seek(start)
+        compressed_bytes = file.read(size)
+        serialized_string = self.compressor.decompress_bytes_to_string(compressed_bytes)
+        return self.serializer.deserialize(serialized_string)
+
+    def _write_bytes(self, file, data):
+        serialized_string = self.serializer.serialize(data)
+        compressed_bytes = self.compressor.compress_string_to_bytes(serialized_string)
+        return file.write(compressed_bytes)
+
+    def _merge_2_index_and_catalog(self, metadata_1, metadata_2):
+        catalog_1 = self._read_catalog_to_file(metadata_1['catalog_file_path'])
+        catalog_2 = self._read_catalog_to_file(metadata_2['catalog_file_path'])
+
+        merged_index_path = self._get_new_index_file_path()
+        merged_catalog = {}
+        with open(merged_index_path, 'wb') as merged_index_file, \
+                open(metadata_1['index_file_path'], 'rb') as index_file_1, \
+                open(metadata_2['index_file_path'], 'rb') as index_file_2:
+
+            for term, read_metadata_1 in catalog_1.items():
+                tf_info_1 = self._read_bytes(index_file_1, read_metadata_1['pos'], read_metadata_1['size'])
+                if term in catalog_2:
+                    read_metadata_2 = catalog_2[term]
+                    tf_info_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
+                    merged_tf_info = self._merge_tf_infos(tf_info_1, tf_info_2)
+                else:
+                    merged_tf_info = tf_info_1
+
+                pos = merged_index_file.tell()
+                size = self._write_bytes(merged_index_file, merged_tf_info)
+                merged_catalog[term] = {'pos': pos, 'size': size}
+
+            for term, read_metadata_2 in catalog_2.items():
+                if term not in catalog_1:
+                    tf_info_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
+
+                    pos = merged_index_file.tell()
+                    size = self._write_bytes(merged_index_file, tf_info_2)
+                    merged_catalog[term] = {'pos': pos, 'size': size}
+
+        return merged_catalog, merged_index_path
 
     def _merge_indexes_and_catalogs(self, metadata_list: list):
         pass
