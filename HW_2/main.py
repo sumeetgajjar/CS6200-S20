@@ -27,16 +27,17 @@ class HW2:
         serializer = Factory.create_serializer(Constants.JSON_SERIALIZER_NAME)
 
         index = CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)
-        return index.add_documents(documents, index_head, enable_stemming)
+        return index.index_documents(documents, index_head, enable_stemming)
 
     @classmethod
     @timing
     def main(cls):
         Utils.configure_logging()
-        for file_path_batch in cls.create_files_to_read_batches():
-            parsed_documents = get_parsed_documents(file_path_batch)
-            results = Utils.run_task_parallelly(cls.add_documents_to_index, parsed_documents, 10)
-            logging.info(results)
+        dir_path = Utils.get_ap89_collection_abs_path()
+        file_paths = get_file_paths_to_parse(dir_path)
+        logging.info("Total File to read: {}".format(len(file_paths)))
+        parsed_documents = get_parsed_documents(file_paths)
+        cls.add_documents_to_index(parsed_documents)
 
 
 if __name__ == '__main__':

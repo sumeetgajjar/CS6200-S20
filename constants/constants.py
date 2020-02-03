@@ -12,6 +12,7 @@ class Constants:
 
     TERMS_IN_SINGLE_WRITE = 200
     BYES_TO_PROCESS_AT_ONCE_FOR_COMPRESSION = 8192
+    NO_OF_PARALLEL_INDEXING_TASKS = 8
 
     # Compressor configs
     GZIP_COMPRESSOR_NAME = 'Gzip'

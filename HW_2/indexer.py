@@ -1,9 +1,12 @@
+import datetime
+import json
+import logging
+import os
 import uuid
 
 from HW_2.compressor import Compressor
 from HW_2.serializer import Serializer
 from constants.constants import Constants
-from utils.decorators import timing
 from utils.utils import Utils
 
 
@@ -14,6 +17,16 @@ class CustomIndex:
         self.stemmer = stemmer
         self.compressor = compressor
         self.serializer = serializer
+
+        self.catalog = None
+        self.tf_info = None
+
+        self._create_dirs_if_absent()
+
+    def _create_dirs_if_absent(self):
+        for path in [self._get_metadata_dir(), self._get_index_data_dir(), self._get_catalog_data_dir()]:
+            if not os.path.isdir(path):
+                os.makedirs(path)
 
     @classmethod
     def _calculate_and_update_tf_info(cls, document_id, tokens, tf_info):
@@ -53,15 +66,28 @@ class CustomIndex:
             yield tf_info_batch
 
     @classmethod
-    def _get_index_file_path(cls):
-        return '{}/{}/{}/{}.txt'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'index', uuid.uuid4())
+    def _get_index_data_dir(cls):
+        return '{}/{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'data', 'index')
+
+    def _get_index_file_path(self):
+        return '{}/{}.txt'.format(self._get_index_data_dir(), uuid.uuid4())
 
     @classmethod
-    def _get_catalog_file_path(cls):
-        return '{}/{}/{}/{}.txt'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'catalog', uuid.uuid4())
+    def _get_catalog_data_dir(cls):
+        return '{}/{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'data', 'catalog')
+
+    def _get_catalog_file_path(self):
+        return '{}/{}.txt'.format(self._get_catalog_data_dir(), uuid.uuid4())
+
+    @classmethod
+    def _get_metadata_dir(cls):
+        return '{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'metadata')
+
+    def _get_new_metadata_file_path(self):
+        return '{}/{}.txt'.format(self._get_metadata_dir(), uuid.uuid4())
 
     def _write_tf_info_to_index_file(self, tf_info):
-        tf_info_metadata = {}
+        catalog = {}
         index_file_path = self._get_index_file_path()
 
         with open(index_file_path, 'wb') as file:
@@ -77,9 +103,9 @@ class CustomIndex:
                 # optimization since all the terms in the same batch will have same pos and size
                 temp = {'pos': current_pos, 'size': size}
                 for term in batch.keys():
-                    tf_info_metadata[term] = temp
+                    catalog[term] = temp
 
-        return tf_info_metadata, index_file_path
+        return catalog, index_file_path
 
     def _write_catalog_to_file(self, catalog):
         catalog_file_path = self._get_catalog_file_path()
@@ -98,19 +124,28 @@ class CustomIndex:
 
         return catalog
 
-    def _create_catalog(self, tf_info_metadata, index_file_path, ):
-        catalog = {
-            'metadata': {
-                'index_file_path': index_file_path,
-                'compressor': self.compressor.name,
-                'serializer': self.serializer.name
-            },
-            'tf_info_metadata': tf_info_metadata
-        }
-        return catalog
+    def _read_metadata_from_file(self, metadata_file_path):
+        with open(metadata_file_path, 'r') as file:
+            metadata = json.loads(file.read())
 
-    @timing
-    def add_documents(self, documents, index_head, enable_stemming):
+        return metadata
+
+    def _write_metadata_to_file(self, metadata):
+        metadata_file_path = self._get_new_metadata_file_path()
+        logging.info('Metadata path:{}'.format(metadata_file_path))
+        with open(metadata_file_path, 'w') as file:
+            file.write(json.dumps(metadata, indent=True))
+
+    def _create_metadata(self, catalog_file_path, index_file_path):
+        return {
+            'index_file_path': index_file_path,
+            'catalog_file_path': catalog_file_path,
+            'compressor': self.compressor.name,
+            'serializer': self.serializer.name,
+            'timestamp': str(datetime.datetime.now())
+        }
+
+    def _create_documents_index_and_catalog(self, documents, index_head, enable_stemming):
 
         tf_info = {}
         for document in documents:
@@ -127,7 +162,19 @@ class CustomIndex:
 
             self._calculate_and_update_tf_info(document['id'], tokens, tf_info)
 
-        tf_info_metadata, index_file_path = self._write_tf_info_to_index_file(tf_info)
-        catalog = self._create_catalog(tf_info_metadata, index_file_path)
+        catalog, index_file_path = self._write_tf_info_to_index_file(tf_info)
         catalog_file_path = self._write_catalog_to_file(catalog)
-        return catalog_file_path, index_file_path
+        metadata = self._create_metadata(catalog_file_path, index_file_path)
+        self._write_metadata_to_file(metadata)
+        return metadata
+
+    def _merge_indexes_and_catalogs(self, metadata_list: list):
+        pass
+
+    def index_documents(self, documents, index_head, enable_stemming):
+        metadata_list = Utils.run_task_parallelly(self._create_documents_index_and_catalog, documents,
+                                                  Constants.NO_OF_PARALLEL_INDEXING_TASKS,
+                                                  index_head=index_head,
+                                                  enable_stemming=enable_stemming)
+
+        self._merge_indexes_and_catalogs(metadata_list)
