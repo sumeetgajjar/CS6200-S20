@@ -1,11 +1,8 @@
 import logging
 
-from nltk.stem import SnowballStemmer
-
 from HW_1.main import get_file_paths_to_parse, get_parsed_documents
-from HW_2.indexer import CustomIndex, GzipCompressor, JsonSerializer
-from HW_2.stopwords import StopwordsFilter
-from HW_2.tokenizer import Tokenzier
+from HW_2.factory import Factory
+from HW_2.indexer import CustomIndex
 from constants.constants import Constants
 from utils.decorators import timing
 from utils.utils import Utils
@@ -22,12 +19,12 @@ class HW2:
 
     @classmethod
     def add_documents_to_index(cls, documents, index_head=False, enable_stemming=False):
-        tokenizer = Tokenzier()
-        stopwords_filter = StopwordsFilter(Utils.get_stopwords_file_path())
-        stemmer = SnowballStemmer('english')
-        compressor = GzipCompressor(Constants.BYES_TO_PROCESS_AT_ONCE_FOR_COMPRESSION)
-        # compressor = NoHopCompressor(Constants.AP_DATA_FILE_ENCODING)
-        serializer = JsonSerializer()
+        tokenizer = Factory.create_tokenizer(Constants.CUSTOM_TOKENIZER_NAME)
+        stopwords_filter = Factory.create_stopwords_filter(Constants.STOPWORDS_FILTER_NAME)
+        stemmer = Factory.create_stemmer(Constants.SNOWBALL_STEMMER_NAME)
+        compressor = Factory.create_compressor(Constants.GZIP_COMPRESSOR_NAME)
+        # compressor = Factory.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
+        serializer = Factory.create_serializer(Constants.JSON_SERIALIZER_NAME)
 
         index = CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)
         return index.add_documents(documents, index_head, enable_stemming)

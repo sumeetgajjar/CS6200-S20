@@ -1,67 +1,14 @@
-import gzip
-import json
 import uuid
-from io import BytesIO
 
+from HW_2.compressor import Compressor
+from HW_2.serializer import Serializer
 from constants.constants import Constants
 from utils.decorators import timing
 from utils.utils import Utils
 
 
-class GzipCompressor:
-
-    def __init__(self, bytes_to_read_at_once) -> None:
-        self.bytes_to_read_at_once = bytes_to_read_at_once
-
-    def compress_string_to_bytes(self, string_to_compress: str):
-        bio = BytesIO()
-        bio.write(string_to_compress.encode("utf-8"))
-        bio.seek(0)
-        stream = BytesIO()
-        compressor = gzip.GzipFile(fileobj=stream, mode='w')
-        while True:  # until EOF
-            chunk = bio.read(self.bytes_to_read_at_once)
-            if not chunk:  # EOF?
-                compressor.close()
-                return stream.getvalue()
-            compressor.write(chunk)
-
-    def decompress_bytes_to_string(self, bytes_to_decompress) -> str:
-        bio = BytesIO()
-        stream = BytesIO(bytes_to_decompress)
-        decompressor = gzip.GzipFile(fileobj=stream, mode='r')
-        while True:  # until EOF
-            chunk = decompressor.read(self.bytes_to_read_at_once)
-            if not chunk:
-                decompressor.close()
-                bio.seek(0)
-                return bio.read().decode("utf-8")
-            bio.write(chunk)
-
-
-class NoHopCompressor:
-
-    def __init__(self, string_encoding) -> None:
-        self.string_encoding = string_encoding
-
-    def compress_string_to_bytes(self, string_to_compress: str):
-        return bytearray(string_to_compress, encoding=self.string_encoding)
-
-    def decompress_bytes_to_string(self, bytes_to_decompress) -> str:
-        return bytes_to_decompress.decode(self.string_encoding)
-
-
-class JsonSerializer:
-
-    def serialize(self, dictionary):
-        return json.dumps(dictionary)
-
-    def deserialize(self, serialized_string: str) -> dict:
-        return json.loads(serialized_string)
-
-
 class CustomIndex:
-    def __init__(self, tokenizer, stopwords_filter, stemmer, compressor, serializer) -> None:
+    def __init__(self, tokenizer, stopwords_filter, stemmer, compressor: Compressor, serializer: Serializer) -> None:
         self.tokenizer = tokenizer
         self.stopwords_filter = stopwords_filter
         self.stemmer = stemmer
@@ -108,7 +55,7 @@ class CustomIndex:
         return '{}/{}/{}/{}.txt'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'catalog', uuid.uuid4())
 
     def _write_tf_info_to_index_file(self, tf_info):
-        catalog = {}
+        tf_info_metadata = {}
         index_file_path = self._get_index_file_path()
 
         with open(index_file_path, 'wb') as file:
@@ -124,9 +71,9 @@ class CustomIndex:
                 # optimization since all the terms in the same batch will have same pos and size
                 temp = {'pos': current_pos, 'size': size}
                 for term in batch.keys():
-                    catalog[term] = temp
+                    tf_info_metadata[term] = temp
 
-        return catalog, index_file_path
+        return tf_info_metadata, index_file_path
 
     def _write_catalog_to_file(self, catalog):
         catalog_file_path = self._get_catalog_file_path()
@@ -143,6 +90,17 @@ class CustomIndex:
             serialized_catalog = self.compressor.decompress_bytes_to_string(compressed_catalog_bytes)
             catalog = self.serializer.deserialize(serialized_catalog)
 
+        return catalog
+
+    def _create_catalog(self, tf_info_metadata, index_file_path, ):
+        catalog = {
+            'metadata': {
+                'index_file_path': index_file_path,
+                'compressor': self.compressor.name,
+                'serializer': self.serializer.name
+            },
+            'tf_info_metadata': tf_info_metadata
+        }
         return catalog
 
     @timing
@@ -163,6 +121,7 @@ class CustomIndex:
 
             self._calculate_and_update_tf_info(document['id'], tokens, tf_info)
 
-        catalog, index_file_path = self._write_tf_info_to_index_file(tf_info)
+        tf_info_metadata, index_file_path = self._write_tf_info_to_index_file(tf_info)
+        catalog = self._create_catalog(tf_info_metadata, index_file_path)
         catalog_file_path = self._write_catalog_to_file(catalog)
         return catalog_file_path, index_file_path
