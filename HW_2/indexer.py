@@ -39,7 +39,7 @@ class CustomIndex:
             tf_info[term]['ttf'] += 1
 
             term_tf_info = tf_info[term]['tf']
-            if document_id not in term:
+            if document_id not in term_tf_info:
                 term_tf_info[document_id] = {'tf': 0, 'pos': []}
 
             termvector = term_tf_info[document_id]
@@ -50,8 +50,11 @@ class CustomIndex:
             termvector['pos'].append(token[1])
 
     @classmethod
-    def _merge_tf_infos(cls, tf_info_1, tf_info_2):
-        pass
+    def _merge_tf_infos(cls, term, tf_info_1, tf_info_2):
+        merged_tf_info = {}
+
+
+        return merged_tf_info
 
     @classmethod
     def _get_index_data_dir(cls):
@@ -174,7 +177,7 @@ class CustomIndex:
                 if term in catalog_2:
                     read_metadata_2 = catalog_2[term]
                     tf_info_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
-                    merged_tf_info = self._merge_tf_infos(tf_info_1, tf_info_2)
+                    merged_tf_info = self._merge_tf_infos(term, tf_info_1, tf_info_2)
                 else:
                     merged_tf_info = tf_info_1
 
