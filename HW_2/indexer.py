@@ -51,8 +51,30 @@ class CustomIndex:
 
     @classmethod
     def _merge_tf_infos(cls, term, tf_info_1, tf_info_2):
-        merged_tf_info = {}
+        merged_tf_info = {term: {'ttf': 0, 'tf': {}}}
 
+        # Merging the ttf
+        merged_tf_info[term]['ttf'] = tf_info_1[term]['ttf'] + tf_info_2[term]['ttf']
+
+        # Merging the tf and positions
+        merged_term_tf_info = merged_tf_info[term]['tf']
+        for document_id, term_tf_info_1 in tf_info_1[term]['tf'].items():
+            if document_id not in merged_term_tf_info:
+                merged_term_tf_info[document_id] = {'tf': 0, 'pos': []}
+
+            merged_term_tf_info[document_id]['tf'] += term_tf_info_1['tf']
+            merged_term_tf_info[document_id]['pos'].extend(term_tf_info_1['pos'])
+
+            term_tf_info_2 = tf_info_2[term]['tf'].get(document_id)
+            if term_tf_info_2:
+                merged_term_tf_info[document_id]['tf'] += term_tf_info_2['tf']
+                merged_term_tf_info[document_id]['pos'].extend(term_tf_info_2['pos'])
+
+        for document_id, term_tf_info_2 in tf_info_2[term]['tf'].items():
+            if document_id not in tf_info_1[term]['tf']:
+                merged_term_tf_info[document_id] = {'tf': 0, 'pos': []}
+                merged_term_tf_info[document_id]['tf'] += term_tf_info_2['tf']
+                merged_term_tf_info[document_id]['pos'].extend(term_tf_info_2['pos'])
 
         return merged_tf_info
 
@@ -183,6 +205,7 @@ class CustomIndex:
 
                 pos = merged_index_file.tell()
                 size = self._write_bytes(merged_index_file, merged_tf_info)
+                merged_index_file.write(b'\n')
                 merged_catalog[term] = {'pos': pos, 'size': size}
 
             for term, read_metadata_2 in catalog_2.items():
@@ -191,12 +214,16 @@ class CustomIndex:
 
                     pos = merged_index_file.tell()
                     size = self._write_bytes(merged_index_file, tf_info_2)
+                    merged_index_file.write(b'\n')
                     merged_catalog[term] = {'pos': pos, 'size': size}
 
         return merged_catalog, merged_index_path
 
     def _merge_indexes_and_catalogs(self, metadata_list: list):
-        pass
+        merged_catalog, merged_index_path = self._merge_2_index_and_catalog(metadata_list[0], metadata_list[1])
+        catalog_file_path = self._write_catalog_to_file(merged_catalog)
+        logging.info("Merged Index: {}".format(merged_index_path))
+        logging.info("Catalog: {}".format(catalog_file_path))
 
     def index_documents(self, documents, index_head, enable_stemming):
         metadata_list = Utils.run_task_parallelly(self._create_documents_index_and_catalog, documents,
