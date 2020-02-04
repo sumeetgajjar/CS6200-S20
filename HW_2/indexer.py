@@ -79,22 +79,23 @@ class CustomIndex:
         return merged_tf_info
 
     @classmethod
-    def _get_index_data_dir(cls):
-        return '{}/{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'data', 'index')
+    def _get_custom_index_dir(cls):
+        return '{}/{}/'.format(Utils.get_data_dir_abs_path(), 'custom-index')
+
+    def _get_index_data_dir(self):
+        return '{}/{}/{}'.format(self._get_custom_index_dir(), 'data', 'index')
 
     def _get_new_index_file_path(self):
         return '{}/{}.txt'.format(self._get_index_data_dir(), uuid.uuid4())
 
-    @classmethod
-    def _get_catalog_data_dir(cls):
-        return '{}/{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'data', 'catalog')
+    def _get_catalog_data_dir(self):
+        return '{}/{}/{}'.format(self._get_custom_index_dir(), 'data', 'catalog')
 
     def _get_new_catalog_file_path(self):
         return '{}/{}.txt'.format(self._get_catalog_data_dir(), uuid.uuid4())
 
-    @classmethod
-    def _get_metadata_dir(cls):
-        return '{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'metadata')
+    def _get_metadata_dir(self):
+        return '{}/{}'.format(self._get_custom_index_dir(), 'metadata')
 
     def _get_new_metadata_file_path(self):
         return '{}/{}.txt'.format(self._get_metadata_dir(), uuid.uuid4())
