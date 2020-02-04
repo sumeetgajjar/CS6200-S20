@@ -24,7 +24,9 @@ class CustomIndex:
         self._create_dirs_if_absent()
 
     def _create_dirs_if_absent(self):
-        for path in [self._get_metadata_dir(), self._get_index_data_dir(), self._get_catalog_data_dir()]:
+        for path in [self._get_metadata_dir(), self._get_index_data_dir(), self._get_catalog_data_dir(),
+                     self._get_old_data_dir()]:
+
             if not os.path.isdir(path):
                 os.makedirs(path)
 
@@ -77,6 +79,10 @@ class CustomIndex:
                 merged_term_tf_info[document_id]['pos'].extend(term_tf_info_2['pos'])
 
         return merged_tf_info
+
+    @classmethod
+    def _get_old_data_dir(cls):
+        return '{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'old-data')
 
     @classmethod
     def _get_index_data_dir(cls):
@@ -170,7 +176,6 @@ class CustomIndex:
         catalog, index_file_path = self._write_tf_info_to_index_file(tf_info)
         catalog_file_path = self._write_catalog_to_file(catalog)
         metadata = self._create_metadata(catalog_file_path, index_file_path)
-        self._write_metadata_to_file(metadata)
         return metadata
 
     def _read_bytes(self, file, start=0, size=-1):
@@ -184,8 +189,19 @@ class CustomIndex:
         compressed_bytes = self.compressor.compress_string_to_bytes(serialized_string)
         return file.write(compressed_bytes)
 
-    def _merge_2_index_and_catalog(self, metadata_1, metadata_2):
+    @classmethod
+    def _delete_index_and_catalog_files(cls, metadata):
+        os.remove(metadata['index_file_path'])
+        os.remove(metadata['catalog_file_path'])
+
+    def _merge_2_index_and_catalog(self, metadata_list):
+        metadata_1 = metadata_list[0]
         catalog_1 = self._read_catalog_to_file(metadata_1['catalog_file_path'])
+
+        if len(metadata_list) == 1:
+            return catalog_1, metadata_1['index_file_path']
+
+        metadata_2 = metadata_list[1]
         catalog_2 = self._read_catalog_to_file(metadata_2['catalog_file_path'])
 
         merged_index_path = self._get_new_index_file_path()
@@ -217,18 +233,34 @@ class CustomIndex:
                     merged_index_file.write(b'\n')
                     merged_catalog[term] = {'pos': pos, 'size': size}
 
+        self._delete_index_and_catalog_files(metadata_1)
+        self._delete_index_and_catalog_files(metadata_2)
+
         return merged_catalog, merged_index_path
 
     def _merge_indexes_and_catalogs(self, metadata_list: list):
-        merged_catalog, merged_index_path = self._merge_2_index_and_catalog(metadata_list[0], metadata_list[1])
-        catalog_file_path = self._write_catalog_to_file(merged_catalog)
-        logging.info("Merged Index: {}".format(merged_index_path))
-        logging.info("Catalog: {}".format(catalog_file_path))
+
+        while len(metadata_list) > 1:
+            logging.info("Metadata list size: {}".format(len(metadata_list)))
+            tasks = list(Utils.split_list_into_sub_lists(metadata_list, sub_list_size=2))
+            results = Utils.run_tasks_parallelly(self._merge_2_index_and_catalog, tasks, 8)
+            metadata_list = []
+            for merged_catalog, merged_index_path in results:
+                merged_catalog_file_path = self._write_catalog_to_file(merged_catalog)
+                merged_metadata = self._create_metadata(merged_catalog_file_path, merged_index_path)
+                metadata_list.append(merged_metadata)
+
+        if len(metadata_list) != 1:
+            raise RuntimeError("More than 1 metadata after merging")
+
+        merged_metadata = metadata_list[0]
+        self._write_metadata_to_file(merged_metadata)
+        return merged_metadata
 
     def index_documents(self, documents, index_head, enable_stemming):
-        metadata_list = Utils.run_task_parallelly(self._create_documents_index_and_catalog, documents,
-                                                  Constants.NO_OF_PARALLEL_INDEXING_TASKS,
-                                                  index_head=index_head,
-                                                  enable_stemming=enable_stemming)
+        metadata_list = Utils.run_tasks_parallelly_in_chunks(self._create_documents_index_and_catalog, documents,
+                                                             Constants.NO_OF_PARALLEL_INDEXING_TASKS,
+                                                             index_head=index_head,
+                                                             enable_stemming=enable_stemming)
 
-        self._merge_indexes_and_catalogs(metadata_list)
+        return self._merge_indexes_and_catalogs(metadata_list)

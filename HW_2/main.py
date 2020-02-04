@@ -37,7 +37,8 @@ class HW2:
         file_paths = get_file_paths_to_parse(dir_path)
         logging.info("Total File to read: {}".format(len(file_paths)))
         parsed_documents = get_parsed_documents(file_paths)
-        cls.add_documents_to_index(parsed_documents)
+        metadata = cls.add_documents_to_index(parsed_documents)
+        logging.info("Metadata: {}".format(metadata))
 
 
 if __name__ == '__main__':

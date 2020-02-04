@@ -150,7 +150,7 @@ def find_scores_parallelly_and_write_to_file(queries,
     results_to_write = []
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
     for query in queries:
-        results = Utils.run_task_parallelly(score_calculator, all_document_ids, 8, query=query, **kwargs)
+        results = Utils.run_tasks_parallelly_in_chunks(score_calculator, all_document_ids, 8, query=query, **kwargs)
         scores = []
         for result in results:
             scores.extend(result)
@@ -209,7 +209,7 @@ def find_scores_parallelly_apply_custom_feedback_and_write_to_file(queries,
     results_to_write_after_feedback = []
     all_document_ids = EsUtils.get_all_document_ids(Constants.AP_DATA_INDEX_NAME)
     for query in queries:
-        results = Utils.run_task_parallelly(score_calculator, all_document_ids, 8, query=query, **kwargs)
+        results = Utils.run_tasks_parallelly_in_chunks(score_calculator, all_document_ids, 8, query=query, **kwargs)
         old_scores = []
         for result in results:
             old_scores.extend(result)
@@ -233,7 +233,7 @@ def find_scores_parallelly_apply_custom_feedback_and_write_to_file(queries,
         temp_tokens = [tup[0] for tup in tf_idf.most_common(10)]
         query['tokens'].extend(temp_tokens)
 
-        results = Utils.run_task_parallelly(score_calculator, all_document_ids, 8, query=query, **kwargs)
+        results = Utils.run_tasks_parallelly_in_chunks(score_calculator, all_document_ids, 8, query=query, **kwargs)
         new_scores = []
         for result in results:
             new_scores.extend(result)
