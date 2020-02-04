@@ -24,9 +24,7 @@ class CustomIndex:
         self._create_dirs_if_absent()
 
     def _create_dirs_if_absent(self):
-        for path in [self._get_metadata_dir(), self._get_index_data_dir(), self._get_catalog_data_dir(),
-                     self._get_old_data_dir()]:
-
+        for path in [self._get_metadata_dir(), self._get_index_data_dir(), self._get_catalog_data_dir()]:
             if not os.path.isdir(path):
                 os.makedirs(path)
 
@@ -79,10 +77,6 @@ class CustomIndex:
                 merged_term_tf_info[document_id]['pos'].extend(term_tf_info_2['pos'])
 
         return merged_tf_info
-
-    @classmethod
-    def _get_old_data_dir(cls):
-        return '{}/{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index', 'old-data')
 
     @classmethod
     def _get_index_data_dir(cls):
