@@ -18,7 +18,12 @@ class HW2:
         return Utils.split_list_into_sub_lists(file_paths, no_of_sub_lists=8)
 
     @classmethod
-    def add_documents_to_index(cls, documents, index_head=False, enable_stemming=False):
+    def add_documents_to_index(cls, index_head, enable_stemming):
+        dir_path = Utils.get_ap89_collection_abs_path()
+        file_paths = get_file_paths_to_parse(dir_path)
+        logging.info("Total File to read: {}".format(len(file_paths)))
+        parsed_documents = get_parsed_documents(file_paths)
+
         tokenizer = Factory.create_tokenizer(Constants.CUSTOM_TOKENIZER_NAME)
         stopwords_filter = Factory.create_stopwords_filter(Constants.STOPWORDS_FILTER_NAME)
         stemmer = Factory.create_stemmer(Constants.SNOWBALL_STEMMER_NAME)
@@ -27,18 +32,14 @@ class HW2:
         serializer = Factory.create_serializer(Constants.JSON_SERIALIZER_NAME)
 
         custom_index = CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)
-        metadata = custom_index.index_documents(documents, index_head, enable_stemming)
+        metadata = custom_index.index_documents(parsed_documents, index_head, enable_stemming)
         return custom_index
 
     @classmethod
     @timing
     def main(cls):
         Utils.configure_logging()
-        dir_path = Utils.get_ap89_collection_abs_path()
-        file_paths = get_file_paths_to_parse(dir_path)
-        logging.info("Total File to read: {}".format(len(file_paths)))
-        parsed_documents = get_parsed_documents(file_paths)
-        custom_index = cls.add_documents_to_index(parsed_documents)
+        custom_index = cls.add_documents_to_index(False, True)
 
 
 if __name__ == '__main__':
