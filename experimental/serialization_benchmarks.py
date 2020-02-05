@@ -23,7 +23,7 @@ def test_protos():
 
 
 @timing
-def test_objects():
+def test_pickling():
     termvector = TermVector('test')
 
     for j in range(100):
@@ -57,5 +57,5 @@ def test_jsons():
 if __name__ == '__main__':
     Utils.configure_logging()
     test_protos()
-    test_objects()
+    test_pickling()
     test_jsons()
