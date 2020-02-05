@@ -2,7 +2,6 @@ import datetime
 import json
 import logging
 import os
-import uuid
 from functools import lru_cache
 
 from HW_2.compressor import Compressor
@@ -88,19 +87,19 @@ class CustomIndex:
         return '{}/{}/{}'.format(self._get_custom_index_dir(), 'data', 'index')
 
     def _get_new_index_file_path(self):
-        return '{}/{}.txt'.format(self._get_index_data_dir(), uuid.uuid4())
+        return '{}/{}.txt'.format(self._get_index_data_dir(), Utils.get_random_file_name_with_ts())
 
     def _get_catalog_data_dir(self):
         return '{}/{}/{}'.format(self._get_custom_index_dir(), 'data', 'catalog')
 
     def _get_new_catalog_file_path(self):
-        return '{}/{}.txt'.format(self._get_catalog_data_dir(), uuid.uuid4())
+        return '{}/{}.txt'.format(self._get_catalog_data_dir(), Utils.get_random_file_name_with_ts())
 
     def _get_metadata_dir(self):
         return '{}/{}'.format(self._get_custom_index_dir(), 'metadata')
 
     def _get_new_metadata_file_path(self):
-        return '{}/{}.txt'.format(self._get_metadata_dir(), uuid.uuid4())
+        return '{}/{}.txt'.format(self._get_metadata_dir(), Utils.get_random_file_name_with_ts())
 
     def _write_tf_info_to_index_file(self, tf_info):
         catalog = {}

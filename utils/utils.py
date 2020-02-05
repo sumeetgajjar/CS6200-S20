@@ -1,6 +1,8 @@
 import concurrent.futures
+import datetime
 import logging
 import math
+import uuid
 from logging import getLogger, Formatter, StreamHandler
 
 from HW_1.es_index_config import EsIndexConfig
@@ -96,3 +98,7 @@ class Utils:
     @classmethod
     def get_stopwords_file_path(cls):
         return "{}/{}".format(cls.get_ap_data_path(), 'stoplist.txt')
+
+    @classmethod
+    def get_random_file_name_with_ts(cls):
+        return '{}-{}'.format(datetime.datetime.now().strftime("%m-%d-%Y-%H:%M:%S"), uuid.uuid4())
