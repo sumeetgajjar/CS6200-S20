@@ -2,8 +2,6 @@ import logging
 
 from HW_1.main import get_file_paths_to_parse, get_parsed_documents
 from HW_2.factory import Factory
-from HW_2.indexer import CustomIndex
-from constants.constants import Constants
 from utils.decorators import timing
 from utils.utils import Utils
 
@@ -24,14 +22,7 @@ class HW2:
         logging.info("Total File to read: {}".format(len(file_paths)))
         parsed_documents = get_parsed_documents(file_paths)
 
-        tokenizer = Factory.create_tokenizer(Constants.CUSTOM_TOKENIZER_NAME)
-        stopwords_filter = Factory.create_stopwords_filter(Constants.STOPWORDS_FILTER_NAME)
-        stemmer = Factory.create_stemmer(Constants.SNOWBALL_STEMMER_NAME)
-        compressor = Factory.create_compressor(Constants.GZIP_COMPRESSOR_NAME)
-        # compressor = Factory.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
-        serializer = Factory.create_serializer(Constants.JSON_SERIALIZER_NAME)
-
-        custom_index = CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)
+        custom_index = Factory.create_custom_index()
         metadata = custom_index.index_documents(parsed_documents, index_head, enable_stemming)
         return custom_index
 

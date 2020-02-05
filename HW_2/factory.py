@@ -1,6 +1,7 @@
 from nltk import SnowballStemmer
 
 from HW_2.compressor import GzipCompressor, NoOpsCompressor, Compressor
+from HW_2.indexer import CustomIndex
 from HW_2.serializer import JsonSerializer, Serializer
 from HW_2.stopwords import StopwordsFilter
 from HW_2.tokenizer import Tokenzier
@@ -46,3 +47,14 @@ class Factory:
             return Tokenzier()
         else:
             raise ValueError('Tokenizer not found')
+
+    @classmethod
+    def create_custom_index(cls):
+        tokenizer = cls.create_tokenizer(Constants.CUSTOM_TOKENIZER_NAME)
+        stopwords_filter = cls.create_stopwords_filter(Constants.STOPWORDS_FILTER_NAME)
+        stemmer = cls.create_stemmer(Constants.SNOWBALL_STEMMER_NAME)
+        compressor = cls.create_compressor(Constants.GZIP_COMPRESSOR_NAME)
+        # compressor = cls.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
+        serializer = cls.create_serializer(Constants.JSON_SERIALIZER_NAME)
+
+        return CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)
