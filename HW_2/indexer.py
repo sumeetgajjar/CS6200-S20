@@ -81,7 +81,7 @@ class CustomIndex:
 
     @classmethod
     def _get_custom_index_dir(cls):
-        return '{}/{}/'.format(Utils.get_data_dir_abs_path(), 'custom-index')
+        return '{}/{}'.format(Utils.get_data_dir_abs_path(), 'custom-index')
 
     def _get_index_data_dir(self):
         return '{}/{}/{}'.format(self._get_custom_index_dir(), 'data', 'index')
