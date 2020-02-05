@@ -12,4 +12,11 @@ class StopwordsFilter:
         return stopwords
 
     def filter(self, tokens):
-        return [token for token in tokens if token[0] not in self.stop_words]
+        filtered_tokens = []
+        i = 1
+        for token in tokens:
+            if token[0] not in self.stop_words:
+                filtered_tokens.append((token[0], i))
+                i += 1
+
+        return filtered_tokens
