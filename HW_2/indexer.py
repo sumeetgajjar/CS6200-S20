@@ -19,7 +19,8 @@ class CustomIndex:
         self.serializer = serializer
 
         self.catalog = None
-        self.tf_info = None
+        self.metadata = None
+        self.index_file_handle = None
 
         self._create_dirs_if_absent()
 
@@ -189,11 +190,16 @@ class CustomIndex:
         os.remove(metadata['index_file_path'])
         os.remove(metadata['catalog_file_path'])
 
+    @classmethod
+    def _delete_catalog_file(cls, metadata):
+        os.remove(metadata['catalog_file_path'])
+
     def _merge_2_index_and_catalog(self, metadata_list):
         metadata_1 = metadata_list[0]
         catalog_1 = self._read_catalog_to_file(metadata_1['catalog_file_path'])
 
         if len(metadata_list) == 1:
+            self._delete_catalog_file(metadata_1)
             return catalog_1, metadata_1['index_file_path']
 
         metadata_2 = metadata_list[1]
@@ -233,6 +239,11 @@ class CustomIndex:
 
         return merged_catalog, merged_index_path
 
+    @classmethod
+    def _make_index_and_catalog_file_readonly(cls, metadata):
+        os.chmod(metadata['catalog_file_path'], 444)
+        os.chmod(metadata['index_file_path'], 444)
+
     def _merge_indexes_and_catalogs(self, metadata_list: list):
 
         while len(metadata_list) > 1:
@@ -249,8 +260,17 @@ class CustomIndex:
             raise RuntimeError("More than 1 metadata after merging")
 
         merged_metadata = metadata_list[0]
-        self._write_metadata_to_file(merged_metadata)
         return merged_metadata
+
+    def _init_index(self, metadata_file_path=None):
+        if metadata_file_path:
+            self.metadata = self._read_metadata_from_file(metadata_file_path)
+
+        if not self.metadata:
+            raise RuntimeError('Metadata cannot be none while initializing the index')
+
+        self.catalog = self._read_catalog_to_file(self.metadata['catalog_file_path'])
+        self.index_file_handle = open(self.metadata['index_file_path'], 'rb')
 
     def index_documents(self, documents, index_head, enable_stemming):
         metadata_list = Utils.run_tasks_parallelly_in_chunks(self._create_documents_index_and_catalog, documents,
@@ -258,4 +278,17 @@ class CustomIndex:
                                                              index_head=index_head,
                                                              enable_stemming=enable_stemming)
 
-        return self._merge_indexes_and_catalogs(metadata_list)
+        merged_metadata = self._merge_indexes_and_catalogs(metadata_list)
+        self._make_index_and_catalog_file_readonly(merged_metadata)
+        self._write_metadata_to_file(merged_metadata)
+        self.metadata = merged_metadata
+        self._init_index()
+        return merged_metadata
+
+    # @lru_cache(maxsize=10000)
+    def get_termvector(self, term):
+        tf_metadata = self.catalog.get(term)
+        if tf_metadata:
+            return self._read_bytes(self.index_file_handle, tf_metadata['pos'], tf_metadata['size'])
+        else:
+            return {}
