@@ -3,7 +3,7 @@ import re
 
 class Tokenzier:
     def __init__(self) -> None:
-        self.split_regex = re.compile("(\\w+)")
+        self.split_regex = re.compile("([\\d.]+|\\w+)")
 
     def tokenize(self, document: str) -> list:
         tokens = re.findall(self.split_regex, document)

@@ -167,7 +167,7 @@ class CustomIndex:
             tokens = self.stopwords_filter.filter(tokens)
 
             if enable_stemming:
-                tokens = [self.stemmer.stem(token) for token in tokens]
+                tokens = [(self.stemmer.stem(token[0]), token[1]) for token in tokens]
 
             self._calculate_and_update_tf_info(document['id'], tokens, tf_info)
 
@@ -264,7 +264,7 @@ class CustomIndex:
         merged_metadata = metadata_list[0]
         return merged_metadata
 
-    def _init_index(self, metadata_file_path=None):
+    def init_index(self, metadata_file_path=None):
         if metadata_file_path:
             self.metadata = self._read_metadata_from_file(metadata_file_path)
 
@@ -284,7 +284,7 @@ class CustomIndex:
         metadata_file_path = self._write_metadata_to_file(merged_metadata)
         self._make_files_readonly(metadata_file_path, merged_metadata)
         self.metadata = merged_metadata
-        self._init_index()
+        self.init_index()
         return merged_metadata
 
     @lru_cache(maxsize=Constants.TERMVECTOR_CACHE_SIZE)
