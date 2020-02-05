@@ -131,7 +131,8 @@ class CustomIndex:
 
         return catalog
 
-    def _read_metadata_from_file(self, metadata_file_path):
+    @classmethod
+    def _read_metadata_from_file(cls, metadata_file_path):
         with open(metadata_file_path, 'r') as file:
             metadata = json.loads(file.read())
 
@@ -142,6 +143,7 @@ class CustomIndex:
         logging.info('Metadata path:{}'.format(metadata_file_path))
         with open(metadata_file_path, 'w') as file:
             file.write(json.dumps(metadata, indent=True))
+        return metadata_file_path
 
     def _create_metadata(self, catalog_file_path, index_file_path):
         return {
@@ -240,9 +242,9 @@ class CustomIndex:
         return merged_catalog, merged_index_path
 
     @classmethod
-    def _make_index_and_catalog_file_readonly(cls, metadata):
-        os.chmod(metadata['catalog_file_path'], 444)
-        os.chmod(metadata['index_file_path'], 444)
+    def _make_files_readonly(cls, metadata_file_path, metadata):
+        for file in [metadata_file_path, metadata['catalog_file_path'], metadata['index_file_path']]:
+            os.chmod(file, 0o444)
 
     def _merge_indexes_and_catalogs(self, metadata_list: list):
 
@@ -279,8 +281,8 @@ class CustomIndex:
                                                              enable_stemming=enable_stemming)
 
         merged_metadata = self._merge_indexes_and_catalogs(metadata_list)
-        self._make_index_and_catalog_file_readonly(merged_metadata)
-        self._write_metadata_to_file(merged_metadata)
+        metadata_file_path = self._write_metadata_to_file(merged_metadata)
+        self._make_files_readonly(metadata_file_path, merged_metadata)
         self.metadata = merged_metadata
         self._init_index()
         return merged_metadata
