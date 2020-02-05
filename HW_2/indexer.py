@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import uuid
+from functools import lru_cache
 
 from HW_2.compressor import Compressor
 from HW_2.serializer import Serializer
@@ -285,8 +286,9 @@ class CustomIndex:
         self._init_index()
         return merged_metadata
 
-    # @lru_cache(maxsize=10000)
+    @lru_cache(maxsize=Constants.TERMVECTOR_CACHE_SIZE)
     def get_termvector(self, term):
+        logging.info("inside get_termvector:::term: {}".format(term))
         tf_metadata = self.catalog.get(term)
         if tf_metadata:
             return self._read_bytes(self.index_file_handle, tf_metadata['pos'], tf_metadata['size'])

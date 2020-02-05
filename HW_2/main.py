@@ -26,19 +26,19 @@ class HW2:
         # compressor = Factory.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
         serializer = Factory.create_serializer(Constants.JSON_SERIALIZER_NAME)
 
-        index = CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)
-        return index.index_documents(documents, index_head, enable_stemming)
+        custom_index = CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)
+        metadata = custom_index.index_documents(documents, index_head, enable_stemming)
+        return custom_index
 
     @classmethod
     @timing
     def main(cls):
         Utils.configure_logging()
         dir_path = Utils.get_ap89_collection_abs_path()
-        file_paths = get_file_paths_to_parse(dir_path)
+        file_paths = get_file_paths_to_parse(dir_path)[:1]
         logging.info("Total File to read: {}".format(len(file_paths)))
-        parsed_documents = get_parsed_documents(file_paths)
-        metadata = cls.add_documents_to_index(parsed_documents)
-        logging.info("Metadata: {}".format(metadata))
+        parsed_documents = get_parsed_documents(file_paths)[:3]
+        custom_index = cls.add_documents_to_index(parsed_documents)
 
 
 if __name__ == '__main__':
