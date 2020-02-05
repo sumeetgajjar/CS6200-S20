@@ -13,11 +13,11 @@ class Compressor:
         pass
 
     @abstractmethod
-    def compress_string_to_bytes(self, string_to_compress: str) -> bytes:
+    def compress_bytes(self, bytes_to_compress: bytes) -> bytes:
         pass
 
     @abstractmethod
-    def decompress_bytes_to_string(self, bytes_to_decompress: bytes) -> str:
+    def decompress_bytes(self, bytes_to_decompress: bytes) -> bytes:
         pass
 
 
@@ -30,10 +30,8 @@ class GzipCompressor(Compressor):
     def name(self) -> str:
         return Constants.GZIP_COMPRESSOR_NAME
 
-    def compress_string_to_bytes(self, string_to_compress: str) -> bytes:
-        bio = BytesIO()
-        bio.write(string_to_compress.encode("utf-8"))
-        bio.seek(0)
+    def compress_bytes(self, bytes_to_compress: bytes) -> bytes:
+        bio = BytesIO(bytes_to_compress)
         stream = BytesIO()
         compressor = gzip.GzipFile(fileobj=stream, mode='w')
         while True:  # until EOF
@@ -43,7 +41,7 @@ class GzipCompressor(Compressor):
                 return stream.getvalue()
             compressor.write(chunk)
 
-    def decompress_bytes_to_string(self, bytes_to_decompress: bytes) -> str:
+    def decompress_bytes(self, bytes_to_decompress: bytes) -> bytes:
         bio = BytesIO()
         stream = BytesIO(bytes_to_decompress)
         decompressor = gzip.GzipFile(fileobj=stream, mode='r')
@@ -52,7 +50,7 @@ class GzipCompressor(Compressor):
             if not chunk:
                 decompressor.close()
                 bio.seek(0)
-                return bio.read().decode("utf-8")
+                return bio.read()
             bio.write(chunk)
 
 
@@ -65,8 +63,8 @@ class NoOpsCompressor(Compressor):
     def name(self) -> str:
         return Constants.NO_OPS_COMPRESSOR_NAME
 
-    def compress_string_to_bytes(self, string_to_compress: str) -> bytes:
-        return bytearray(string_to_compress, encoding=self.string_encoding)
+    def compress_bytes(self, bytes_to_compress: bytes) -> bytes:
+        return bytes_to_compress
 
-    def decompress_bytes_to_string(self, bytes_to_decompress: bytes) -> str:
-        return bytes_to_decompress.decode(self.string_encoding)
+    def decompress_bytes(self, bytes_to_decompress: bytes) -> bytes:
+        return bytes_to_decompress

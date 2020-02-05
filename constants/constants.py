@@ -5,6 +5,7 @@ class Constants:
     AP89_COLLECTION = 'ap89_collection'
     AP_DATA_INDEX_NAME = 'ap_data'
     AP_DATA_FILE_ENCODING = 'latin-1'
+    SERIALIZER_ENCODING = "utf-8"
 
     # ES related configs
     CHUNK_SIZE = 10000

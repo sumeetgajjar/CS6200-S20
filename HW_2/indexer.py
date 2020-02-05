@@ -179,12 +179,12 @@ class CustomIndex:
     def _read_bytes(self, file, start=0, size=-1):
         file.seek(start)
         compressed_bytes = file.read(size)
-        serialized_string = self.compressor.decompress_bytes_to_string(compressed_bytes)
+        serialized_string = self.compressor.decompress_bytes(compressed_bytes)
         return self.serializer.deserialize(serialized_string)
 
     def _write_bytes(self, file, data):
-        serialized_string = self.serializer.serialize(data)
-        compressed_bytes = self.compressor.compress_string_to_bytes(serialized_string)
+        serialized_bytes = self.serializer.serialize(data)
+        compressed_bytes = self.compressor.compress_bytes(serialized_bytes)
         return file.write(compressed_bytes)
 
     @classmethod

@@ -12,11 +12,11 @@ class Serializer:
         pass
 
     @abstractmethod
-    def serialize(self, dictionary: dict) -> str:
+    def serialize(self, obj_to_serialize) -> bytes:
         pass
 
     @abstractmethod
-    def deserialize(self, serialized_string: str) -> dict:
+    def deserialize(self, bytes_to_deserialize: bytes):
         pass
 
 
@@ -26,8 +26,8 @@ class JsonSerializer(Serializer):
     def name(self) -> str:
         return Constants.JSON_SERIALIZER_NAME
 
-    def serialize(self, dictionary: dict) -> str:
-        return json.dumps(dictionary)
+    def serialize(self, obj_to_serialize) -> bytes:
+        return json.dumps(obj_to_serialize).encode(Constants.SERIALIZER_ENCODING)
 
-    def deserialize(self, serialized_string: str) -> dict:
-        return json.loads(serialized_string)
+    def deserialize(self, bytes_to_deserialize: bytes):
+        return json.loads(bytes_to_deserialize.decode(Constants.SERIALIZER_ENCODING))
