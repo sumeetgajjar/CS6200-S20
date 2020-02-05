@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message TfInfo {
+    int32 tf = 1;
+    repeated int32 positions = 2;
+}
+
+message TermVector {
+    string term = 1;
+    int32 ttf = 2;
+    map<string, TfInfo> tfInfo = 3;
+}

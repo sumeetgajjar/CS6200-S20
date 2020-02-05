@@ -35,3 +35,7 @@ class HW2:
 
 if __name__ == '__main__':
     HW2.main()
+    # tokens = Factory.create_tokenizer(Constants.CUSTOM_TOKENIZER_NAME).tokenize("The car was in the car wash.")
+    # print(tokens)
+    # filtered_tokens = Factory.create_stopwords_filter(Constants.STOPWORDS_FILTER_NAME).filter(tokens)
+    # print(filtered_tokens)
