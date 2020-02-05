@@ -1,4 +1,5 @@
 import json
+import pickle
 from abc import abstractmethod
 
 from constants.constants import Constants
@@ -31,3 +32,16 @@ class JsonSerializer(Serializer):
 
     def deserialize(self, bytes_to_deserialize: bytes):
         return json.loads(bytes_to_deserialize.decode(Constants.SERIALIZER_ENCODING))
+
+
+class PickleSerializer(Serializer):
+
+    @property
+    def name(self) -> str:
+        return Constants.PICKLE_SERIALIZER_NAME
+
+    def serialize(self, obj_to_serialize) -> bytes:
+        return pickle.dumps(obj_to_serialize, protocol=Constants.PICKLE_PROTOCOL)
+
+    def deserialize(self, bytes_to_deserialize: bytes):
+        return pickle.loads(bytes_to_deserialize)

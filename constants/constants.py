@@ -6,6 +6,7 @@ class Constants:
     AP_DATA_INDEX_NAME = 'ap_data'
     AP_DATA_FILE_ENCODING = 'latin-1'
     SERIALIZER_ENCODING = "utf-8"
+    PICKLE_PROTOCOL = 3
 
     # ES related configs
     CHUNK_SIZE = 10000
@@ -21,6 +22,7 @@ class Constants:
 
     # Serializer configs
     JSON_SERIALIZER_NAME = 'Json'
+    PICKLE_SERIALIZER_NAME = 'Pickle'
 
     # Stemmer configs
     SNOWBALL_STEMMER_NAME = 'Snowball'

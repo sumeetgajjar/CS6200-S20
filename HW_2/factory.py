@@ -2,7 +2,7 @@ from nltk import SnowballStemmer
 
 from HW_2.compressor import GzipCompressor, NoOpsCompressor, Compressor
 from HW_2.indexer import CustomIndex
-from HW_2.serializer import JsonSerializer, Serializer
+from HW_2.serializer import JsonSerializer, Serializer, PickleSerializer
 from HW_2.stopwords import StopwordsFilter
 from HW_2.tokenizer import Tokenzier
 from constants.constants import Constants
@@ -24,6 +24,8 @@ class Factory:
     def create_serializer(cls, serializer_name: str) -> Serializer:
         if serializer_name == Constants.JSON_SERIALIZER_NAME:
             return JsonSerializer()
+        elif serializer_name == Constants.PICKLE_SERIALIZER_NAME:
+            return PickleSerializer()
         else:
             raise ValueError('Serializer not found')
 
@@ -56,5 +58,6 @@ class Factory:
         compressor = cls.create_compressor(Constants.GZIP_COMPRESSOR_NAME)
         # compressor = cls.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
         serializer = cls.create_serializer(Constants.JSON_SERIALIZER_NAME)
+        # serializer = cls.create_serializer(Constants.PICKLE_SERIALIZER_NAME)
 
         return CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)
