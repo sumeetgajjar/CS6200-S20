@@ -103,6 +103,7 @@ class HW2:
     def find_scores_and_write_to_file(cls, queries,
                                       score_calculator,
                                       file_name,
+                                      result_sub_dir=None,
                                       **kwargs):
         results_to_write = []
         for query in queries:
@@ -112,6 +113,8 @@ class HW2:
             results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
 
         file_path = 'results/{}.txt'.format(file_name)
+        if result_sub_dir:
+            file_path = '{}/{}'.format(file_path, result_sub_dir)
         Utils.write_results_to_file(file_path, results_to_write)
 
     @classmethod
@@ -133,34 +136,62 @@ class HW2:
         return queries
 
     @classmethod
-    @timing
-    def main(cls):
-        Utils.configure_logging()
-        # custom_index = cls.add_documents_to_index(False, True)
-
+    def run_models_on_indexed_text(cls):
         custom_index = Factory.create_custom_index()
         custom_index.init_index(
             '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/02-05-2020-22:31:22-ccf762e5-3e26-4b37-9a6c-257d9159c3be.txt')
 
         queries = cls.get_queries(custom_index)
-        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf', 'text',
                                           custom_index=custom_index,
                                           avg_doc_len=custom_index.get_average_doc_length(),
                                           total_documents=custom_index.get_total_documents()
                                           )
 
-        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25',
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25', 'text',
                                           custom_index=custom_index,
                                           avg_doc_len=custom_index.get_average_doc_length(),
                                           total_documents=custom_index.get_total_documents()
                                           )
 
-        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
+        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores, 'text',
                                           'unigram_lm_with_laplace_smoothing',
                                           custom_index=custom_index,
                                           vocabulary_size=custom_index.get_vocabulary_size()
                                           )
 
+    @classmethod
+    def run_models_on_indexed_head_and_text(cls):
+        custom_index = Factory.create_custom_index()
+        custom_index.init_index(
+            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/02-06-2020-13:22:44-9c1e68a1-ef78-4256-87fa-32b5aad81c02.txt')
+
+        queries = cls.get_queries(custom_index)
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf', 'head-text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25', 'head-text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores, 'head-text',
+                                          'unigram_lm_with_laplace_smoothing',
+                                          custom_index=custom_index,
+                                          vocabulary_size=custom_index.get_vocabulary_size()
+                                          )
+
+    @classmethod
+    @timing
+    def main(cls):
+        Utils.configure_logging()
+        # custom_index = cls.add_documents_to_index(True, True)
+        # cls.run_models_on_indexed_text()
+        cls.run_models_on_indexed_head_and_text()
 
 if __name__ == '__main__':
     HW2.main()

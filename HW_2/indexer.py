@@ -168,7 +168,7 @@ class CustomIndex:
 
             tokens = self.analyze(document['text'], enable_stemming)
             if index_head:
-                head_tokens = self.analyze(document['head'], enable_stemming)
+                head_tokens = self.analyze(document.get('head', ''), enable_stemming)
                 tokens.extend(head_tokens)
 
             self._calculate_and_update_termvectors(document['id'], tokens, termvectors)
