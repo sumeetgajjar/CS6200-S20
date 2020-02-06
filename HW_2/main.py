@@ -112,9 +112,11 @@ class HW2:
 
             results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
 
-        file_path = 'results/{}.txt'.format(file_name)
+        file_path = 'results'
         if result_sub_dir:
             file_path = '{}/{}'.format(file_path, result_sub_dir)
+        file_path = '{}/{}.txt'.format(file_path, file_name)
+        
         Utils.write_results_to_file(file_path, results_to_write)
 
     @classmethod
@@ -192,6 +194,7 @@ class HW2:
         # custom_index = cls.add_documents_to_index(True, True)
         # cls.run_models_on_indexed_text()
         cls.run_models_on_indexed_head_and_text()
+
 
 if __name__ == '__main__':
     HW2.main()
