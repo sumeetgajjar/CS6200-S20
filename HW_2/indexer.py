@@ -7,6 +7,7 @@ from functools import lru_cache
 from HW_2.compressor import Compressor
 from HW_2.serializer import Serializer
 from constants.constants import Constants
+from utils.decorators import timing
 from utils.utils import Utils
 
 
@@ -21,6 +22,7 @@ class CustomIndex:
         self.catalog = None
         self.metadata = None
         self.index_file_handle = None
+        self.document_length = None
 
         self._create_dirs_if_absent()
 
@@ -279,7 +281,20 @@ class CustomIndex:
         merged_metadata = metadata_list[0]
         return merged_metadata
 
+    @timing
+    def _compute_document_length(self):
+        document_length = {}
+
+        for term in self.catalog['data'].keys():
+            termvector = self.get_termvector(term)
+            for doc_id, tf_info in termvector['tf'].items():
+                document_length[doc_id] = document_length.get(doc_id, 0) + tf_info['tf']
+
+        self.document_length = document_length
+
+    @timing
     def init_index(self, metadata_file_path=None):
+        logging.info("Initializing Index")
         if metadata_file_path:
             self.metadata = self._read_metadata_from_file(metadata_file_path)
 
@@ -288,6 +303,8 @@ class CustomIndex:
 
         self.catalog = self._read_catalog_to_file(self.metadata['catalog_file_path'])
         self.index_file_handle = open(self.metadata['index_file_path'], 'rb')
+        self._compute_document_length()
+        logging.info("Index initialized")
 
     def index_documents(self, documents, index_head, enable_stemming):
         metadata_list = Utils.run_tasks_parallelly_in_chunks(self._create_documents_index_and_catalog, documents,
@@ -316,7 +333,6 @@ class CustomIndex:
     def get_vocabulary_size(self) -> int:
         return len(self.catalog['data'])
 
-    @lru_cache()
     def get_average_doc_length(self) -> float:
         tf_sum = 0
         for term in self.catalog['data'].keys():
@@ -334,3 +350,6 @@ class CustomIndex:
             tokens = [(self.stemmer.stem(token[0]), token[1]) for token in tokens]
 
         return tokens
+
+    def get_doc_length(self, document_id) -> int:
+        return self.document_length.get(document_id)
