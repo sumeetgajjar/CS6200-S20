@@ -30,54 +30,56 @@ class CustomIndex:
                 os.makedirs(path)
 
     @classmethod
-    def _calculate_and_update_tf_info(cls, document_id, tokens, tf_info):
+    def _calculate_and_update_termvectors(cls, document_id, tokens, termvectors):
         for token in tokens:
             term = token[0]
-            if term not in tf_info:
-                tf_info[term] = {'ttf': 0, 'tf': {}}
+            if term not in termvectors:
+                termvectors[term] = {'ttf': 0, 'tf': {}}
 
             # updating the ttf
-            tf_info[term]['ttf'] += 1
+            termvectors[term]['ttf'] += 1
 
-            term_tf_info = tf_info[term]['tf']
-            if document_id not in term_tf_info:
-                term_tf_info[document_id] = {'tf': 0, 'pos': []}
+            tf_info_dict = termvectors[term]['tf']
+            if document_id not in tf_info_dict:
+                tf_info_dict[document_id] = {'tf': 0, 'pos': []}
 
-            termvector = term_tf_info[document_id]
+            tf_info = tf_info_dict[document_id]
             # updating the tf
-            termvector['tf'] += 1
+            tf_info['tf'] += 1
 
             # updating the position information
-            termvector['pos'].append(token[1])
+            tf_info['pos'].append(token[1])
 
     @classmethod
-    def _merge_tf_infos(cls, term, tf_info_1, tf_info_2):
-        merged_tf_info = {term: {'ttf': 0, 'tf': {}}}
-
+    def _merge_termvectors(cls, termvector_1, termvector_2):
         # Merging the ttf
-        merged_tf_info[term]['ttf'] = tf_info_1[term]['ttf'] + tf_info_2[term]['ttf']
+        merged_termvector = {
+            'ttf': termvector_1['ttf'] + termvector_2['ttf'],
+            'tf': {}
+        }
 
         # Merging the tf and positions
-        merged_term_tf_info = merged_tf_info[term]['tf']
-        for document_id, term_tf_info_1 in tf_info_1[term]['tf'].items():
-            if document_id not in merged_term_tf_info:
-                merged_term_tf_info[document_id] = {'tf': 0, 'pos': []}
+        merged_term_tf_info_dict = merged_termvector['tf']
+        for document_id, tf_info_1 in termvector_1['tf'].items():
+            if document_id not in merged_term_tf_info_dict:
+                merged_term_tf_info_dict[document_id] = {'tf': 0, 'pos': []}
 
-            merged_term_tf_info[document_id]['tf'] += term_tf_info_1['tf']
-            merged_term_tf_info[document_id]['pos'].extend(term_tf_info_1['pos'])
+            merged_tf_info = merged_term_tf_info_dict[document_id]
+            merged_tf_info['tf'] += tf_info_1['tf']
+            merged_tf_info['pos'].extend(tf_info_1['pos'])
 
-            term_tf_info_2 = tf_info_2[term]['tf'].get(document_id)
-            if term_tf_info_2:
-                merged_term_tf_info[document_id]['tf'] += term_tf_info_2['tf']
-                merged_term_tf_info[document_id]['pos'].extend(term_tf_info_2['pos'])
+            tf_info_2 = termvector_2['tf'].get(document_id)
+            if tf_info_2:
+                merged_tf_info['tf'] += tf_info_2['tf']
+                merged_tf_info['pos'].extend(tf_info_2['pos'])
 
-        for document_id, term_tf_info_2 in tf_info_2[term]['tf'].items():
-            if document_id not in tf_info_1[term]['tf']:
-                merged_term_tf_info[document_id] = {'tf': 0, 'pos': []}
-                merged_term_tf_info[document_id]['tf'] += term_tf_info_2['tf']
-                merged_term_tf_info[document_id]['pos'].extend(term_tf_info_2['pos'])
+        for document_id, tf_info_2 in termvector_2['tf'].items():
+            if document_id not in termvector_1['tf']:
+                merged_term_tf_info_dict[document_id] = {'tf': 0, 'pos': []}
+                merged_term_tf_info_dict[document_id]['tf'] += tf_info_2['tf']
+                merged_term_tf_info_dict[document_id]['pos'].extend(tf_info_2['pos'])
 
-        return merged_tf_info
+        return merged_termvector
 
     @classmethod
     def _get_custom_index_dir(cls):
@@ -101,13 +103,13 @@ class CustomIndex:
     def _get_new_metadata_file_path(self):
         return '{}/{}.txt'.format(self._get_metadata_dir(), Utils.get_random_file_name_with_ts())
 
-    def _write_tf_info_to_index_file(self, tf_info):
+    def _write_termvectors_to_index_file(self, termvectors):
         catalog = {}
         index_file_path = self._get_new_index_file_path()
 
         with open(index_file_path, 'wb') as file:
-            for term, info in tf_info.items():
-                data = {term: info}
+            for term, termvector in termvectors.items():
+                data = {term: termvector}
 
                 current_pos = file.tell()
                 size = self._write_bytes(file, data)
@@ -156,7 +158,7 @@ class CustomIndex:
 
     def _create_documents_index_and_catalog(self, documents, index_head, enable_stemming):
 
-        tf_info = {}
+        termvectors = {}
         for document in documents:
             tokens = self.tokenizer.tokenize(document['text'])
 
@@ -169,9 +171,9 @@ class CustomIndex:
             if enable_stemming:
                 tokens = [(self.stemmer.stem(token[0]), token[1]) for token in tokens]
 
-            self._calculate_and_update_tf_info(document['id'], tokens, tf_info)
+            self._calculate_and_update_termvectors(document['id'], tokens, termvectors)
 
-        catalog, index_file_path = self._write_tf_info_to_index_file(tf_info)
+        catalog, index_file_path = self._write_termvectors_to_index_file(termvectors)
         catalog_file_path = self._write_catalog_to_file(catalog)
         metadata = self._create_metadata(catalog_file_path, index_file_path)
         return metadata
@@ -214,26 +216,29 @@ class CustomIndex:
                 open(metadata_2['index_file_path'], 'rb') as index_file_2:
 
             for term, read_metadata_1 in catalog_1.items():
-                tf_info_1 = self._read_bytes(index_file_1, read_metadata_1['pos'], read_metadata_1['size'])
+                termvector_1 = self._read_bytes(index_file_1, read_metadata_1['pos'], read_metadata_1['size'])[term]
                 if term in catalog_2:
                     read_metadata_2 = catalog_2[term]
-                    tf_info_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
-                    merged_tf_info = self._merge_tf_infos(term, tf_info_1, tf_info_2)
+                    termvector_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])[term]
+                    merged_termvector = self._merge_termvectors(termvector_1, termvector_2)
                 else:
-                    merged_tf_info = tf_info_1
+                    merged_termvector = termvector_1
 
+                data = {term: merged_termvector}
                 pos = merged_index_file.tell()
-                size = self._write_bytes(merged_index_file, merged_tf_info)
+                size = self._write_bytes(merged_index_file, data)
                 merged_index_file.write(b'\n')
+
                 merged_catalog[term] = {'pos': pos, 'size': size}
 
             for term, read_metadata_2 in catalog_2.items():
                 if term not in catalog_1:
-                    tf_info_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
+                    data = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
 
                     pos = merged_index_file.tell()
-                    size = self._write_bytes(merged_index_file, tf_info_2)
+                    size = self._write_bytes(merged_index_file, data)
                     merged_index_file.write(b'\n')
+
                     merged_catalog[term] = {'pos': pos, 'size': size}
 
         self._delete_index_and_catalog_files(metadata_1)
