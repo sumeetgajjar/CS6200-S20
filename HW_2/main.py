@@ -34,11 +34,10 @@ class HW2:
 
         custom_index = Factory.create_custom_index()
         custom_index.init_index(
-            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/02-05-2020-21:15:16-112b1670-7d6b-4f8c-b9ee-06509b8b0e1a.txt')
-        alexand = 'alexand'
+            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/02-05-2020-17:19:07-1704a0d1-ab51-4afe-b921-d029bb62c0e1.txt')
+        alexand = 'bandana'
         print(custom_index.get_termvector('%s' % alexand))
-        print(len(custom_index.get_termvector(alexand).tfInfo))
-        print(custom_index.get_termvector(alexand).ttf)
+        print(len(custom_index.get_termvector(alexand)[alexand]['tf']))
 
 
 if __name__ == '__main__':
