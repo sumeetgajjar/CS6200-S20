@@ -163,16 +163,11 @@ class CustomIndex:
 
         termvectors = {}
         for document in documents:
-            tokens = self.tokenizer.tokenize(document['text'])
 
+            tokens = self.analyze(document['text'], enable_stemming)
             if index_head:
-                head_tokens = self.tokenizer.tokenize(document['head'])
+                head_tokens = self.analyze(document['head'], enable_stemming)
                 tokens.extend(head_tokens)
-
-            tokens = self.stopwords_filter.filter(tokens)
-
-            if enable_stemming:
-                tokens = [(self.stemmer.stem(token[0]), token[1]) for token in tokens]
 
             self._calculate_and_update_termvectors(document['id'], tokens, termvectors)
 
@@ -330,3 +325,12 @@ class CustomIndex:
                 tf_sum += tf_info['tf']
 
         return tf_sum / self.get_total_documents()
+
+    def analyze(self, text: str, enable_stemming: bool) -> list:
+        tokens = self.tokenizer.tokenize(text)
+        tokens = self.stopwords_filter.filter(tokens)
+
+        if enable_stemming:
+            tokens = [(self.stemmer.stem(token[0]), token[1]) for token in tokens]
+
+        return tokens
