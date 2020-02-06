@@ -32,7 +32,9 @@ class Factory:
     @classmethod
     def create_stemmer(cls, stemmer_name):
         if stemmer_name == Constants.SNOWBALL_STEMMER_NAME:
-            return SnowballStemmer('english')
+            stemmer = SnowballStemmer('english')
+            setattr(stemmer, 'name', stemmer_name)
+            return stemmer
         else:
             raise ValueError('Stemmer not found')
 
@@ -55,8 +57,8 @@ class Factory:
         tokenizer = cls.create_tokenizer(Constants.CUSTOM_TOKENIZER_NAME)
         stopwords_filter = cls.create_stopwords_filter(Constants.STOPWORDS_FILTER_NAME)
         stemmer = cls.create_stemmer(Constants.SNOWBALL_STEMMER_NAME)
-        # compressor = cls.create_compressor(Constants.GZIP_COMPRESSOR_NAME)
-        compressor = cls.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
+        compressor = cls.create_compressor(Constants.GZIP_COMPRESSOR_NAME)
+        # compressor = cls.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
         serializer = cls.create_serializer(Constants.JSON_SERIALIZER_NAME)
         # serializer = cls.create_serializer(Constants.PICKLE_SERIALIZER_NAME)
 

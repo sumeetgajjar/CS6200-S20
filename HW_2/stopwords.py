@@ -1,3 +1,6 @@
+from constants.constants import Constants
+
+
 class StopwordsFilter:
     def __init__(self, stopwords_file_path: str) -> None:
         self.stop_word_file_path = stopwords_file_path
@@ -10,6 +13,10 @@ class StopwordsFilter:
                 stopwords.add(line.lower().strip())
 
         return stopwords
+
+    @property
+    def name(self):
+        return Constants.STOPWORDS_FILTER_NAME
 
     def filter(self, tokens):
         filtered_tokens = []

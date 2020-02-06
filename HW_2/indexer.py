@@ -104,7 +104,7 @@ class CustomIndex:
         return '{}/{}.txt'.format(self._get_metadata_dir(), Utils.get_random_file_name_with_ts())
 
     def _write_termvectors_to_index_file(self, termvectors):
-        catalog = {}
+        catalog_data = {}
         index_file_path = self._get_new_index_file_path()
 
         with open(index_file_path, 'wb') as file:
@@ -116,9 +116,9 @@ class CustomIndex:
 
                 file.write(b"\n")
 
-                catalog[term] = {'pos': current_pos, 'size': size}
+                catalog_data[term] = {'pos': current_pos, 'size': size}
 
-        return catalog, index_file_path
+        return catalog_data, index_file_path
 
     def _write_catalog_to_file(self, catalog):
         catalog_file_path = self._get_new_catalog_file_path()
@@ -151,8 +151,11 @@ class CustomIndex:
         return {
             'index_file_path': index_file_path,
             'catalog_file_path': catalog_file_path,
-            'compressor': self.compressor.name,
+            'tokenizer': self.tokenizer.name,
+            'stopwords_filter': self.stopwords_filter.name,
+            'stemmer': self.stemmer.name,
             'serializer': self.serializer.name,
+            'compressor': self.compressor.name,
             'timestamp': str(datetime.datetime.now())
         }
 
@@ -173,7 +176,13 @@ class CustomIndex:
 
             self._calculate_and_update_termvectors(document['id'], tokens, termvectors)
 
-        catalog, index_file_path = self._write_termvectors_to_index_file(termvectors)
+        catalog_data, index_file_path = self._write_termvectors_to_index_file(termvectors)
+        catalog = {
+            'metadata': {
+                'total_docs': len(documents)
+            },
+            'data': catalog_data
+        }
         catalog_file_path = self._write_catalog_to_file(catalog)
         metadata = self._create_metadata(catalog_file_path, index_file_path)
         return metadata
@@ -210,15 +219,15 @@ class CustomIndex:
         catalog_2 = self._read_catalog_to_file(metadata_2['catalog_file_path'])
 
         merged_index_path = self._get_new_index_file_path()
-        merged_catalog = {}
+        merged_catalog_data = {}
         with open(merged_index_path, 'wb') as merged_index_file, \
                 open(metadata_1['index_file_path'], 'rb') as index_file_1, \
                 open(metadata_2['index_file_path'], 'rb') as index_file_2:
 
-            for term, read_metadata_1 in catalog_1.items():
+            for term, read_metadata_1 in catalog_1['data'].items():
                 termvector_1 = self._read_bytes(index_file_1, read_metadata_1['pos'], read_metadata_1['size'])[term]
-                if term in catalog_2:
-                    read_metadata_2 = catalog_2[term]
+                if term in catalog_2['data']:
+                    read_metadata_2 = catalog_2['data'][term]
                     termvector_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])[term]
                     merged_termvector = self._merge_termvectors(termvector_1, termvector_2)
                 else:
@@ -229,21 +238,27 @@ class CustomIndex:
                 size = self._write_bytes(merged_index_file, data)
                 merged_index_file.write(b'\n')
 
-                merged_catalog[term] = {'pos': pos, 'size': size}
+                merged_catalog_data[term] = {'pos': pos, 'size': size}
 
-            for term, read_metadata_2 in catalog_2.items():
-                if term not in catalog_1:
+            for term, read_metadata_2 in catalog_2['data'].items():
+                if term not in catalog_1['data']:
                     data = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
 
                     pos = merged_index_file.tell()
                     size = self._write_bytes(merged_index_file, data)
                     merged_index_file.write(b'\n')
 
-                    merged_catalog[term] = {'pos': pos, 'size': size}
+                    merged_catalog_data[term] = {'pos': pos, 'size': size}
 
         self._delete_index_and_catalog_files(metadata_1)
         self._delete_index_and_catalog_files(metadata_2)
 
+        merged_catalog = {
+            'metadata': {
+                'total_docs': catalog_1['metadata']['total_docs'] + catalog_2['metadata']['total_docs']
+            },
+            'data': merged_catalog_data
+        }
         return merged_catalog, merged_index_path
 
     @classmethod
@@ -294,9 +309,24 @@ class CustomIndex:
 
     @lru_cache(maxsize=Constants.TERMVECTOR_CACHE_SIZE)
     def get_termvector(self, term):
-        logging.info("inside get_termvector:::term: {}".format(term))
-        tf_metadata = self.catalog.get(term)
+        tf_metadata = self.catalog['data'].get(term)
         if tf_metadata:
-            return self._read_bytes(self.index_file_handle, tf_metadata['pos'], tf_metadata['size'])
+            return self._read_bytes(self.index_file_handle, tf_metadata['pos'], tf_metadata['size'])[term]
         else:
             return {}
+
+    def get_total_documents(self):
+        return self.catalog['metadata']['total_docs']
+
+    def get_vocabulary_size(self) -> int:
+        return len(self.catalog['data'])
+
+    @lru_cache()
+    def get_average_doc_length(self) -> float:
+        tf_sum = 0
+        for term in self.catalog['data'].keys():
+            termvector = self.get_termvector(term)
+            for doc_id, tf_info in termvector['tf'].items():
+                tf_sum += tf_info['tf']
+
+        return tf_sum / self.get_total_documents()
