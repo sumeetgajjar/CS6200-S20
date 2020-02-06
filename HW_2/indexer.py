@@ -353,3 +353,6 @@ class CustomIndex:
 
     def get_doc_length(self, document_id) -> int:
         return self.document_length.get(document_id)
+
+    def get_all_document_ids(self):
+        return self.document_length.keys()

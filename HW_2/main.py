@@ -73,6 +73,32 @@ class HW2:
         return scores
 
     @classmethod
+    def calculate_unigram_lm_with_laplace_smoothing_scores(cls, query, custom_index, vocabulary_size):
+
+        def _calculate_score(_tf, _doc_id):
+            _doc_length = custom_index.get_doc_length(_doc_id)
+            _temp = (_tf + 1.0) / (_doc_length + vocabulary_size)
+            _score = math.log(_temp)
+            return _score
+
+        document_score = defaultdict(float)
+
+        document_ids = custom_index.get_all_document_ids()
+
+        for query_token in query['tokens']:
+            termvector = custom_index.get_termvector(query_token)
+            if termvector:
+                for doc_id, tf_info in termvector['tf'].items():
+                    document_score[doc_id] += _calculate_score(tf_info['tf'], doc_id)
+
+                for doc_id in document_ids:
+                    if doc_id not in termvector['tf']:
+                        document_score[doc_id] += _calculate_score(0, doc_id)
+
+        scores = [(score, doc_id) for doc_id, score in document_score.items()]
+        return scores
+
+    @classmethod
     @timing
     def find_scores_and_write_to_file(cls, queries,
                                       score_calculator,
@@ -103,8 +129,6 @@ class HW2:
     @timing
     def get_queries(cls, custom_index):
         queries = parse_queries()
-        # import sys
-        # queries = [queries[int(sys.argv[1])]]
         queries = cls.clean_queries(queries, custom_index)
         return queries
 
@@ -117,14 +141,7 @@ class HW2:
         custom_index = Factory.create_custom_index()
         custom_index.init_index(
             '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/02-05-2020-22:31:22-ccf762e5-3e26-4b37-9a6c-257d9159c3be.txt')
-        # term = 'alexand'
-        # print(custom_index.get_termvector('%s' % term))
-        # print(len(custom_index.get_termvector(term)['tf']))
-        # print(custom_index.get_average_doc_length())
-        # print(custom_index.analyze("The car was in the car wash.", True))
-        # print(custom_index.get_doc_length('AP891218-0001
-        # '))
-        # results_to_write = []
+
         queries = cls.get_queries(custom_index)
         cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
                                           custom_index=custom_index,
@@ -132,16 +149,18 @@ class HW2:
                                           total_documents=custom_index.get_total_documents()
                                           )
 
-        # cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25',
-        #                                   custom_index=custom_index,
-        #                                   avg_doc_len=custom_index.get_average_doc_length(),
-        #                                   total_documents=custom_index.get_total_documents()
-        #                                   )
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
+                                          'unigram_lm_with_laplace_smoothing',
+                                          custom_index=custom_index,
+                                          vocabulary_size=custom_index.get_vocabulary_size()
+                                          )
 
 
 if __name__ == '__main__':
     HW2.main()
-    # tokens = Factory.create_tokenizer(Constants.CUSTOM_TOKENIZER_NAME).tokenize("The car was in the car wash.")
-    # print(tokens)
-    # filtered_tokens = Factory.create_stopwords_filter(Constants.STOPWORDS_FILTER_NAME).filter(tokens)
-    # print(filtered_tokens)
