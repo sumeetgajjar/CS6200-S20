@@ -116,7 +116,7 @@ class HW2:
         if result_sub_dir:
             file_path = '{}/{}'.format(file_path, result_sub_dir)
         file_path = '{}/{}.txt'.format(file_path, file_name)
-        
+
         Utils.write_results_to_file(file_path, results_to_write)
 
     @classmethod
@@ -181,8 +181,8 @@ class HW2:
                                           total_documents=custom_index.get_total_documents()
                                           )
 
-        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores, 'head-text',
-                                          'unigram_lm_with_laplace_smoothing',
+        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
+                                          'unigram_lm_with_laplace_smoothing', 'head-text',
                                           custom_index=custom_index,
                                           vocabulary_size=custom_index.get_vocabulary_size()
                                           )
