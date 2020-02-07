@@ -58,8 +58,8 @@ class HW2:
 
         for query_token in query['tokens']:
             termvector = custom_index.get_termvector(query_token)
-            doc_freq = len(termvector['tf'])
             if termvector:
+                doc_freq = len(termvector['tf'])
                 for doc_id, tf_info in termvector['tf'].items():
                     score = 0.0
                     tf = tf_info['tf']
@@ -97,6 +97,10 @@ class HW2:
 
         scores = [(score, doc_id) for doc_id, score in document_score.items()]
         return scores
+
+    @classmethod
+    def calculate_scores_using_proximity_search(cls, query, custom_index, vocabulary_size):
+        pass
 
     @classmethod
     @timing
@@ -138,51 +142,107 @@ class HW2:
         return queries
 
     @classmethod
-    def run_models_on_indexed_text(cls):
+    def run_models_on_stemmed_text_index(cls):
         custom_index = Factory.create_custom_index()
         custom_index.init_index(
-            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/02-05-2020-22:31:22-ccf762e5-3e26-4b37-9a6c-257d9159c3be.txt')
+            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/stemmed-text-02-06-2020-13:22:44.txt')
 
         queries = cls.get_queries(custom_index)
-        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf', 'text',
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf', 'stemmed/text',
                                           custom_index=custom_index,
                                           avg_doc_len=custom_index.get_average_doc_length(),
                                           total_documents=custom_index.get_total_documents()
                                           )
 
-        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25', 'text',
-                                          custom_index=custom_index,
-                                          avg_doc_len=custom_index.get_average_doc_length(),
-                                          total_documents=custom_index.get_total_documents()
-                                          )
-
-        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores, 'text',
-                                          'unigram_lm_with_laplace_smoothing',
-                                          custom_index=custom_index,
-                                          vocabulary_size=custom_index.get_vocabulary_size()
-                                          )
-
-    @classmethod
-    def run_models_on_indexed_head_and_text(cls):
-        custom_index = Factory.create_custom_index()
-        custom_index.init_index(
-            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/02-06-2020-13:22:44-9c1e68a1-ef78-4256-87fa-32b5aad81c02.txt')
-
-        queries = cls.get_queries(custom_index)
-        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf', 'head-text',
-                                          custom_index=custom_index,
-                                          avg_doc_len=custom_index.get_average_doc_length(),
-                                          total_documents=custom_index.get_total_documents()
-                                          )
-
-        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25', 'head-text',
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25', 'stemmed/text',
                                           custom_index=custom_index,
                                           avg_doc_len=custom_index.get_average_doc_length(),
                                           total_documents=custom_index.get_total_documents()
                                           )
 
         cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
-                                          'unigram_lm_with_laplace_smoothing', 'head-text',
+                                          'unigram_lm_with_laplace_smoothing',
+                                          'stemmed/text',
+                                          custom_index=custom_index,
+                                          vocabulary_size=custom_index.get_vocabulary_size()
+                                          )
+
+    @classmethod
+    def run_models_on_stemmed_head_and_text_index(cls):
+        custom_index = Factory.create_custom_index()
+        custom_index.init_index(
+            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/stemmed-head-and-text-02-06-2020-13:22:44.txt')
+
+        queries = cls.get_queries(custom_index)
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
+                                          'stemmed/head-text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25', 'stemmed/head-text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
+                                          'unigram_lm_with_laplace_smoothing', 'stemmed/head-text',
+                                          custom_index=custom_index,
+                                          vocabulary_size=custom_index.get_vocabulary_size()
+                                          )
+
+    @classmethod
+    def run_models_on_non_stemmed_text_index(cls):
+        custom_index = Factory.create_custom_index()
+        custom_index.init_index(
+            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/non-stemmed-text-02-07-2020-17:10:33-13.txt')
+
+        queries = cls.get_queries(custom_index)
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
+                                          'non-stemmed/text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25', 'non-stemmed/text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
+                                          'unigram_lm_with_laplace_smoothing',
+                                          'non-stemmed/text',
+                                          custom_index=custom_index,
+                                          vocabulary_size=custom_index.get_vocabulary_size()
+                                          )
+
+    @classmethod
+    def run_models_on_non_stemmed_head_and_text_index(cls):
+        custom_index = Factory.create_custom_index()
+        custom_index.init_index(
+            '/home/sumeet/PycharmProjects/CS6200-S20/data/custom-index/metadata/non-stemmed-head-and-text-02-07-2020-17:22:07.txt')
+
+        queries = cls.get_queries(custom_index)
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
+                                          'non-stemmed/head-text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25',
+                                          'non-stemmed/head-text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
+                                          'unigram_lm_with_laplace_smoothing', 'non-stemmed/head-text',
                                           custom_index=custom_index,
                                           vocabulary_size=custom_index.get_vocabulary_size()
                                           )
@@ -191,9 +251,11 @@ class HW2:
     @timing
     def main(cls):
         Utils.configure_logging()
-        # custom_index = cls.add_documents_to_index(True, True)
-        # cls.run_models_on_indexed_text()
-        cls.run_models_on_indexed_head_and_text()
+        # custom_index = cls.add_documents_to_index(True, False)
+        # cls.run_models_on_stemmed_text_index()
+        # cls.run_models_on_stemmed_head_and_text_index()
+        cls.run_models_on_non_stemmed_text_index()
+        cls.run_models_on_non_stemmed_head_and_text_index()
 
 
 if __name__ == '__main__':
