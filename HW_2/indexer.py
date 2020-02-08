@@ -111,10 +111,8 @@ class CustomIndex:
 
         with open(index_file_path, 'wb') as file:
             for term, termvector in termvectors.items():
-                data = {term: termvector}
-
                 current_pos = file.tell()
-                size = self._write_bytes(file, data)
+                size = self._write_termvector(file, termvector)
 
                 file.write(b"\n")
 
@@ -125,13 +123,15 @@ class CustomIndex:
     def _write_catalog_to_file(self, catalog):
         catalog_file_path = self._get_new_catalog_file_path()
         with open(catalog_file_path, 'wb') as file:
-            self._write_bytes(file, catalog)
+            catalog_bytes = json.dumps(catalog).encode(Constants.SERIALIZER_ENCODING)
+            self._write_bytes(file, catalog_bytes)
 
         return catalog_file_path
 
     def _read_catalog_to_file(self, catalog_file_path):
         with open(catalog_file_path, 'rb') as file:
-            catalog = self._read_bytes(file)
+            catalog_bytes = self._read_bytes(file)
+            catalog = json.loads(catalog_bytes.decode(Constants.SERIALIZER_ENCODING))
 
         return catalog
 
@@ -187,13 +187,20 @@ class CustomIndex:
     def _read_bytes(self, file, start=0, size=-1):
         file.seek(start)
         compressed_bytes = file.read(size)
-        serialized_string = self.compressor.decompress_bytes(compressed_bytes)
-        return self.serializer.deserialize(serialized_string)
+        decompressed_bytes = self.compressor.decompress_bytes(compressed_bytes)
+        return decompressed_bytes
 
-    def _write_bytes(self, file, data):
-        serialized_bytes = self.serializer.serialize(data)
-        compressed_bytes = self.compressor.compress_bytes(serialized_bytes)
+    def _read_termvector(self, file, start, size):
+        termvector_bytes = self._read_bytes(file, start, size)
+        return self.serializer.deserialize(termvector_bytes)
+
+    def _write_bytes(self, file, bytes_to_write):
+        compressed_bytes = self.compressor.compress_bytes(bytes_to_write)
         return file.write(compressed_bytes)
+
+    def _write_termvector(self, file, termvector):
+        serialized_bytes = self.serializer.serialize(termvector)
+        return self._write_bytes(serialized_bytes)
 
     @classmethod
     def _delete_index_and_catalog_files(cls, metadata):
@@ -222,27 +229,26 @@ class CustomIndex:
                 open(metadata_2['index_file_path'], 'rb') as index_file_2:
 
             for term, read_metadata_1 in catalog_1['data'].items():
-                termvector_1 = self._read_bytes(index_file_1, read_metadata_1['pos'], read_metadata_1['size'])[term]
+                termvector_1 = self._read_termvector(index_file_1, read_metadata_1['pos'], read_metadata_1['size'])
                 if term in catalog_2['data']:
                     read_metadata_2 = catalog_2['data'][term]
-                    termvector_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])[term]
+                    termvector_2 = self._read_termvector(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
                     merged_termvector = self._merge_termvectors(termvector_1, termvector_2)
                 else:
                     merged_termvector = termvector_1
 
-                data = {term: merged_termvector}
                 pos = merged_index_file.tell()
-                size = self._write_bytes(merged_index_file, data)
+                size = self._write_termvector(merged_index_file, merged_termvector)
                 merged_index_file.write(b'\n')
 
                 merged_catalog_data[term] = {'pos': pos, 'size': size}
 
             for term, read_metadata_2 in catalog_2['data'].items():
                 if term not in catalog_1['data']:
-                    data = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
+                    termvector_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
 
                     pos = merged_index_file.tell()
-                    size = self._write_bytes(merged_index_file, data)
+                    size = self._write_termvector(merged_index_file, termvector_2)
                     merged_index_file.write(b'\n')
 
                     merged_catalog_data[term] = {'pos': pos, 'size': size}
@@ -323,7 +329,7 @@ class CustomIndex:
     def get_termvector(self, term):
         tf_metadata = self.catalog['data'].get(term)
         if tf_metadata:
-            return self._read_bytes(self.index_file_handle, tf_metadata['pos'], tf_metadata['size'])[term]
+            return self._read_termvector(self.index_file_handle, tf_metadata['pos'], tf_metadata['size'])
         else:
             return {}
 
