@@ -1,4 +1,4 @@
-import logging
+import gc
 import logging
 import math
 import sys
@@ -285,6 +285,7 @@ class HW2:
                 logging.info(
                     'Index Head: {}, Stemming Enabled: {}, Metadata file: {}'.format(index_head, stemming_enabled,
                                                                                      metadata_file_path))
+                gc.collect()
 
     @classmethod
     @timing

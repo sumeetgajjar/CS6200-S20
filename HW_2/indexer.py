@@ -138,7 +138,7 @@ class CustomIndex:
     @classmethod
     def _read_metadata_from_file(cls, metadata_file_path):
         with open(metadata_file_path, 'r') as file:
-            metadata = json.loads(file.read())
+            metadata = json.load(file)
 
         return metadata
 
@@ -146,7 +146,7 @@ class CustomIndex:
         metadata_file_path = self._get_new_metadata_file_path()
         logging.info('Metadata path:{}'.format(metadata_file_path))
         with open(metadata_file_path, 'w') as file:
-            file.write(json.dumps(metadata, indent=True))
+            json.dump(metadata, file, indent=True)
         return metadata_file_path
 
     def _create_metadata(self, catalog_file_path, index_file_path):
@@ -309,7 +309,7 @@ class CustomIndex:
 
         self.catalog = self._read_catalog_to_file(self.metadata['catalog_file_path'])
         self.index_file_handle = open(self.metadata['index_file_path'], 'rb')
-        # self._compute_document_length()
+        self._compute_document_length()
         logging.info("Index initialized")
 
     def index_documents(self, documents, index_head, enable_stemming):
