@@ -245,7 +245,7 @@ class CustomIndex:
 
             for term, read_metadata_2 in catalog_2['data'].items():
                 if term not in catalog_1['data']:
-                    termvector_2 = self._read_bytes(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
+                    termvector_2 = self._read_termvector(index_file_2, read_metadata_2['pos'], read_metadata_2['size'])
 
                     pos = merged_index_file.tell()
                     size = self._write_termvector(merged_index_file, termvector_2)

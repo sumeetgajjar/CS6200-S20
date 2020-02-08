@@ -23,6 +23,7 @@ class Constants:
     # Serializer configs
     JSON_SERIALIZER_NAME = 'Json'
     PICKLE_SERIALIZER_NAME = 'Pickle'
+    TERMVECTOR_SERIALIZER_NAME = 'TermvectorSerializer'
 
     # Stemmer configs
     SNOWBALL_STEMMER_NAME = 'Snowball'
