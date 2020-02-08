@@ -284,7 +284,7 @@ class HW2:
         for index_head in [True, False]:
             for stemming_enabled in [True, False]:
                 gc.collect()
-                custom_index, metadata_file_path = cls.add_documents_to_index(False, True)
+                custom_index, metadata_file_path = cls.add_documents_to_index(index_head, stemming_enabled)
                 logging.info(
                     'Index Head: {}, Stemming Enabled: {}, Metadata file: {}'.format(index_head, stemming_enabled,
                                                                                      metadata_file_path))
@@ -297,17 +297,17 @@ class HW2:
     @timing
     def main(cls):
         Utils.configure_logging()
-        Utils.set_gc_debug_flags()
+        # Utils.set_gc_debug_flags()
         # cls.generate_indexes()
 
         cls.run_models('non-stemmed/head-text', cls._get_absolute_metadata_file_path(
-            '02-08-2020-14:36:36-63f016ec-26cb-4829-b5b2-9d5b6e90f55f.txt'))
+            '02-08-2020-15:11:12-22a12732-fc24-40d7-98ff-587a31439dd0.txt'))
         cls.run_models('non-stemmed/text', cls._get_absolute_metadata_file_path(
-            '02-08-2020-14:49:24-e18fc2a1-48f3-4d56-88f2-f4a3ee1513ac.txt'))
+            '02-08-2020-15:17:41-60170caf-3317-4cd3-97f0-473cee8ac778.txt'))
         cls.run_models('stemmed/head-text', cls._get_absolute_metadata_file_path(
-            '02-08-2020-14:30:13-41322cde-e679-4a6b-9058-b4708bf3ea22.txt'))
+            '02-08-2020-15:08:13-9e26ba96-ba2e-42e7-991d-5dfa9a468c59.txt'))
         cls.run_models('stemmed/text', cls._get_absolute_metadata_file_path(
-            '02-08-2020-14:42:59-df4cff4c-11b6-4346-ac18-b307c94d130f.txt'))
+            '02-08-2020-15:14:42-f6e26542-5858-4248-8be1-611a45fd721f.txt'))
 
 
 if __name__ == '__main__':
