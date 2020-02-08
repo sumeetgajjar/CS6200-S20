@@ -311,6 +311,7 @@ class HW2:
             '02-08-2020-15:14:42-f6e26542-5858-4248-8be1-611a45fd721f.txt'))
 
         # compressed indexes
+        # change the compressor to Gzip compressor in Factory.create_custom_index()
         # cls.run_models('non-stemmed/head-text', cls._get_absolute_metadata_file_path(
         #     '02-08-2020-15:51:46-0e909aca-bd79-4214-bfe1-edc734ad3389.txt'))
         # cls.run_models('non-stemmed/text', cls._get_absolute_metadata_file_path(
