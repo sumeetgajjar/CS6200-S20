@@ -123,7 +123,7 @@ class CustomIndex:
     def _write_catalog_to_file(self, catalog):
         catalog_file_path = self._get_new_catalog_file_path()
         with open(catalog_file_path, 'wb') as file:
-            catalog_bytes = json.dumps(catalog).encode(Constants.SERIALIZER_ENCODING)
+            catalog_bytes = json.dumps(catalog).encode(Constants.AP_DATA_FILE_ENCODING)
             self._write_bytes(file, catalog_bytes)
 
         return catalog_file_path
@@ -131,7 +131,7 @@ class CustomIndex:
     def _read_catalog_to_file(self, catalog_file_path):
         with open(catalog_file_path, 'rb') as file:
             catalog_bytes = self._read_bytes(file)
-            catalog = json.loads(catalog_bytes.decode(Constants.SERIALIZER_ENCODING))
+            catalog = json.loads(catalog_bytes.decode(Constants.AP_DATA_FILE_ENCODING))
 
         return catalog
 
@@ -309,7 +309,7 @@ class CustomIndex:
 
         self.catalog = self._read_catalog_to_file(self.metadata['catalog_file_path'])
         self.index_file_handle = open(self.metadata['index_file_path'], 'rb')
-        self._compute_document_length()
+        # self._compute_document_length()
         logging.info("Index initialized")
 
     def index_documents(self, documents, index_head, enable_stemming):
@@ -319,11 +319,11 @@ class CustomIndex:
                                                              enable_stemming=enable_stemming)
 
         merged_metadata = self._merge_indexes_and_catalogs(metadata_list)
-        metadata_file_path = self._write_metadata_to_file(merged_metadata)
-        self._make_files_readonly(metadata_file_path, merged_metadata)
+        merged_metadata_file_path = self._write_metadata_to_file(merged_metadata)
+        self._make_files_readonly(merged_metadata_file_path, merged_metadata)
         self.metadata = merged_metadata
         self.init_index()
-        return merged_metadata
+        return merged_metadata, merged_metadata_file_path
 
     @lru_cache(maxsize=Constants.TERMVECTOR_CACHE_SIZE)
     def get_termvector(self, term):

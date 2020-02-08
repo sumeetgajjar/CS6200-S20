@@ -27,7 +27,7 @@ class Factory:
         elif serializer_name == Constants.PICKLE_SERIALIZER_NAME:
             return PickleSerializer()
         elif serializer_name == Constants.TERMVECTOR_SERIALIZER_NAME:
-            return TermvectorSerializer()
+            return TermvectorSerializer(Utils.get_document_id_mapping_path())
         else:
             raise ValueError('Serializer not found')
 
@@ -60,9 +60,11 @@ class Factory:
         stopwords_filter = cls.create_stopwords_filter(Constants.STOPWORDS_FILTER_NAME)
         stemmer = cls.create_stemmer(Constants.SNOWBALL_STEMMER_NAME)
         compressor = cls.create_compressor(Constants.GZIP_COMPRESSOR_NAME)
-        # compressor = cls.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
         # serializer = cls.create_serializer(Constants.JSON_SERIALIZER_NAME)
+
+        # compressor = cls.create_compressor(Constants.NO_OPS_COMPRESSOR_NAME)
         serializer = cls.create_serializer(Constants.TERMVECTOR_SERIALIZER_NAME)
+
         # serializer = cls.create_serializer(Constants.PICKLE_SERIALIZER_NAME)
 
         return CustomIndex(tokenizer, stopwords_filter, stemmer, compressor, serializer)

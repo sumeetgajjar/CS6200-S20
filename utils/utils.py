@@ -22,8 +22,12 @@ class Utils:
         return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.AP_DATA_PATH)
 
     @classmethod
-    def get_ap89_collection_abs_path(cls, ):
+    def get_ap89_collection_abs_path(cls):
         return '{}/{}'.format(cls.get_ap_data_path(), Constants.AP89_COLLECTION)
+
+    @classmethod
+    def get_document_id_mapping_path(cls):
+        return '{}/{}'.format(cls.get_ap_data_path(), Constants.DOCUMENT_ID_MAPPING_FILE_NAME)
 
     @classmethod
     def create_ap_data_index(cls, ):
