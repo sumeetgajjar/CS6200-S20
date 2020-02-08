@@ -82,7 +82,7 @@ class TermvectorSerializer(Serializer):
             tf_info_splits = termvector_split.split(self._TF_INFO_SEPARATOR)
             doc_id = tf_info_splits[0]
             tf = int(tf_info_splits[1])
-            positions = map(int, tf_info_splits[2].split(self._POSITION_SEPARATOR))
+            positions = list(map(int, tf_info_splits[2].split(self._POSITION_SEPARATOR)))
             termvector['tf'][doc_id] = {'tf': tf, 'pos': positions}
 
         return termvector
