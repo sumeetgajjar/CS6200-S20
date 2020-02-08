@@ -27,7 +27,7 @@ class CustomIndex:
         self._create_dirs_if_absent()
 
     def _create_dirs_if_absent(self):
-        for path in [self._get_metadata_dir(), self._get_index_data_dir(), self._get_catalog_data_dir()]:
+        for path in [self.get_metadata_dir(), self._get_index_data_dir(), self._get_catalog_data_dir()]:
             if not os.path.isdir(path):
                 os.makedirs(path)
 
@@ -99,11 +99,12 @@ class CustomIndex:
     def _get_new_catalog_file_path(self):
         return '{}/{}.txt'.format(self._get_catalog_data_dir(), Utils.get_random_file_name_with_ts())
 
-    def _get_metadata_dir(self):
-        return '{}/{}'.format(self._get_custom_index_dir(), 'metadata')
+    @classmethod
+    def get_metadata_dir(cls):
+        return '{}/{}'.format(cls._get_custom_index_dir(), 'metadata')
 
     def _get_new_metadata_file_path(self):
-        return '{}/{}.txt'.format(self._get_metadata_dir(), Utils.get_random_file_name_with_ts())
+        return '{}/{}.txt'.format(self.get_metadata_dir(), Utils.get_random_file_name_with_ts())
 
     def _write_termvectors_to_index_file(self, termvectors):
         catalog_data = {}

@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from HW_1.main import get_file_paths_to_parse, get_parsed_documents, parse_queries, \
     transform_scores_for_writing_to_file
 from HW_2.factory import Factory
+from HW_2.indexer import CustomIndex
 from utils.decorators import timing
 from utils.utils import Utils
 
@@ -243,6 +244,7 @@ class HW2:
 
     @classmethod
     def run_models(cls, results_sub_dir, metadata_file_path):
+        gc.collect()
         custom_index = Factory.create_custom_index()
         custom_index.init_index(metadata_file_path)
 
@@ -281,18 +283,31 @@ class HW2:
     def generate_indexes(cls):
         for index_head in [True, False]:
             for stemming_enabled in [True, False]:
+                gc.collect()
                 custom_index, metadata_file_path = cls.add_documents_to_index(False, True)
                 logging.info(
                     'Index Head: {}, Stemming Enabled: {}, Metadata file: {}'.format(index_head, stemming_enabled,
                                                                                      metadata_file_path))
-                gc.collect()
+
+    @classmethod
+    def _get_absolute_metadata_file_path(cls, metadata_file_name):
+        return '{}/{}'.format(CustomIndex.get_metadata_dir(), metadata_file_name)
 
     @classmethod
     @timing
     def main(cls):
         Utils.configure_logging()
-        cls.generate_indexes()
-        # cls.run_models('')
+        Utils.set_gc_debug_flags()
+        # cls.generate_indexes()
+
+        cls.run_models('non-stemmed/head-text', cls._get_absolute_metadata_file_path(
+            '02-08-2020-14:36:36-63f016ec-26cb-4829-b5b2-9d5b6e90f55f.txt'))
+        cls.run_models('non-stemmed/text', cls._get_absolute_metadata_file_path(
+            '02-08-2020-14:49:24-e18fc2a1-48f3-4d56-88f2-f4a3ee1513ac.txt'))
+        cls.run_models('stemmed/head-text', cls._get_absolute_metadata_file_path(
+            '02-08-2020-14:30:13-41322cde-e679-4a6b-9058-b4708bf3ea22.txt'))
+        cls.run_models('stemmed/text', cls._get_absolute_metadata_file_path(
+            '02-08-2020-14:42:59-df4cff4c-11b6-4346-ac18-b307c94d130f.txt'))
 
 
 if __name__ == '__main__':

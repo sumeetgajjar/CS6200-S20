@@ -1,5 +1,6 @@
 import concurrent.futures
 import datetime
+import gc
 import logging
 import math
 import uuid
@@ -106,3 +107,7 @@ class Utils:
     @classmethod
     def get_random_file_name_with_ts(cls):
         return '{}-{}'.format(datetime.datetime.now().strftime("%m-%d-%Y-%H:%M:%S"), uuid.uuid4())
+
+    @classmethod
+    def set_gc_debug_flags(cls):
+        gc.set_debug(gc.DEBUG_STATS)
