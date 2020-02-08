@@ -200,7 +200,7 @@ class CustomIndex:
 
     def _write_termvector(self, file, termvector):
         serialized_bytes = self.serializer.serialize(termvector)
-        return self._write_bytes(serialized_bytes)
+        return self._write_bytes(file, serialized_bytes)
 
     @classmethod
     def _delete_index_and_catalog_files(cls, metadata):
