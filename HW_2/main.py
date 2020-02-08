@@ -1,8 +1,10 @@
 import logging
 import math
+import sys
 from collections import Counter, defaultdict
 
-from HW_1.main import get_file_paths_to_parse, get_parsed_documents, parse_queries, transform_scores_for_writing_to_file
+from HW_1.main import get_file_paths_to_parse, get_parsed_documents, parse_queries, \
+    transform_scores_for_writing_to_file
 from HW_2.factory import Factory
 from utils.decorators import timing
 from utils.utils import Utils
@@ -99,8 +101,105 @@ class HW2:
         return scores
 
     @classmethod
-    def calculate_scores_using_proximity_search(cls, query, custom_index, vocabulary_size):
-        pass
+    def compute_minimum_span(cls, ngram_tokens, positions):
+        min_ix, max_ix = 0, 0
+        min_pos, max_pos = sys.maxsize, -sys.maxsize
+        pointers = [0] * len(ngram_tokens)
+        min_span = sys.maxsize
+        while True:
+            for ix, token in enumerate(ngram_tokens):
+                token_positions = positions[token]
+                curr_pos = token_positions[pointers[ix]]
+                if min_pos > curr_pos:
+                    min_ix = ix
+                    min_pos = curr_pos
+                elif max_pos < curr_pos:
+                    max_pos = curr_pos
+
+            curr_span = max_pos - min_pos
+            if min_span > curr_span:
+                min_span = curr_span
+
+            pointers[min_ix] += 1
+
+            min_pos_token = ngram_tokens[min_ix]
+            if pointers[min_ix] >= len(positions[min_pos_token]):
+                if 0 < min_span < 500:
+                    return min_span
+                else:
+                    return 500
+
+            min_pos = positions[min_pos_token][pointers[min_ix]]
+
+    @classmethod
+    def compute_doc_id_term_positions(cls, query, custom_index):
+        doc_id_term_positions = {}
+        for query_token in query['tokens']:
+            termvector = custom_index.get_termvector(query_token)
+            if termvector:
+                for doc_id, tf_info in termvector['tf'].items():
+                    if doc_id not in doc_id_term_positions:
+                        doc_id_term_positions[doc_id] = {}
+
+                    doc_id_term_positions[doc_id][query_token] = tf_info['pos']
+
+        return doc_id_term_positions
+
+    @classmethod
+    def compute_min_span_score(cls, query_ngrams, doc_id_term_positions, alpha):
+        document_score = defaultdict(float)
+        for doc_id in doc_id_term_positions.keys():
+            for ngram_tokens in query_ngrams:
+                positions = {}
+                for ngram_token in ngram_tokens:
+                    pos = doc_id_term_positions[doc_id].get(ngram_token)
+                    if pos:
+                        positions[ngram_token] = pos
+
+                if len(query_ngrams) == len(positions):
+                    min_span = cls.compute_minimum_span(ngram_tokens, positions)
+                else:
+                    min_span = 500
+
+                document_score[doc_id] += math.log(alpha + math.exp(-min_span))
+
+        return document_score
+
+    @classmethod
+    def generate_query_ngrams(cls, query, ngram_length):
+        query_ngrams = []
+        for i in range(len(query['tokens']) - ngram_length + 1):
+            query_ngrams.append(query['tokens'][i:i + ngram_length])
+
+        return query_ngrams
+
+    @classmethod
+    def calculate_scores_using_proximity_search(cls, query, custom_index, avg_doc_len, total_documents, k_1=1.2,
+                                                k_2=500, b=0.75, ngram_length=2, alpha=0.3):
+
+        query_term_freq = Counter(query['tokens'])
+        doc_id_term_positions = cls.compute_doc_id_term_positions(query, custom_index)
+        query_ngrams = cls.generate_query_ngrams(query, ngram_length)
+        document_score = cls.compute_min_span_score(query_ngrams, doc_id_term_positions, alpha)
+
+        for query_token in query['tokens']:
+            termvector = custom_index.get_termvector(query_token)
+            if termvector:
+                doc_freq = len(termvector['tf'])
+                for doc_id, tf_info in termvector['tf'].items():
+                    score = 0.0
+                    tf = tf_info['tf']
+                    query_tf = query_term_freq.get(query_token)
+                    doc_length = custom_index.get_doc_length(doc_id)
+                    temp_1 = math.log((total_documents + 0.5) / (doc_freq + 0.5))
+                    temp_2 = (tf + (k_1 * tf)) / (tf + (k_1 * ((1 - b) + (b * (doc_length / avg_doc_len)))))
+                    temp_3 = (query_tf + (k_2 * query_tf)) / (query_tf + k_2)
+                    score += (temp_1 * temp_2 * temp_3)
+
+                    document_score[doc_id] += score
+
+        scores = [(score, doc_id) for doc_id, score in document_score.items()]
+        return scores
 
     @classmethod
     @timing
@@ -167,6 +266,14 @@ class HW2:
                                           vocabulary_size=custom_index.get_vocabulary_size()
                                           )
 
+        cls.find_scores_and_write_to_file(queries, cls.calculate_scores_using_proximity_search,
+                                          'proximity_search',
+                                          'stemmed/text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
     @classmethod
     def run_models_on_stemmed_head_and_text_index(cls):
         custom_index = Factory.create_custom_index()
@@ -191,6 +298,14 @@ class HW2:
                                           'unigram_lm_with_laplace_smoothing', 'stemmed/head-text',
                                           custom_index=custom_index,
                                           vocabulary_size=custom_index.get_vocabulary_size()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_scores_using_proximity_search,
+                                          'proximity_search',
+                                          'stemmed/head-text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
                                           )
 
     @classmethod
@@ -220,6 +335,14 @@ class HW2:
                                           vocabulary_size=custom_index.get_vocabulary_size()
                                           )
 
+        cls.find_scores_and_write_to_file(queries, cls.calculate_scores_using_proximity_search,
+                                          'proximity_search',
+                                          'non-stemmed/text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
     @classmethod
     def run_models_on_non_stemmed_head_and_text_index(cls):
         custom_index = Factory.create_custom_index()
@@ -247,13 +370,21 @@ class HW2:
                                           vocabulary_size=custom_index.get_vocabulary_size()
                                           )
 
+        cls.find_scores_and_write_to_file(queries, cls.calculate_scores_using_proximity_search,
+                                          'proximity_search',
+                                          'non-stemmed/head-text',
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
     @classmethod
     @timing
     def main(cls):
         Utils.configure_logging()
         # custom_index = cls.add_documents_to_index(True, False)
-        # cls.run_models_on_stemmed_text_index()
-        # cls.run_models_on_stemmed_head_and_text_index()
+        cls.run_models_on_stemmed_text_index()
+        cls.run_models_on_stemmed_head_and_text_index()
         cls.run_models_on_non_stemmed_text_index()
         cls.run_models_on_non_stemmed_head_and_text_index()
 
