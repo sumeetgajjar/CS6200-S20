@@ -300,6 +300,7 @@ class HW2:
         # Utils.set_gc_debug_flags()
         # cls.generate_indexes()
 
+        # uncompressed indexes
         cls.run_models('non-stemmed/head-text', cls._get_absolute_metadata_file_path(
             '02-08-2020-15:11:12-22a12732-fc24-40d7-98ff-587a31439dd0.txt'))
         cls.run_models('non-stemmed/text', cls._get_absolute_metadata_file_path(
@@ -308,6 +309,16 @@ class HW2:
             '02-08-2020-15:08:13-9e26ba96-ba2e-42e7-991d-5dfa9a468c59.txt'))
         cls.run_models('stemmed/text', cls._get_absolute_metadata_file_path(
             '02-08-2020-15:14:42-f6e26542-5858-4248-8be1-611a45fd721f.txt'))
+
+        # compressed indexes
+        # cls.run_models('non-stemmed/head-text', cls._get_absolute_metadata_file_path(
+        #     '02-08-2020-15:51:46-0e909aca-bd79-4214-bfe1-edc734ad3389.txt'))
+        # cls.run_models('non-stemmed/text', cls._get_absolute_metadata_file_path(
+        #     '02-08-2020-16:02:06-d0f6bbbb-b4d1-4e86-8fb5-672ab8d9568b.txt'))
+        # cls.run_models('stemmed/head-text', cls._get_absolute_metadata_file_path(
+        #     '02-08-2020-15:46:56-fea8cc14-a710-4cc7-9a4c-e3aff6aa30b9.txt'))
+        # cls.run_models('stemmed/text', cls._get_absolute_metadata_file_path(
+        #     '02-08-2020-15:56:55-3c539457-a6ac-415d-aeac-c88710b68edd.txt'))
 
 
 if __name__ == '__main__':
