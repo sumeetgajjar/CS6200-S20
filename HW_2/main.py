@@ -86,9 +86,7 @@ class HW2:
             return _score
 
         document_score = defaultdict(float)
-
         document_ids = custom_index.get_all_document_ids()
-
         for query_token in query['tokens']:
             termvector = custom_index.get_termvector(query_token)
             if termvector:
@@ -98,6 +96,44 @@ class HW2:
                 for doc_id in document_ids:
                     if doc_id not in termvector['tf']:
                         document_score[doc_id] += _calculate_score(0, doc_id)
+            else:
+                for doc_id in document_ids:
+                    document_score[doc_id] += _calculate_score(0, doc_id)
+
+        scores = [(score, doc_id) for doc_id, score in document_score.items()]
+        return scores
+
+    @classmethod
+    def calculate_unigram_lm_with_jelinek_mercer_smoothing_scores(cls, query, custom_index, vocabulary_size, lam=0.9):
+
+        def _calculate(_tf, _ttf, _doc_id):
+            _doc_length = custom_index.get_doc_length(_doc_id)
+            _score = 0.0
+            _temp_1 = lam * (_tf / _doc_length)
+            _temp_2 = (1 - lam) * (_ttf / vocabulary_size)
+            try:
+                _score += math.log(_temp_1 + _temp_2)
+                return _score
+            except:
+                return 0
+
+        document_score = defaultdict(float)
+        document_ids = custom_index.get_all_document_ids()
+
+        for query_token in query['tokens']:
+            termvector = custom_index.get_termvector(query_token)
+            if termvector:
+                token_ttf = termvector['ttf']
+                for doc_id, tf_info in termvector['tf'].items():
+                    tf = tf_info['tf']
+                    document_score[doc_id] += _calculate(tf, token_ttf, doc_id)
+
+                for doc_id in document_ids:
+                    if doc_id not in termvector['tf']:
+                        document_score[doc_id] += _calculate(0, token_ttf, doc_id)
+            else:
+                for doc_id in document_ids:
+                    document_score[doc_id] += _calculate(0, 0, doc_id)
 
         scores = [(score, doc_id) for doc_id, score in document_score.items()]
         return scores
@@ -245,26 +281,33 @@ class HW2:
         custom_index.init_index(metadata_file_path)
 
         queries = cls.get_queries(custom_index)
-        # cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
-        #                                   results_sub_dir,
-        #                                   custom_index=custom_index,
-        #                                   avg_doc_len=custom_index.get_average_doc_length(),
-        #                                   total_documents=custom_index.get_total_documents()
-        #                                   )
-        #
-        # cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25',
-        #                                   results_sub_dir,
-        #                                   custom_index=custom_index,
-        #                                   avg_doc_len=custom_index.get_average_doc_length(),
-        #                                   total_documents=custom_index.get_total_documents()
-        #                                   )
-        #
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
+                                          results_sub_dir,
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25',
+                                          results_sub_dir,
+                                          custom_index=custom_index,
+                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          total_documents=custom_index.get_total_documents()
+                                          )
+
         # cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
         #                                   'unigram_lm_with_laplace_smoothing',
         #                                   results_sub_dir,
         #                                   custom_index=custom_index,
         #                                   vocabulary_size=custom_index.get_vocabulary_size()
         #                                   )
+
+        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_jelinek_mercer_smoothing_scores,
+                                          'unigram_lm_with_jelinek_mercer_smoothing',
+                                          results_sub_dir,
+                                          custom_index=custom_index,
+                                          vocabulary_size=custom_index.get_vocabulary_size()
+                                          )
 
         cls.find_scores_and_write_to_file(queries, cls.calculate_scores_using_proximity_search,
                                           'proximity_search',
@@ -299,8 +342,8 @@ class HW2:
         # uncompressed indexes
         # cls.run_models('non-stemmed/head-text', cls._get_absolute_metadata_file_path(
         #     '02-08-2020-15:11:12-22a12732-fc24-40d7-98ff-587a31439dd0.txt'))
-        cls.run_models('non-stemmed/text', cls._get_absolute_metadata_file_path(
-            '02-08-2020-15:17:41-60170caf-3317-4cd3-97f0-473cee8ac778.txt'))
+        # cls.run_models('non-stemmed/text', cls._get_absolute_metadata_file_path(
+        #     '02-08-2020-15:17:41-60170caf-3317-4cd3-97f0-473cee8ac778.txt'))
         # cls.run_models('stemmed/head-text', cls._get_absolute_metadata_file_path(
         #     '02-08-2020-15:08:13-9e26ba96-ba2e-42e7-991d-5dfa9a468c59.txt'))
         # cls.run_models('stemmed/text', cls._get_absolute_metadata_file_path(
