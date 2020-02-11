@@ -158,10 +158,10 @@ class HW2:
                     if pos:
                         positions[ngram_token] = pos
 
-                if len(query_ngrams) == len(positions):
+                if len(ngram_tokens) == len(positions):
                     min_span = cls.compute_minimum_span(ngram_tokens, positions)
                 else:
-                    min_span = 500
+                    min_span = 287
 
                 document_score[doc_id] += math.log(alpha + math.exp(-min_span))
 
@@ -176,10 +176,9 @@ class HW2:
         return query_ngrams
 
     @classmethod
-    def calculate_scores_using_proximity_search(cls, query, custom_index, avg_doc_len, total_documents, k_1=1.2,
-                                                k_2=500, b=0.75, ngram_length=2, alpha=0.3):
+    def calculate_scores_using_proximity_search(cls, query, custom_index, avg_doc_len, total_documents, ngram_length=2,
+                                                alpha=1.3):
 
-        query_term_freq = Counter(query['tokens'])
         doc_id_term_positions = cls.compute_doc_id_term_positions(query, custom_index)
         query_ngrams = cls.generate_query_ngrams(query, ngram_length)
         document_score = cls.compute_min_span_score(query_ngrams, doc_id_term_positions, alpha)
@@ -191,12 +190,9 @@ class HW2:
                 for doc_id, tf_info in termvector['tf'].items():
                     score = 0.0
                     tf = tf_info['tf']
-                    query_tf = query_term_freq.get(query_token)
                     doc_length = custom_index.get_doc_length(doc_id)
-                    temp_1 = math.log((total_documents + 0.5) / (doc_freq + 0.5))
-                    temp_2 = (tf + (k_1 * tf)) / (tf + (k_1 * ((1 - b) + (b * (doc_length / avg_doc_len)))))
-                    temp_3 = (query_tf + (k_2 * query_tf)) / (query_tf + k_2)
-                    score += (temp_1 * temp_2 * temp_3)
+                    temp = tf / (tf + 0.5 + (1.5 * (doc_length / avg_doc_len)))
+                    score += (temp * math.log(total_documents / doc_freq))
 
                     document_score[doc_id] += score
 
@@ -249,32 +245,32 @@ class HW2:
         custom_index.init_index(metadata_file_path)
 
         queries = cls.get_queries(custom_index)
-        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
-                                          results_sub_dir,
-                                          custom_index=custom_index,
-                                          avg_doc_len=custom_index.get_average_doc_length(),
-                                          total_documents=custom_index.get_total_documents()
-                                          )
-
-        cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25',
-                                          results_sub_dir,
-                                          custom_index=custom_index,
-                                          avg_doc_len=custom_index.get_average_doc_length(),
-                                          total_documents=custom_index.get_total_documents()
-                                          )
-
-        cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
-                                          'unigram_lm_with_laplace_smoothing',
-                                          results_sub_dir,
-                                          custom_index=custom_index,
-                                          vocabulary_size=custom_index.get_vocabulary_size()
-                                          )
+        # cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_tf_idf_scores, 'okapi_tf_idf',
+        #                                   results_sub_dir,
+        #                                   custom_index=custom_index,
+        #                                   avg_doc_len=custom_index.get_average_doc_length(),
+        #                                   total_documents=custom_index.get_total_documents()
+        #                                   )
+        #
+        # cls.find_scores_and_write_to_file(queries, cls.calculate_okapi_bm25_scores, 'okapi_bm25',
+        #                                   results_sub_dir,
+        #                                   custom_index=custom_index,
+        #                                   avg_doc_len=custom_index.get_average_doc_length(),
+        #                                   total_documents=custom_index.get_total_documents()
+        #                                   )
+        #
+        # cls.find_scores_and_write_to_file(queries, cls.calculate_unigram_lm_with_laplace_smoothing_scores,
+        #                                   'unigram_lm_with_laplace_smoothing',
+        #                                   results_sub_dir,
+        #                                   custom_index=custom_index,
+        #                                   vocabulary_size=custom_index.get_vocabulary_size()
+        #                                   )
 
         cls.find_scores_and_write_to_file(queries, cls.calculate_scores_using_proximity_search,
                                           'proximity_search',
                                           results_sub_dir,
                                           custom_index=custom_index,
-                                          avg_doc_len=custom_index.get_average_doc_length(),
+                                          avg_doc_len=281.71925743100417,
                                           total_documents=custom_index.get_total_documents()
                                           )
 
@@ -301,14 +297,14 @@ class HW2:
         # cls.generate_indexes()
 
         # uncompressed indexes
-        cls.run_models('non-stemmed/head-text', cls._get_absolute_metadata_file_path(
-            '02-08-2020-15:11:12-22a12732-fc24-40d7-98ff-587a31439dd0.txt'))
+        # cls.run_models('non-stemmed/head-text', cls._get_absolute_metadata_file_path(
+        #     '02-08-2020-15:11:12-22a12732-fc24-40d7-98ff-587a31439dd0.txt'))
         cls.run_models('non-stemmed/text', cls._get_absolute_metadata_file_path(
             '02-08-2020-15:17:41-60170caf-3317-4cd3-97f0-473cee8ac778.txt'))
-        cls.run_models('stemmed/head-text', cls._get_absolute_metadata_file_path(
-            '02-08-2020-15:08:13-9e26ba96-ba2e-42e7-991d-5dfa9a468c59.txt'))
-        cls.run_models('stemmed/text', cls._get_absolute_metadata_file_path(
-            '02-08-2020-15:14:42-f6e26542-5858-4248-8be1-611a45fd721f.txt'))
+        # cls.run_models('stemmed/head-text', cls._get_absolute_metadata_file_path(
+        #     '02-08-2020-15:08:13-9e26ba96-ba2e-42e7-991d-5dfa9a468c59.txt'))
+        # cls.run_models('stemmed/text', cls._get_absolute_metadata_file_path(
+        #     '02-08-2020-15:14:42-f6e26542-5858-4248-8be1-611a45fd721f.txt'))
 
         # compressed indexes
         # change the compressor to Gzip compressor in Factory.create_custom_index()
