@@ -39,7 +39,7 @@ def url_cleaner():
     ]
 )
 def test_get_canonical_url(url: str, canonical_url: str, error_msg: str, url_cleaner: UrlCleaner):
-    assert url_cleaner.get_canonical_url(url) == canonical_url, error_msg
+    assert url_cleaner.get_canonical_url(url).geturl() == canonical_url, error_msg
 
 
 @pytest.mark.xfail(raises=ValueError)

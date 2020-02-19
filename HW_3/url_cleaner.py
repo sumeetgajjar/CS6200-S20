@@ -86,7 +86,7 @@ class UrlCleaner:
         else:
             return 'http://{}'.format(url)
 
-    def get_canonical_url(self, url: str) -> str:
+    def get_canonical_url(self, url: str) -> ParseResult:
         """
         It applies the following rules to the url in the given order
         1. strips the url
@@ -104,7 +104,7 @@ class UrlCleaner:
         13. remove trailing tld slash
 
         :param url:
-        :return: canonical form of the given url
+        :return: ParseResult which contains canonical form of the given url
         """
         url = url.strip()
         url = self._remove_escape_sequences(url)
@@ -115,14 +115,12 @@ class UrlCleaner:
         parsed_url = self._remove_duplicate_slashes(parsed_url)
         parsed_url = self._remove_trailing_tld_slash(parsed_url)
 
-        url = parsed_url.geturl()
+        return parsed_url
 
-        return url
-
-    def transform_relative_url_to_absolute_url(self, current_url: str, relative_url: str) -> str:
+    def transform_relative_url_to_absolute_url(self, current_url: str, relative_url: str) -> ParseResult:
         """
         :param current_url:
         :param relative_url:
-        :return: the canonical form of the absolute url of the given relative url
+        :return: ParseResult which contains the canonical form of the absolute url of the given relative url
         """
         return self.get_canonical_url(urljoin(current_url, relative_url))
