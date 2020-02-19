@@ -1,3 +1,4 @@
 [submodule "CS6200_S20_SHARED"]
 	path = CS6200_S20_SHARED
 	url = git@github.ccs.neu.edu:sumeetgajjar/CS6200_S20_SHARED.git
+	branch = master
