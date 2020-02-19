@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse, ParseResult
+from urllib.parse import urlparse, ParseResult, urljoin
 
 
 class UrlCleaner:
@@ -79,6 +79,13 @@ class UrlCleaner:
     def _remove_duplicate_slashes(self, parsed_url: ParseResult) -> ParseResult:
         return parsed_url._replace(path=self._DUPLICATE_SLASH_REGEX.sub("/", parsed_url.path))
 
+    @classmethod
+    def _add_protocol_if_not_exists(cls, url: str) -> str:
+        if url.lower().startswith("http"):
+            return url
+        else:
+            return 'http://{}'.format(url)
+
     def get_canonical_url(self, url: str) -> str:
         """
         It applies the following rules to the url in the given order
@@ -112,9 +119,10 @@ class UrlCleaner:
 
         return url
 
-    @classmethod
-    def _add_protocol_if_not_exists(cls, url: str) -> str:
-        if url.lower().startswith("http"):
-            return url
-        else:
-            return 'http://{}'.format(url)
+    def transform_relative_url_to_absolute_url(self, current_url: str, relative_url: str) -> str:
+        """
+        :param current_url:
+        :param relative_url:
+        :return: the canonical form of the absolute url of the given relative url
+        """
+        return self.get_canonical_url(urljoin(current_url, relative_url))
