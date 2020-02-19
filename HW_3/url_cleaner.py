@@ -64,16 +64,16 @@ class UrlCleaner:
     def _remove_trailing_special_chars(self, url: str) -> str:
         return self._TRAILING_SPECIAL_CHARS_REGEX.sub("", url)
 
-    def _remove_duplicate_slashes(self, url: str) -> str:
-        return self._DUPLICATE_SLASH_REGEX.sub("/", url)
+    def _remove_duplicate_slashes(self, parsed_url: ParseResult) -> ParseResult:
+        return parsed_url._replace(path=self._DUPLICATE_SLASH_REGEX.sub("/", parsed_url.path))
 
     def get_canonical_url(self, url: str) -> str:
         url = url.strip()
         url = self._remove_escape_sequences(url)
         url = self._remove_session_ids(url)
-        url = self._remove_duplicate_slashes(url)
         parsed_url = self._clean_scheme_host_and_fragment(url)
         parsed_url = self._remove_trailing_default_file_names(parsed_url)
+        parsed_url = self._remove_duplicate_slashes(parsed_url)
         parsed_url = self._remove_trailing_tld_slash(parsed_url)
 
         url = parsed_url.geturl()
