@@ -13,8 +13,20 @@ class UrlCleaner:
     _DUPLICATE_SLASH_REGEX = re.compile("/{2,}", re.IGNORECASE)
 
     @classmethod
-    def _remove_port_if_exists(cls, netloc: str) -> str:
-        return netloc.split(":")[0]
+    def _remove_port_if_exists(cls, scheme: str, netloc: str) -> str:
+        splits = netloc.split(":")
+        if len(splits) == 1:
+            return netloc
+        elif len(splits) == 2:
+            port = splits[1]
+            if scheme == 'http' and port == '80':
+                return splits[0]
+            elif scheme == 'https' and port == '443':
+                return splits[0]
+            else:
+                return netloc
+        else:
+            raise ValueError("Invalid Domain: {}".format(netloc))
 
     @classmethod
     def _remove_www(cls, netloc: str) -> str:
@@ -41,7 +53,7 @@ class UrlCleaner:
         lowercase_scheme = parsed_url.scheme.lower()
 
         lowercase_netloc = parsed_url.netloc.strip().lower()
-        port_removed_netloc = self._remove_port_if_exists(lowercase_netloc)
+        port_removed_netloc = self._remove_port_if_exists(lowercase_scheme, lowercase_netloc)
         www_removed_netloc = self._remove_www(port_removed_netloc)
 
         stripped_query = parsed_url.query.strip()
@@ -72,7 +84,10 @@ class UrlCleaner:
         It applies the following rules to the url in the given order
         1. strips the url
         2. removes all the escape sequences from the url
-        3. removes all the session ids from the url
+        3. adds http as the protocol if not present
+        4. lower case the scheme
+        5. remove the default http and https port if exists
+        6.
         :param url:
         :return: canonical form of the given url
         """
