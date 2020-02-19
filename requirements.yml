@@ -10,5 +10,4 @@ dependencies:
       - protobuf==3.11.3
       - pytest==5.3.5
       - beautifulsoup4==4.8.2
-      - tldextract==2.2.2
       - redis==3.4.1
