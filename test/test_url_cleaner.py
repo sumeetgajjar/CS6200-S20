@@ -42,5 +42,10 @@ def test_get_canonical_url(url: str, canonical_url: str, error_msg: str, url_cle
     assert url_cleaner.get_canonical_url(url) == canonical_url, error_msg
 
 
+@pytest.mark.xfail(raises=ValueError)
+def test_invalid_host_failure(url_cleaner: UrlCleaner):
+    url_cleaner.get_canonical_url("http://www.google.om:123:123/asd.html")
+
+
 if __name__ == '__main__':
     pytest.main()
