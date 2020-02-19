@@ -21,8 +21,7 @@ class DomainRank:
 
 class DomainRankings:
     _DEFAULT_DOMAIN_RANK = sys.maxsize
-    _RAW_DOMAIN_RANK_FILE_NAME = 'domain_rankings.csv'
-    _RAW_DOMAIN_RANK_FILE_PATH = '{}/{}'.format(Utils.get_data_dir_abs_path(), _RAW_DOMAIN_RANK_FILE_NAME)
+    _RAW_DOMAIN_RANK_FILE_PATH = '/home/sumeet/PycharmProjects/CS6200-S20/CS6200_S20_SHARED/domain_rankings.csv'
     _PROCESSED_DOMAIN_RANK_FILE_NAME = 'processed_domain_ranking.json'
     _PROCESSED_DOMAIN_RANK_FILE_PATH = '{}/{}'.format(Utils.get_data_dir_abs_path(), _PROCESSED_DOMAIN_RANK_FILE_NAME)
 
@@ -60,7 +59,10 @@ class DomainRankings:
         :return: the domain rank
         """
         domain_rank_info = self.domain_rankings.get(canonical_domain)
-        return DomainRank(canonical_domain, domain_rank_info[0], domain_rank_info[1])
+        if domain_rank_info:
+            return DomainRank(canonical_domain, domain_rank_info[0], domain_rank_info[1])
+        else:
+            return DomainRank(canonical_domain, self._DEFAULT_DOMAIN_RANK, self._DEFAULT_DOMAIN_RANK)
 
 
 if __name__ == '__main__':
