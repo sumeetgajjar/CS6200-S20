@@ -87,7 +87,15 @@ class UrlCleaner:
         3. adds http as the protocol if not present
         4. lower case the scheme
         5. remove the default http and https port if exists
-        6.
+        6. remove www from the hostname
+        7. strip the query
+        8. strip the path
+        9. remove the fragment
+        10. remove session ids
+        11. remove default file name like index.html etc
+        12. remove duplicate slashes
+        13. remove trailing tld slash
+
         :param url:
         :return: canonical form of the given url
         """
