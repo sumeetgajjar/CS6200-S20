@@ -1,0 +1,3 @@
+[submodule "CS6200-S20-SHARED"]
+	path = CS6200-S20-SHARED
+	url = git@github.ccs.neu.edu:sumeetgajjar/CS6200-S20-SHARED.git
