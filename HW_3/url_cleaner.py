@@ -4,9 +4,9 @@ from urllib.parse import urlparse, ParseResult
 
 class UrlCleaner:
     # Url Cleaner Constants
-    _DEFAULT_FILE_NAME_TO_REMOVE_LIST = ["\\index.html", "\\index.php", "\\default.aspx", "\\index.asp", "\\index.htm"]
+    _DEFAULT_FILE_NAME_TO_REMOVE_LIST = ["index.html", "index.php", "default.aspx", "index.asp", "index.htm"]
     _SESSION_IDS_TO_REMOVE = "PHPSESSID|JSESSIONID|ASPSESSIONID|ZENID|phpsessid|jsessionid|aspsessionid|zenid"
-    _SESSION_IDS_TO_REMOVE_REGEX = re.compile("([&?;])({})=[^&]*".format(_SESSION_IDS_TO_REMOVE), re.IGNORECASE)
+    _SESSION_IDS_TO_REMOVE_REGEX = re.compile("([&?;]{,1})(%s)=[^&]*" % _SESSION_IDS_TO_REMOVE, re.IGNORECASE)
     _ESCAPE_SEQUENCES_REGEX = re.compile("([\n\t\r])", re.IGNORECASE)
     _SLASH_REGEX = re.compile("\\\\", re.IGNORECASE)
     _TRAILING_SPECIAL_CHARS_REGEX = re.compile("([&?])*$", re.IGNORECASE)
@@ -24,15 +24,15 @@ class UrlCleaner:
             return netloc
 
     def _remove_trailing_tld_slash(self, parsed_url: ParseResult) -> ParseResult:
-        if not parsed_url.query and parsed_url.path == '/':
+        if parsed_url.path == '/':
             return parsed_url._replace(path='')
         else:
             return parsed_url
 
     def _remove_trailing_default_file_names(self, parsed_url: ParseResult) -> ParseResult:
         for default_file_name in self._DEFAULT_FILE_NAME_TO_REMOVE_LIST:
-            if parsed_url.path.startswith(default_file_name):
-                return parsed_url._replace(path=parsed_url.path[len(default_file_name):])
+            if parsed_url.path.endswith(default_file_name):
+                return parsed_url._replace(path=parsed_url.path[:len(parsed_url.path) - len(default_file_name)])
 
         return parsed_url
 
@@ -58,8 +58,8 @@ class UrlCleaner:
     def _remove_escape_sequences(self, url: str) -> str:
         return self._SLASH_REGEX.sub("", self._ESCAPE_SEQUENCES_REGEX.sub("", url))
 
-    def _remove_session_ids(self, url: str) -> str:
-        return self._SESSION_IDS_TO_REMOVE_REGEX.sub("", url)
+    def _remove_session_ids(self, parsed_url: ParseResult) -> ParseResult:
+        return parsed_url._replace(query=self._SESSION_IDS_TO_REMOVE_REGEX.sub("", parsed_url.query))
 
     def _remove_trailing_special_chars(self, url: str) -> str:
         return self._TRAILING_SPECIAL_CHARS_REGEX.sub("", url)
@@ -68,10 +68,19 @@ class UrlCleaner:
         return parsed_url._replace(path=self._DUPLICATE_SLASH_REGEX.sub("/", parsed_url.path))
 
     def get_canonical_url(self, url: str) -> str:
+        """
+        It applies the following rules to the url in the given order
+        1. strips the url
+        2. removes all the escape sequences from the url
+        3. removes all the session ids from the url
+        :param url:
+        :return: canonical form of the given url
+        """
         url = url.strip()
         url = self._remove_escape_sequences(url)
-        url = self._remove_session_ids(url)
+        url = self._add_protocol_if_not_exists(url)
         parsed_url = self._clean_scheme_host_and_fragment(url)
+        parsed_url = self._remove_session_ids(parsed_url)
         parsed_url = self._remove_trailing_default_file_names(parsed_url)
         parsed_url = self._remove_duplicate_slashes(parsed_url)
         parsed_url = self._remove_trailing_tld_slash(parsed_url)
@@ -79,3 +88,10 @@ class UrlCleaner:
         url = parsed_url.geturl()
 
         return url
+
+    @classmethod
+    def _add_protocol_if_not_exists(cls, url: str) -> str:
+        if url.lower().startswith("http"):
+            return url
+        else:
+            return 'http://{}'.format(url)
