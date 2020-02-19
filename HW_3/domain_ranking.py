@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 
+from CS6200_S20_SHARED.url_cleaner import UrlCleaner
 from utils.decorators import timing
 from utils.utils import Utils
 
@@ -51,7 +52,8 @@ class DomainRankings:
         with open(self._RAW_DOMAIN_RANK_FILE_PATH, 'r') as file:
             csv_reader = csv.DictReader(file)
             for row in csv_reader:
-                self.domain_rankings[row['Domain']] = [row['GlobalRank'], row['TldRank']]
+                domain = UrlCleaner.get_domain_from_url(row['Domain'])
+                self.domain_rankings[domain] = [row['GlobalRank'], row['TldRank']]
 
     def get_domain_rank(self, canonical_domain: str) -> DomainRank:
         """
