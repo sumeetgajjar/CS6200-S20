@@ -1,1 +1,3 @@
-create database if not exists cs6200;
+CREATE DATABASE IF NOT EXISTS CS6200;
+CREATE USER IF NOT EXISTS 'cs6200'@'localhost' IDENTIFIED BY 'cs6200';
+GRANT ALL PRIVILEGES ON cs6200.* TO 'cs6200'@'localhost';
