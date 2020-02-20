@@ -12,3 +12,4 @@ dependencies:
       - beautifulsoup4==4.8.2
       - tldextract==2.2.2
       - redis==3.4.1
+      - mysql-connector==2.2.9
