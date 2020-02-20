@@ -16,10 +16,6 @@ from utils.singleton import SingletonMeta
 from utils.utils import Utils
 
 
-class UrlDistributionService:
-    pass
-
-
 class CrawlingRateLimitingService(metaclass=SingletonMeta):
 
     def __init__(self) -> None:
