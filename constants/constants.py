@@ -52,3 +52,5 @@ class Constants:
     # CRAWLING configs
     MAX_URLS_TO_CRAWL = 60000
     DEFAULT_DOMAIN_RPS = 1
+    TAGS_TO_REMOVE = ['img', 'iframe', 'script', 'stylesheet', 'map', 'progress', 'video', 'audio', 'area', 'embed']
+    ROBOTS_TXT_CACHE_SIZE = 2000
