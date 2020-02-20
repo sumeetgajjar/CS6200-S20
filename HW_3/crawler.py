@@ -3,12 +3,11 @@ import threading
 import time
 from datetime import datetime
 from functools import lru_cache
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional
 from urllib.parse import urljoin
 from urllib.robotparser import RobotFileParser
 
 import requests
-from bs4 import BeautifulSoup
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
 from constants.constants import Constants
@@ -63,13 +62,10 @@ class RobotsTxtService(metaclass=SingletonMeta):
 
 class CrawlerResponse:
 
-    def __init__(self) -> None:
-        self.url_detail: UrlDetail
-        self.raw_html: str
-        self.outlinks: List[Tuple[str, str]]
-        self.title_text: str
-        self.clean_html_text: str
-        self.headers: dict
+    def __init__(self, url_detail, raw_html, headers) -> None:
+        self.url_detail: UrlDetail = url_detail
+        self.raw_html: str = raw_html
+        self.headers: dict = headers
 
 
 class Crawler:
@@ -83,16 +79,6 @@ class Crawler:
         head_response = requests.head(url_detail.canonical_url)
         content_type = head_response.headers.get('content-type').strip()
         return content_type == 'text/html', content_type
-
-    @classmethod
-    def _clean_html(cls, soup: BeautifulSoup):
-        for tag_to_remove in Constants.TAGS_TO_REMOVE:
-            for element in soup.find_all(tag_to_remove):
-                element.clear()
-
-    @classmethod
-    def _extract_outlinks(cls, soup: BeautifulSoup) -> List[Tuple[str, str]]:
-        return [(a_element['href'], a_element.text) for a_element in soup.find_all('a') if a_element['href']]
 
     def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
         rp = self.robots_txt_service.get_robot_txt(url_detail.host)
@@ -108,20 +94,7 @@ class Crawler:
             return None
 
         response = requests.get(url_detail.canonical_url)
-        raw_html = response.text
-
-        soup = BeautifulSoup(raw_html, features=Constants.HTML_PARSER)
-        self._clean_html(soup)
-
-        crawler_response = CrawlerResponse()
-
-        crawler_response.raw_html = raw_html
-        crawler_response.outlinks = self._extract_outlinks(soup)
-        crawler_response.title_text = soup.title.text
-        crawler_response.clean_html_text = soup.text
-        crawler_response.headers = response.headers
-
-        return crawler_response
+        return CrawlerResponse(url_detail, response.text, response.headers)
 
 
 if __name__ == '__main__':
