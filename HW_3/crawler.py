@@ -3,11 +3,12 @@ import threading
 import time
 from datetime import datetime
 from functools import lru_cache
-from typing import Tuple
+from typing import Tuple, Optional
 from urllib.parse import urljoin
 from urllib.robotparser import RobotFileParser
 
 import requests
+from bs4 import BeautifulSoup
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
 from constants.constants import Constants
@@ -64,6 +65,17 @@ class RobotsTxtService(metaclass=SingletonMeta):
         return rp
 
 
+class CrawlerResponse:
+
+    def __init__(self) -> None:
+        self.url_detail = None
+        self.raw_html = None
+        self.outlinks = None
+        self.title_text = None
+        self.clean_html_text = None
+        self.headers = None
+
+
 class Crawler:
 
     def __init__(self, robots_txt_service: RobotsTxtService, rate_limiter: CrawlingRateLimitingService) -> None:
@@ -76,16 +88,44 @@ class Crawler:
         content_type = head_response.headers.get('content-type').strip()
         return content_type == 'text/html', content_type
 
-    def crawl(self, url_detail: UrlDetail) -> None:
+    @classmethod
+    def _clean_html(cls, soup: BeautifulSoup):
+        for tag_to_remove in Constants.TAGS_TO_REMOVE:
+            for element in soup.find_all(tag_to_remove):
+                element.clear()
+
+    @classmethod
+    def _extract_outlinks(cls, soup: BeautifulSoup):
+        return [a_element['href'] for a_element in soup.find_all('a') if a_element['href']]
+
+    def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
         rp = self.robots_txt_service.get_robot_txt(url_detail.host)
+        if not rp.can_fetch("*", url_detail.canonical_url):
+            logging.info("Crawling not allowed: {}".format(url_detail.canonical_url))
+            return None
+
         self.rate_limiter.might_block(url_detail, rp)
 
         is_html, content_type = self._is_html(url_detail)
-        if is_html:
-            response = requests.get(url_detail.canonical_url)
-            print(response)
-        else:
+        if not is_html:
             logging.info("Dropping non html ({}) url: {}".format(content_type, url_detail.canonical_url))
+            return None
+
+        response = requests.get(url_detail.canonical_url)
+        raw_html = response.text
+
+        soup = BeautifulSoup(raw_html, features=Constants.HTML_PARSER)
+        self._clean_html(soup)
+
+        crawler_response = CrawlerResponse()
+
+        crawler_response.raw_html = raw_html
+        crawler_response.outlinks = self._extract_outlinks(soup)
+        crawler_response.title_text = soup.title.text
+        crawler_response.clean_html_text = soup.text
+        crawler_response.headers = response.headers
+
+        return crawler_response
 
 
 if __name__ == '__main__':

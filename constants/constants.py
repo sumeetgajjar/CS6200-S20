@@ -54,3 +54,4 @@ class Constants:
     DEFAULT_CRAWL_DELAY = 1
     TAGS_TO_REMOVE = ['img', 'iframe', 'script', 'stylesheet', 'map', 'progress', 'video', 'audio', 'area', 'embed']
     ROBOTS_TXT_CACHE_SIZE = 2000
+    HTML_PARSER = 'lxml'
