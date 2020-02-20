@@ -1,3 +1,5 @@
+import time
+from datetime import datetime
 from functools import lru_cache
 from urllib.parse import urljoin
 from urllib.robotparser import RobotFileParser
@@ -13,10 +15,25 @@ class UrlDistributionService:
 class CrawlingRateLimitingService:
 
     def __init__(self) -> None:
-        pass
+        self.domains_being_crawled = {}
 
-    def might_block(self, url_detail: UrlDetail) -> None:
-        pass
+    @classmethod
+    def _get_crawl_delay(cls, rp: RobotFileParser):
+        try:
+            return int(rp.crawl_delay("*"))
+        except:
+            return Constants.DEFAULT_CRAWL_DELAY
+
+    def might_block(self, url_detail: UrlDetail, rp: RobotFileParser) -> None:
+        domain = url_detail.domain
+        last_crawling_time = self.domains_being_crawled.get(domain)
+        if last_crawling_time:
+            crawl_delay = self._get_crawl_delay(rp)
+            secs_to_wait = crawl_delay - (datetime.now() - last_crawling_time).total_seconds()
+            if secs_to_wait > 0.0001:
+                time.sleep(secs_to_wait)
+
+        self.domains_being_crawled[domain] = datetime.now()
 
 
 class RobotsTxtService:
