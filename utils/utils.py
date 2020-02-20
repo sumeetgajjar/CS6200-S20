@@ -66,8 +66,9 @@ class Utils:
 
     @classmethod
     @timing
-    def run_tasks_parallelly_in_chunks(cls, func, tasks: list, no_of_parallel_tasks: int, **kwargs):
-        with concurrent.futures.ProcessPoolExecutor(no_of_parallel_tasks) as pool:
+    def run_tasks_parallelly_in_chunks(cls, func, tasks: list, no_of_parallel_tasks: int, multi_process: bool = True,
+                                       **kwargs):
+        with cls._get_pool_executor(multi_process)(no_of_parallel_tasks) as pool:
             futures = []
             for sub_tasks in cls.split_list_into_sub_lists(tasks, no_of_parallel_tasks):
                 futures.append(pool.submit(func, sub_tasks, **kwargs))
@@ -79,9 +80,18 @@ class Utils:
         return results
 
     @classmethod
+    def _get_pool_executor(cls, multi_process: bool):
+        if multi_process:
+            executor = concurrent.futures.ProcessPoolExecutor
+        else:
+            executor = concurrent.futures.ThreadPoolExecutor
+        return executor
+
+    @classmethod
     @timing
-    def run_tasks_parallelly(cls, func, tasks: list, no_of_parallel_tasks: int, **kwargs):
-        with concurrent.futures.ProcessPoolExecutor(no_of_parallel_tasks) as pool:
+    def run_tasks_parallelly(cls, func, tasks: list, no_of_parallel_tasks: int, multi_process: bool = True, **kwargs):
+
+        with cls._get_pool_executor(multi_process)(no_of_parallel_tasks) as pool:
             futures = []
             for task in tasks:
                 futures.append(pool.submit(func, task, **kwargs))
