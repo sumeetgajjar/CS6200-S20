@@ -3,7 +3,7 @@ import threading
 import time
 from datetime import datetime
 from functools import lru_cache
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 from urllib.parse import urljoin
 from urllib.robotparser import RobotFileParser
 
@@ -68,12 +68,12 @@ class RobotsTxtService(metaclass=SingletonMeta):
 class CrawlerResponse:
 
     def __init__(self) -> None:
-        self.url_detail = None
-        self.raw_html = None
-        self.outlinks = None
-        self.title_text = None
-        self.clean_html_text = None
-        self.headers = None
+        self.url_detail: UrlDetail
+        self.raw_html: str
+        self.outlinks: List[Tuple[str, str]]
+        self.title_text: str
+        self.clean_html_text: str
+        self.headers: dict
 
 
 class Crawler:
@@ -95,8 +95,8 @@ class Crawler:
                 element.clear()
 
     @classmethod
-    def _extract_outlinks(cls, soup: BeautifulSoup):
-        return [a_element['href'] for a_element in soup.find_all('a') if a_element['href']]
+    def _extract_outlinks(cls, soup: BeautifulSoup) -> List[Tuple[str, str]]:
+        return [(a_element['href'], a_element.text) for a_element in soup.find_all('a') if a_element['href']]
 
     def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
         rp = self.robots_txt_service.get_robot_txt(url_detail.host)
@@ -108,7 +108,7 @@ class Crawler:
 
         is_html, content_type = self._is_html(url_detail)
         if not is_html:
-            logging.info("Dropping non html ({}) url: {}".format(content_type, url_detail.canonical_url))
+            logging.info("Dropping non-html({}) url: {}".format(content_type, url_detail.canonical_url))
             return None
 
         response = requests.get(url_detail.canonical_url)
