@@ -33,3 +33,16 @@ class Constants:
 
     # Tokenizer configs
     CUSTOM_TOKENIZER_NAME = 'CustomTokenizer'
+
+    # MySQL config
+    MYSQL_HOST = '127.0.0.1'
+    MYSQL_PORT = 3306
+    MYSQL_DATABASE = 'cs6200'
+    MYSQL_USERNAME = 'cs6200'
+    MYSQL_PASSWORD = 'cs6200'
+
+    # Redis Config
+    REDIS_HOST = '127.0.0.1'
+    REDIS_PORT = 6379
+    MYSQL_POOL_NAME = 'cs6200'
+    REDIS_SOCKET_TIMEOUT = 10
