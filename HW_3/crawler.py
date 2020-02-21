@@ -11,6 +11,7 @@ import requests
 from retrying import retry
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
+from HW_3.beans import CrawlerResponse
 from HW_3.filter import UrlFilteringService
 from constants.constants import Constants
 from utils.singleton import SingletonMeta
@@ -62,16 +63,6 @@ class RobotsTxtService(metaclass=SingletonMeta):
         return rp
 
 
-class CrawlerResponse:
-
-    def __init__(self, url_detail, raw_html, headers) -> None:
-        self.url_detail: UrlDetail = url_detail
-        self.raw_html: str = raw_html
-        self.headers: dict = headers
-        self.redirected: bool = False
-        self.redirected_url: Optional[str] = None
-
-
 class Crawler:
 
     def __init__(self, robots_txt_service: RobotsTxtService, rate_limiter: CrawlingRateLimitingService,
@@ -87,9 +78,6 @@ class Crawler:
 
         content_type = head_response.headers.get('content-type').strip()
         new_url_detail = self.url_cleaner.get_canonical_url(head_response.url)
-        if url_detail.canonical_url != new_url_detail.canonical_url:
-            logging.info("Url redirection detected, changing url detail: {}->{}".format(url_detail.canonical_url,
-                                                                                        new_url_detail.canonical_url))
 
         return 'text/html' in content_type, content_type, new_url_detail
 
@@ -102,21 +90,28 @@ class Crawler:
 
         self.rate_limiter.might_block(url_detail, rp)
 
-        is_html, content_type, url_detail = self._is_html(url_detail)
+        is_html, content_type, new_url_detail = self._is_html(url_detail)
         if not is_html:
             logging.info("Dropping non-html({}) url: {}".format(content_type, url_detail.canonical_url))
             return None
 
-        if self.url_filtering_service.is_crawled(url_detail):
-            return None
+        crawler_response = CrawlerResponse(url_detail)
+        if url_detail.canonical_url != new_url_detail.canonical_url:
+            logging.info("Url redirection detected, changing url detail: {}->{}".format(url_detail.canonical_url,
+                                                                                        new_url_detail.canonical_url))
+
+            crawler_response.redirected = True
+            crawler_response.redirected_url = new_url_detail
+
+            url_detail = new_url_detail
+            if self.url_filtering_service.is_crawled(url_detail):
+                return None
 
         response = requests.get(url_detail.canonical_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
         response.raise_for_status()
 
-        crawler_response = CrawlerResponse(url_detail, response.text, response.headers)
-        if response.history:
-            crawler_response.redirected = True
-            crawler_response.redirected_url = response.url
+        crawler_response.headers = response.headers
+        crawler_response.raw_html = response.text
 
         return crawler_response
 
@@ -131,10 +126,10 @@ class Crawler:
 
 if __name__ == '__main__':
     Utils.configure_logging()
-    a = UrlCleaner().get_canonical_url("docs.python.org/3/library/urllib.request.html")
+    a = UrlCleaner().get_canonical_url("https://docs.python.org/3/library/urllib.request.html")
     c = Crawler(RobotsTxtService(), CrawlingRateLimitingService(), UrlCleaner(), UrlFilteringService())
     c.crawl(a)
 
     a = UrlCleaner().get_canonical_url(
-        "user-media-prod-cdn.itsre-sumo.mozilla.net/uploads/products/2018-10-03-20-10-50-e35beb.png")
+        "https://user-media-prod-cdn.itsre-sumo.mozilla.net/uploads/products/2018-10-03-20-10-50-e35beb.png")
     c.crawl(a)

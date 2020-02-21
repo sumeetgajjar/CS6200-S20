@@ -6,9 +6,9 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
-from HW_3.beans import Outlink
+from HW_3.beans import Outlink, CrawlerResponse
 from HW_3.connection_factory import ConnectionFactory
-from HW_3.crawler import Crawler, RobotsTxtService, CrawlingRateLimitingService, CrawlerResponse
+from HW_3.crawler import Crawler, RobotsTxtService, CrawlingRateLimitingService
 from HW_3.factory import Factory
 from HW_3.link_graph import LinkGraph
 from constants.constants import Constants
@@ -98,6 +98,15 @@ class UrlProcessor:
         return Utils.int(redis_conn.get(Constants.URL_PROCESSOR_BATCH_SIZE_KEY),
                          Constants.URL_PROCESSOR_DEFAULT_BATCH_SIZE)
 
+    def _remove_crawled_urls_from_redis_queue(self, crawler_responses: List[CrawlerResponse], redis_conn):
+        crawled_urls = []
+        for crawler_response in crawler_responses:
+            if crawler_response:
+                crawled_urls.append(crawler_response.url_detail.canonical_url)
+
+        if crawled_urls:
+            redis_conn.zrem(self.redis_queue_name, crawled_urls)
+
     def start(self):
         while True:
             with ConnectionFactory.create_redis_connection() as redis_conn:
@@ -107,15 +116,18 @@ class UrlProcessor:
                 urls_to_process = redis_conn.zrevrange(self.redis_queue_name, 0, urls_batch_size, withscores=True)
                 if urls_to_process:
                     url_details = [self.url_cleaner.get_canonical_url(url) for url in urls_to_process]
-                    if url_details:
+                    filtered_result = self.url_filtering_service.filter_already_crawled_links(url_details)
+                    filtered_url_details = filtered_result.filtered
+                    if filtered_url_details:
                         crawler_responses = Utils.run_tasks_parallelly(self._process_crawler_response,
-                                                                       url_details,
+                                                                       filtered_url_details,
                                                                        Constants.NO_OF_THREADS_PER_URL_PROCESSOR)
+
+                        self._remove_crawled_urls_from_redis_queue(crawler_responses, redis_conn)
 
                         for crawler_response in crawler_responses:
                             self._process_crawler_response(crawler_response)
 
-                    # TODO remove url_details from redis queue since we do zrevrange
                 else:
                     logging.info('No urls to process, {} sleeping for 10 sec'.format(self.processor_id))
                     time.sleep(Constants.URL_PROCESSOR_SLEEP_TIME)

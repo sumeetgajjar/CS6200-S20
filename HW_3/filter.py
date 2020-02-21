@@ -3,10 +3,10 @@ import json
 import logging
 import os
 import sys
-from typing import List, Tuple
+from typing import List
 
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner, UrlDetail
-from HW_3.beans import DomainRank, Outlink
+from HW_3.beans import DomainRank, Outlink, FilteredResult
 from utils.decorators import timing
 from utils.utils import Utils
 
@@ -64,11 +64,12 @@ class UrlFilteringService:
     # TODO contact us and other common stuff
     # TODO ads
 
-    def is_blacklisted_url(self, url_detail: UrlDetail) -> bool:
-        pass
-
-    def filter_outlinks(self, outlinks: List[Outlink]) -> Tuple[List[Outlink], List[Outlink]]:
-        return outlinks, []
+    def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
+        # todo do not remove already visited links
+        return FilteredResult(outlinks, [])
 
     def is_crawled(self, url_detail: UrlDetail) -> bool:
-        pass
+        return len(self.filter_already_crawled_links([url_detail]).filtered) == 1
+
+    def filter_already_crawled_links(self, url_details: List[UrlDetail]) -> FilteredResult:
+        return FilteredResult(url_details, [])
