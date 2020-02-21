@@ -1,7 +1,7 @@
 from typing import List
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
-from HW_3.url_processor import Outlink
+from HW_3.beans import Outlink
 from utils.singleton import SingletonMeta
 
 

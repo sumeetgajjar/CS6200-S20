@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
+from HW_3.beans import Outlink
 from HW_3.connection_factory import ConnectionFactory
 from HW_3.crawler import Crawler, RobotsTxtService, CrawlingRateLimitingService, CrawlerResponse
 from HW_3.factory import Factory
@@ -28,23 +29,17 @@ class UrlMapper:
             # TODO write logic to map url_details to processor
 
 
-class Outlink:
-
-    def __init__(self, url_detail: UrlDetail, anchor_text: str) -> None:
-        self.url_detail: UrlDetail = url_detail
-        self.anchor_text: str = anchor_text
-
-
 class UrlProcessor:
 
     def __init__(self, processor_id, redis_queue_name) -> None:
         self.processor_id = processor_id
         self.redis_queue_name = redis_queue_name
         self.redis_processing_queue = '{}{}{}'.format(redis_queue_name, Constants.REDIS_SEPARATOR, 'PROCESSING')
-        self.crawler = Crawler(RobotsTxtService(), CrawlingRateLimitingService())
         self.url_cleaner = Factory.create_url_cleaner()
-        self.frontier_manager = Factory.create_frontier_manager()
         self.url_filtering_service = Factory.create_url_filtering_service()
+        self.crawler = Crawler(RobotsTxtService(), CrawlingRateLimitingService(),
+                               self.url_cleaner, self.url_filtering_service)
+        self.frontier_manager = Factory.create_frontier_manager()
 
     @classmethod
     def _clean_html(cls, soup: BeautifulSoup):

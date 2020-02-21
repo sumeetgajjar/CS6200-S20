@@ -11,7 +11,7 @@ import requests
 from retrying import retry
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
-from HW_3.factory import Factory
+from HW_3.filter import UrlFilteringService
 from constants.constants import Constants
 from utils.singleton import SingletonMeta
 from utils.utils import Utils
@@ -74,11 +74,12 @@ class CrawlerResponse:
 
 class Crawler:
 
-    def __init__(self, robots_txt_service: RobotsTxtService, rate_limiter: CrawlingRateLimitingService) -> None:
+    def __init__(self, robots_txt_service: RobotsTxtService, rate_limiter: CrawlingRateLimitingService,
+                 url_cleaner: UrlCleaner, url_filtering_service: UrlFilteringService) -> None:
         self.robots_txt_service = robots_txt_service
         self.rate_limiter = rate_limiter
-        self.url_cleaner = Factory.create_url_cleaner()
-        self.url_filtering_service = Factory.create_url_filtering_service()
+        self.url_cleaner = url_cleaner
+        self.url_filtering_service = url_filtering_service
 
     def _is_html(self, url_detail: UrlDetail) -> Tuple[bool, str, UrlDetail]:
         head_response = requests.head(url_detail.canonical_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
@@ -130,10 +131,10 @@ class Crawler:
 
 if __name__ == '__main__':
     Utils.configure_logging()
-    a = UrlCleaner().get_canonical_url("https://docs.python.org/3/library/urllib.request.html")
-    c = Crawler(RobotsTxtService(), CrawlingRateLimitingService())
+    a = UrlCleaner().get_canonical_url("docs.python.org/3/library/urllib.request.html")
+    c = Crawler(RobotsTxtService(), CrawlingRateLimitingService(), UrlCleaner(), UrlFilteringService())
     c.crawl(a)
 
     a = UrlCleaner().get_canonical_url(
-        "https://user-media-prod-cdn.itsre-sumo.mozilla.net/uploads/products/2018-10-03-20-10-50-e35beb.png")
+        "user-media-prod-cdn.itsre-sumo.mozilla.net/uploads/products/2018-10-03-20-10-50-e35beb.png")
     c.crawl(a)
