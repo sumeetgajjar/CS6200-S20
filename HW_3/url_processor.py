@@ -1,6 +1,7 @@
 import logging
 import time
-from typing import List, Tuple
+from typing import List
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
@@ -27,6 +28,13 @@ class UrlMapper:
             # TODO write logic to map url_details to processor
 
 
+class Outlink:
+
+    def __init__(self, url_detail: UrlDetail, anchor_text: str) -> None:
+        self.url_detail: UrlDetail = url_detail
+        self.anchor_text: str = anchor_text
+
+
 class UrlProcessor:
 
     def __init__(self, processor_id, redis_queue_name) -> None:
@@ -44,17 +52,33 @@ class UrlProcessor:
             for element in soup.find_all(tag_to_remove):
                 element.clear()
 
-    def _extract_outlinks(self, soup: BeautifulSoup) -> List[Tuple[UrlDetail, str]]:
-        return [(self.url_cleaner.get_canonical_url(a_element['href']), a_element.text)
-                for a_element in soup.find_all('a') if a_element['href']]
+    @classmethod
+    def _is_absolute(cls, url):
+        return bool(urlparse(url).netloc)
+
+    def _extract_outlinks(self, in_link: UrlDetail, soup: BeautifulSoup) -> List[Outlink]:
+        outlinks = []
+        for a_element in soup.find_all('a'):
+            outlink_url = a_element['href']
+            if self._is_absolute(outlink_url):
+                outlink_url_detail = self.url_cleaner.transform_relative_url_to_absolute_url(in_link.canonical_url,
+                                                                                             outlink_url)
+            else:
+                outlink_url_detail = self.url_cleaner.get_canonical_url(outlink_url)
+
+            outlink = Outlink(outlink_url_detail, a_element.text)
+            outlinks.append(outlink)
+
+        return outlinks
 
     @classmethod
-    def _update_link_graph(cls, curr_url_detail: UrlDetail, outlinks: List[Tuple[UrlDetail, str]]) -> None:
+    def _update_link_graph(cls, curr_url_detail: UrlDetail, outlinks: List[Outlink]) -> None:
         graph = LinkGraph()
         for outlink_tup in outlinks:
-            graph.add_edge(curr_url_detail, outlink_tup[0])
+            pass
+            # graph.add_edge(curr_url_detail, outlink_tup[0])
 
-    def _filter_outlinks(self, outlinks: List[Tuple[UrlDetail, str]]) -> List[Tuple[UrlDetail, str]]:
+    def _filter_outlinks(self, outlinks: List[Outlink]) -> List[Outlink]:
         filtered_urls, removed_urls = self.url_filtering_service.filter_outlinks(outlinks)
         # TODO log removed urls
         return filtered_urls
@@ -64,7 +88,7 @@ class UrlProcessor:
         try:
             soup = BeautifulSoup(crawler_response.raw_html, features=Constants.HTML_PARSER)
             cleaned_text = soup.text
-            outlinks = self._extract_outlinks(soup)
+            outlinks = self._extract_outlinks(crawler_response.url_detail, soup)
             self._update_link_graph(crawler_response.url_detail, outlinks)
             filtered_outlinks = self._filter_outlinks(outlinks)
             self.frontier_manager.add_to_queue(filtered_outlinks)

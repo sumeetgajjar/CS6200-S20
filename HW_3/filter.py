@@ -6,6 +6,7 @@ import sys
 from typing import List, Tuple
 
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner, UrlDetail
+from HW_3.url_processor import Outlink
 from utils.decorators import timing
 from utils.utils import Utils
 
@@ -77,8 +78,7 @@ class UrlFilteringService:
     def is_blacklisted_url(self, url_detail: UrlDetail) -> bool:
         pass
 
-    def filter_outlinks(self, outlinks: List[Tuple[UrlDetail, str]]) -> Tuple[List[Tuple[UrlDetail, str]],
-                                                                              List[Tuple[UrlDetail, str]]]:
+    def filter_outlinks(self, outlinks: List[Outlink]) -> Tuple[List[Outlink], List[Outlink]]:
         return outlinks, []
 
     def is_crawled(self, url_detail: UrlDetail) -> bool:
