@@ -68,6 +68,7 @@ class UrlProcessor:
 
     @classmethod
     def _update_link_graph(cls, curr_url_detail: UrlDetail, outlinks: List[Outlink]) -> None:
+        # TODO added edge between old url and new url if there is any redirection
         graph = LinkGraph()
         for outlink_tup in outlinks:
             pass
