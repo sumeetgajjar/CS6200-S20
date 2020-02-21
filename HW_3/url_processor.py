@@ -13,6 +13,20 @@ from constants.constants import Constants
 from utils.utils import Utils
 
 
+class UrlMapper:
+
+    def __init__(self) -> None:
+        self.frontier_manager = Factory.create_frontier_manager()
+
+    def start(self):
+        with ConnectionFactory.create_redis_connection() as redis_conn:
+            url_processor_batch_size = UrlProcessor.get_batch_size(redis_conn)
+            url_to_crawl_batch_size = url_processor_batch_size * Constants.NO_OF_URL_PROCESSORS
+            url_details = self.frontier_manager.get_urls_to_crawl(url_to_crawl_batch_size)
+
+            # TODO write logic to map url_details to processor
+
+
 class UrlProcessor:
 
     def __init__(self, processor_id, redis_queue_name) -> None:
@@ -60,10 +74,15 @@ class UrlProcessor:
             logging.error("Error occurred while crawling: {}".format(crawler_response.url_detail.canonical_url),
                           exc_info=True)
 
+    @classmethod
+    def get_batch_size(cls, redis_conn) -> int:
+        return Utils.int(redis_conn.get(Constants.URL_PROCESSOR_BATCH_SIZE_KEY),
+                         Constants.URL_PROCESSOR_DEFAULT_BATCH_SIZE)
+
     def start(self):
         while True:
             with ConnectionFactory.create_redis_connection() as redis_conn:
-                urls_batch_size = Utils.int(redis_conn.get(Constants.URLS_BATCH_SIZE_KEY), Constants.URLS_BATCH_SIZE)
+                urls_batch_size = self.get_batch_size(redis_conn)
                 urls_batch_size -= 1
 
                 urls_to_process = redis_conn.zrevrange(self.redis_queue_name, 0, urls_batch_size, withscores=True)
