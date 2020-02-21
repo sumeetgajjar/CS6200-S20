@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 
-from CS6200_S20_SHARED.url_cleaner import UrlCleaner
+from CS6200_S20_SHARED.url_cleaner import UrlCleaner, UrlDetail
 from utils.decorators import timing
 from utils.utils import Utils
 
@@ -65,3 +65,12 @@ class DomainRanker:
             return DomainRank(canonical_domain, domain_rank_info[0], domain_rank_info[1])
         else:
             return DomainRank(canonical_domain, self._DEFAULT_DOMAIN_RANK, self._DEFAULT_DOMAIN_RANK)
+
+
+class UrlFilteringService:
+
+    # TODO contact us and other common stuff
+    # TODO ads
+
+    def is_blacklisted_url(self, url_detail: UrlDetail) -> bool:
+        pass
