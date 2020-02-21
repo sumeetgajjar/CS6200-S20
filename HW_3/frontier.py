@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
 from utils.singleton import SingletonMeta
@@ -16,5 +16,5 @@ class FrontierManager(metaclass=SingletonMeta):
         self.queue = self.queue[len(batch):]
         return batch
 
-    def add_to_queue(self, urls_to_queue: List[UrlDetail]):
-        self.queue.extend(urls_to_queue)
+    def add_to_queue(self, outlinks: List[Tuple[UrlDetail, str]]):
+        self.queue.extend(outlinks)

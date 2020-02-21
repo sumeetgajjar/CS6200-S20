@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from typing import List, Tuple
 
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner, UrlDetail
 from utils.decorators import timing
@@ -67,6 +68,7 @@ class DomainRanker:
             return DomainRank(canonical_domain, self._DEFAULT_DOMAIN_RANK, self._DEFAULT_DOMAIN_RANK)
 
 
+# todo check if singleton required
 class UrlFilteringService:
 
     # TODO contact us and other common stuff
@@ -74,6 +76,10 @@ class UrlFilteringService:
 
     def is_blacklisted_url(self, url_detail: UrlDetail) -> bool:
         pass
+
+    def filter_outlinks(self, outlinks: List[Tuple[UrlDetail, str]]) -> Tuple[List[Tuple[UrlDetail, str]],
+                                                                              List[Tuple[UrlDetail, str]]]:
+        return outlinks, []
 
     def is_crawled(self, url_detail: UrlDetail) -> bool:
         pass
