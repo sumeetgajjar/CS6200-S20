@@ -135,7 +135,6 @@ class UrlProcessor:
         # TODO log removed urls
         return filtered_urls
 
-    # TODO add the retryer here
     def _process_crawler_response(self, crawler_response: CrawlerResponse):
         try:
             soup = BeautifulSoup(crawler_response.raw_html, features=Constants.HTML_PARSER)
