@@ -56,6 +56,7 @@ class Constants:
     TAGS_TO_REMOVE = ['img', 'iframe', 'script', 'stylesheet', 'map', 'progress', 'video', 'audio', 'area', 'embed']
     ROBOTS_TXT_CACHE_SIZE = 2000
     HTML_PARSER = 'lxml'
+    CRAWLER_READ_TIMEOUT = 10
 
     # Url Processor configs
     URLS_BATCH_SIZE_KEY = 'URLS_BATCH_SIZE'

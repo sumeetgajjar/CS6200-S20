@@ -76,7 +76,7 @@ class Crawler:
 
     @classmethod
     def _is_html(cls, url_detail: UrlDetail) -> Tuple[bool, str]:
-        head_response = requests.head(url_detail.canonical_url)
+        head_response = requests.head(url_detail.canonical_url, timeout=Constants.CRAWLER_READ_TIMEOUT)
         head_response.raise_for_status()
 
         content_type = head_response.headers.get('content-type').strip()
@@ -95,9 +95,9 @@ class Crawler:
             logging.info("Dropping non-html({}) url: {}".format(content_type, url_detail.canonical_url))
             return None
 
-        response = requests.get(url_detail.canonical_url)
+        response = requests.get(url_detail.canonical_url, timeout=Constants.CRAWLER_READ_TIMEOUT)
         response.raise_for_status()
-        
+
         return CrawlerResponse(url_detail, response.text, response.headers)
 
 
