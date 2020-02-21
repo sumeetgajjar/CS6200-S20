@@ -46,6 +46,7 @@ class Constants:
     REDIS_PORT = 6379
     MYSQL_POOL_NAME = 'cs6200'
     REDIS_SOCKET_TIMEOUT = 10
+    REDIS_SEPARATOR = "::"
 
     TOPIC_KEYWORDS = {'1521', 'AMERICAN', 'INDEPENDENCE', 'WAR'}
 
@@ -55,3 +56,7 @@ class Constants:
     TAGS_TO_REMOVE = ['img', 'iframe', 'script', 'stylesheet', 'map', 'progress', 'video', 'audio', 'area', 'embed']
     ROBOTS_TXT_CACHE_SIZE = 2000
     HTML_PARSER = 'lxml'
+
+    # Url Processor configs
+    URLS_BATCH_SIZE_KEY = 'URLS_BATCH_SIZE'
+    URLS_BATCH_SIZE = 20

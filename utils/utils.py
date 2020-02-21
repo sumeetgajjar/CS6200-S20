@@ -121,3 +121,10 @@ class Utils:
     @classmethod
     def set_gc_debug_flags(cls):
         gc.set_debug(gc.DEBUG_STATS)
+
+    @classmethod
+    def int(cls, input_str: str, default_value: int = None) -> int:
+        try:
+            return int(input_str)
+        except:
+            return default_value
