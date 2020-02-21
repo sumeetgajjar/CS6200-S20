@@ -33,7 +33,7 @@ def init_url_mapper(url_processor_queue_names: List[str]):
 
 
 def url_mapper_init_wrapper(url_processor_queue_names):
-    url_mapper_process = Process(target=init_url_mapper, args=(url_processor_queue_names))
+    url_mapper_process = Process(target=init_url_mapper, args=url_processor_queue_names)
     url_mapper_process.start()
     return url_mapper_process
 
