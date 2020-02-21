@@ -74,3 +74,6 @@ class UrlFilteringService:
 
     def is_blacklisted_url(self, url_detail: UrlDetail) -> bool:
         pass
+
+    def is_crawled(self, url_detail: UrlDetail) -> bool:
+        pass

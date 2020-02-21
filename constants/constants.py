@@ -58,6 +58,7 @@ class Constants:
     HTML_PARSER = 'lxml'
     # connection timeout and read timeout
     CRAWLER_TIMEOUT = (3, 20)
+    CRAWLER_RETRY = 2
 
     # Url Processor configs
     URLS_BATCH_SIZE_KEY = 'URLS_BATCH_SIZE'

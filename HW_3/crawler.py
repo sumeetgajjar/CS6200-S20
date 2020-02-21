@@ -8,8 +8,10 @@ from urllib.parse import urljoin
 from urllib.robotparser import RobotFileParser
 
 import requests
+from retrying import retry
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
+from HW_3.factory import Factory
 from constants.constants import Constants
 from utils.singleton import SingletonMeta
 from utils.utils import Utils
@@ -75,16 +77,23 @@ class Crawler:
     def __init__(self, robots_txt_service: RobotsTxtService, rate_limiter: CrawlingRateLimitingService) -> None:
         self.robots_txt_service = robots_txt_service
         self.rate_limiter = rate_limiter
+        self.url_cleaner = Factory.create_url_cleaner()
+        self.url_filtering_service = Factory.create_url_filtering_service()
 
-    @classmethod
-    def _is_html(cls, url_detail: UrlDetail) -> Tuple[bool, str]:
+    def _is_html(self, url_detail: UrlDetail) -> Tuple[bool, str, UrlDetail]:
         head_response = requests.head(url_detail.canonical_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
         head_response.raise_for_status()
 
         content_type = head_response.headers.get('content-type').strip()
-        return content_type == 'text/html', content_type
+        new_url_detail = self.url_cleaner.get_canonical_url(head_response.url)
+        if url_detail.canonical_url != new_url_detail.canonical_url:
+            logging.info("Url redirection detected, changing url detail: {}->{}".format(url_detail.canonical_url,
+                                                                                        new_url_detail.canonical_url))
 
-    def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
+        return 'text/html' in content_type, content_type, new_url_detail
+
+    @retry(stop_max_attempt_number=Constants.CRAWLER_RETRY, retry_on_exception=True)
+    def _crawl_helper(self, url_detail: UrlDetail):
         rp = self.robots_txt_service.get_robot_txt(url_detail.host)
         if not rp.can_fetch("*", url_detail.canonical_url):
             logging.info("Crawling not allowed: {}".format(url_detail.canonical_url))
@@ -92,9 +101,12 @@ class Crawler:
 
         self.rate_limiter.might_block(url_detail, rp)
 
-        is_html, content_type = self._is_html(url_detail)
+        is_html, content_type, url_detail = self._is_html(url_detail)
         if not is_html:
             logging.info("Dropping non-html({}) url: {}".format(content_type, url_detail.canonical_url))
+            return None
+
+        if self.url_filtering_service.is_crawled(url_detail):
             return None
 
         response = requests.get(url_detail.canonical_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
@@ -106,6 +118,14 @@ class Crawler:
             crawler_response.redirected_url = response.url
 
         return crawler_response
+
+    def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
+        try:
+            return self._crawl_helper(url_detail)
+        except:
+            logging.error("Error while crawling: {}".format(url_detail.canonical_url), exc_info=True)
+
+        return None
 
 
 if __name__ == '__main__':

@@ -1,9 +1,10 @@
 from typing import List
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
+from utils.singleton import SingletonMeta
 
 
-class FrontierManager:
+class FrontierManager(metaclass=SingletonMeta):
 
     def __init__(self, seed_urls: List[UrlDetail]) -> None:
         self.seed_urls = seed_urls
