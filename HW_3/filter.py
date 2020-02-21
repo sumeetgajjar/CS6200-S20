@@ -20,24 +20,19 @@ class DomainRank:
         return "Domain:{}, GlobalRank:{}, TldRank:{}".format(self.domain, self.global_rank, self.tld_rank)
 
 
-class DomainRankings:
+class DomainRanker:
     _DEFAULT_DOMAIN_RANK = sys.maxsize
     _RAW_DOMAIN_RANK_FILE_PATH = '/home/sumeet/PycharmProjects/CS6200-S20/CS6200_S20_SHARED/domain_rankings.csv'
     _PROCESSED_DOMAIN_RANK_FILE_NAME = 'processed_domain_ranking.json'
     _PROCESSED_DOMAIN_RANK_FILE_PATH = '{}/{}'.format(Utils.get_data_dir_abs_path(), _PROCESSED_DOMAIN_RANK_FILE_NAME)
 
-    def __init__(self) -> None:
+    def __init__(self, override_old_data=False) -> None:
         self.domain_rankings = {}
-        self._init_domain_rankings()
+        self._init_domain_rankings(override_old_data)
 
     @timing
-    def _init_domain_rankings(self):
-        if os.path.isfile(self._PROCESSED_DOMAIN_RANK_FILE_PATH):
-            logging.info("Processed Domain rank exists")
-            logging.info("Reading the processed domain ranks from json")
-            with open(self._PROCESSED_DOMAIN_RANK_FILE_PATH, 'r') as file:
-                self.domain_rankings = json.load(file)
-        else:
+    def _init_domain_rankings(self, override_old_data):
+        if override_old_data or not os.path.isfile(self._PROCESSED_DOMAIN_RANK_FILE_PATH):
             logging.info("Processing Domain ranks")
             self._read_domain_ranks()
 
@@ -46,6 +41,11 @@ class DomainRankings:
                 json.dump(self.domain_rankings, file)
 
             logging.info("Domain ranks processed")
+        else:
+            logging.info("Processed Domain rank exists")
+            logging.info("Reading the processed domain ranks from json")
+            with open(self._PROCESSED_DOMAIN_RANK_FILE_PATH, 'r') as file:
+                self.domain_rankings = json.load(file)
 
     @timing
     def _read_domain_ranks(self):
@@ -53,7 +53,7 @@ class DomainRankings:
             csv_reader = csv.DictReader(file)
             for row in csv_reader:
                 domain = UrlCleaner.get_domain_from_url(row['Domain'])
-                self.domain_rankings[domain] = [row['GlobalRank'], row['TldRank']]
+                self.domain_rankings[domain] = [int(row['GlobalRank']), int(row['TldRank'])]
 
     def get_domain_rank(self, canonical_domain: str) -> DomainRank:
         """
@@ -65,8 +65,3 @@ class DomainRankings:
             return DomainRank(canonical_domain, domain_rank_info[0], domain_rank_info[1])
         else:
             return DomainRank(canonical_domain, self._DEFAULT_DOMAIN_RANK, self._DEFAULT_DOMAIN_RANK)
-
-
-if __name__ == '__main__':
-    Utils.configure_logging()
-    print(DomainRankings().get_domain_rank('wikipedia.org'))
