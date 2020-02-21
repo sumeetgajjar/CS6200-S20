@@ -3,11 +3,15 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime
 from typing import List
+from urllib.robotparser import RobotFileParser
 
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner, UrlDetail
 from HW_3.beans import DomainRank, Outlink, FilteredResult
+from constants.constants import Constants
 from utils.decorators import timing
+from utils.singleton import SingletonMeta
 from utils.utils import Utils
 
 
@@ -73,3 +77,45 @@ class UrlFilteringService:
 
     def filter_already_crawled_links(self, url_details: List[UrlDetail]) -> FilteredResult:
         return FilteredResult(url_details, [])
+
+
+class CrawlingRateLimitingService(metaclass=SingletonMeta):
+
+    def __init__(self) -> None:
+        self.domains_being_crawled = {}
+
+    @classmethod
+    def _get_crawl_delay(cls, rp: RobotFileParser) -> int:
+        crawl_delay = rp.crawl_delay("*")
+        if crawl_delay:
+            try:
+                return int(crawl_delay)
+            except:
+                logging.error("Error occurred while parsing crawl_delay: {}".format(crawl_delay), exc_info=True)
+                pass
+
+        return Constants.DEFAULT_CRAWL_DELAY
+
+    def _is_rate_limited(self, url_detail: UrlDetail) -> bool:
+        rate_limited = False
+        domain = url_detail.domain
+        last_crawling_time = self.domains_being_crawled.get(domain)
+        if last_crawling_time:
+            rp = Utils.get_robots_txt(url_detail.host)
+            crawl_delay = self._get_crawl_delay(rp)
+            secs_to_wait = crawl_delay - (datetime.now() - last_crawling_time).total_seconds()
+            if secs_to_wait > 0.0001:
+                rate_limited = True
+
+        self.domains_being_crawled[domain] = datetime.now()
+        return rate_limited
+
+    def filter(self, url_details: List[UrlDetail]) -> FilteredResult:
+        filtered_result = FilteredResult([], [])
+        for url_detail in url_details:
+            if self._is_rate_limited(url_detail):
+                filtered_result.removed.append(url_detail)
+            else:
+                filtered_result.filtered.append(url_detail)
+
+        return filtered_result

@@ -4,7 +4,10 @@ import gc
 import logging
 import math
 import uuid
+from functools import lru_cache
 from logging import getLogger, Formatter, StreamHandler
+from urllib.parse import urljoin
+from urllib.robotparser import RobotFileParser
 
 from HW_1.es_index_config import EsIndexConfig
 from HW_1.es_utils import EsUtils
@@ -128,3 +131,13 @@ class Utils:
             return int(input_str)
         except:
             return default_value
+
+    @classmethod
+    @lru_cache(maxsize=Constants.ROBOTS_TXT_CACHE_SIZE)
+    def get_robots_txt(cls, host: str) -> RobotFileParser:
+        robots_txt_url = urljoin(host, Constants.ROBOTS_TXT_FILE_NAME)
+        logging.info("Fetching robots.txt: {}".format(robots_txt_url))
+        rp = RobotFileParser()
+        rp.set_url(robots_txt_url)
+        rp.read()
+        return rp
