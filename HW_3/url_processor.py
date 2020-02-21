@@ -96,6 +96,7 @@ class UrlProcessor:
                         for crawler_response in crawler_responses:
                             self._process_crawler_response(crawler_response)
 
+                    # TODO remove url_details from redis queue since we do zrevrange
                 else:
                     logging.info('No urls to process, {} sleeping for 10 sec'.format(self.processor_id))
                     time.sleep(Constants.URL_PROCESSOR_SLEEP_TIME)
