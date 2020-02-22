@@ -26,11 +26,13 @@ BEGIN
     select url
     where not exists(select 1 from cs6200.url_ids as a where a.url = url);
 
-    select LAST_INSERT_ID() as url_id;
+    select a.id as url_id
+    from cs6200.url_ids as a
+    where a.url = url;
 END $$
 DELIMITER ;
 
-call sp_insert_url(@url := 'testing_sumeet.com');;
+call sp_insert_url(@url := '1.testing_sumeet.comasd');
 select *
 from cs6200.url_ids;
 

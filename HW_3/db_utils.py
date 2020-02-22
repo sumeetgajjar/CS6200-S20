@@ -1,2 +1,0 @@
-class MysqlHelper:
-    pass
