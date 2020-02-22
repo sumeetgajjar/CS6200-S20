@@ -218,22 +218,3 @@ DELIMITER ;
 call sp_insert_url(@url := '1.testing_sumeet.comasd');
 select *
 from cs6200.url_ids;
-
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS `sp_get_crawled_urls` $$
-CREATE
-    PROCEDURE `sp_get_crawled_urls`(IN url_id int)
-BEGIN
-    /*
-    call sp_get_crawled_urls(@url_id:=1);
-    */
-    select a.url_id
-    from crawled_urls as a
-    where a.url_id = url_id;
-END $$
-DELIMITER ;
-
-call sp_get_crawled_urls(@url_id := 1);
-call sp_get_crawled_urls(@url_id := 2);
-call sp_get_crawled_urls(@url_id := 3);
