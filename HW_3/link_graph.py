@@ -1,17 +1,36 @@
 from typing import List
 
+from sqlalchemy import create_engine
+
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
 from HW_3.beans import Outlink
 
 
 class LinkGraph:
+    _ENGINE = create_engine('mysql+mysqldb://cs6200:cs6200@127.0.0.1:3306/cs6200')
+
+    @classmethod
+    def _insert_edges_to_mysql(cls, edges_xml: str):
+        with cls._ENGINE.connect() as conn:
+            conn.execute('call sp_insert_link_graph_edges(@var_edges_xml:="?")', edges_xml)
+
+    @classmethod
+    def _generate_edges_xml(cls, src: UrlDetail, dests: List[UrlDetail]) -> str:
+        rows = []
+        for dest in dests:
+            rows.append('<r><s><![CDATA[{}]]></s><d><![CDATA[{}]]></d></r>'.format(src.canonical_url,
+                                                                                   dest.canonical_url))
+        return "<rt>{}</rt>".format("".join(rows))
 
     @classmethod
     def add_edge(cls, src: UrlDetail, destination: UrlDetail):
-        # TODO implement this
-        pass
+        cls.add_edges(src, [Outlink(destination, "")])
 
     @classmethod
     def add_edges(cls, src: UrlDetail, outlinks: List[Outlink]):
-        # TODO: implement this using xml proc
-        pass
+        edges_xml = cls._generate_edges_xml(src, [outlink.url_detail for outlink in outlinks])
+        cls._insert_edges_to_mysql(edges_xml)
+
+
+if __name__ == '__main__':
+    LinkGraph._insert_edges_to_mysql('')

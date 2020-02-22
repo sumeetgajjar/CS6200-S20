@@ -3,6 +3,9 @@
 # TODO check where retry is required
 # TODO check the entire flow
 # TODO add logging wherever necessary
+# TODO write stuff to add to es
+# TODO write stuff to create link graph once processing is done
+
 from multiprocessing.context import Process
 from typing import List
 

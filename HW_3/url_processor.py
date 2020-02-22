@@ -144,6 +144,8 @@ class UrlProcessor:
                 title = soup.title.text
             cleaned_text = soup.text
 
+
+
             outlinks = self._extract_outlinks(crawler_response.url_detail, soup)
             self._update_link_graph(crawler_response, outlinks)
             filtered_outlinks = self._filter_outlinks(outlinks)
