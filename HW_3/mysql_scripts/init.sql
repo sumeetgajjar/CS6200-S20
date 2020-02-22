@@ -5,7 +5,7 @@ GRANT ALL PRIVILEGES ON cs6200.* TO 'cs6200'@'localhost';
 drop table if exists cs6200.link_graph_edges;
 create table if not exists cs6200.link_graph_edges
 (
-    id        int primary key auto_increment,
+    id        int auto_increment,
     src       nvarchar(1000) not null,
     src_hash  varchar(40)    not null,
     dest      nvarchar(1000) not null,
@@ -13,8 +13,12 @@ create table if not exists cs6200.link_graph_edges
     created   timestamp default CURRENT_TIMESTAMP,
     updated   timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
     is_active tinyint   default 1,
-    index (src_hash, dest_hash)
-);
+    index (src_hash, dest_hash),
+    primary key (id, is_active)
+) partition by list (is_active)(
+    partition p_active values in (1),
+    partition p_inactive values in (0)
+    );
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `sp_insert_link_graph_edges` $$
@@ -77,22 +81,8 @@ BEGIN
 END $$
 DELIMITER ;
 
-call sp_insert_link_graph_edges(@var_edges_xml := '
-    <rt>
-        <r>
-            <s><![CDATA[src-1]]></s>
-            <d><![CDATA[des-1]]></d>
-        </r>
-        <r>
-            <s><![CDATA[src-1]]></s>
-            <d><![CDATA[des-2]]></d>
-        </r>
-        <r>
-            <s><![CDATA[des-2]]></s>
-            <d><![CDATA[des-1]]></d>
-        </r>
-    </rt>
-    ');
+call sp_insert_link_graph_edges(
+        @var_edges_xml := '<rt><r><s><![CDATA[sumeet-1]]></s><d><![CDATA[sumeet-1]]></d></r></rt>');
 select *
 from cs6200.link_graph_edges;
 
@@ -100,14 +90,18 @@ from cs6200.link_graph_edges;
 drop table if exists cs6200.crawled_urls;
 create table if not exists cs6200.crawled_urls
 (
-    id        int primary key auto_increment,
+    id        int auto_increment,
     url       nvarchar(1000) not null,
     url_hash  varchar(40)    not null,
     created   timestamp default CURRENT_TIMESTAMP,
     updated   timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
     is_active tinyint   default 1,
-    index (url_hash)
-);
+    index (url_hash),
+    primary key (id, is_active)
+) partition by list (is_active)(
+    partition p_active values in (1),
+    partition p_inactive values in (0)
+    );
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `sp_insert_crawled_urls` $$
@@ -118,13 +112,13 @@ BEGIN
     call sp_insert_crawled_urls(@var_urls_xml:='
     <rt>
         <r>
-            <s><![CDATA[url-1]]></s>
+            <u><![CDATA[url-1]]></u>
         </r>
         <r>
-            <s><![CDATA[url-2]]></s>
+            <u><![CDATA[url-2]]></u>
         </r>
         <r>
-            <s><![CDATA[url-3]]></s>
+            <u><![CDATA[url-3]]></u>
         </r>
     </rt>
     ');
@@ -155,7 +149,7 @@ BEGIN
     insert into cs6200.crawled_urls(url, url_hash)
     select url, url_hash
     from tmp a
-    where not exists(select 1 from cs6200.crawled_urls as b where b.url_hash = a.url_hash);
+    where not exists(select 1 from cs6200.crawled_urls as b where b.url_hash = a.url_hash and b.is_active = 1);
 
 END $$
 DELIMITER ;

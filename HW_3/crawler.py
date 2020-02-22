@@ -79,10 +79,8 @@ class Crawler:
 
 if __name__ == '__main__':
     Utils.configure_logging()
-    a = UrlCleaner().get_canonical_url("https://docs.python.org/3/library/urllib.request.html")
+    a = UrlCleaner().get_canonical_url("https://docs.sqlalchemy.org/en/13/core/connections.html")
     c = Crawler(UrlCleaner())
-    c.crawl(a)
+    cr = c.crawl(a)
 
-    a = UrlCleaner().get_canonical_url(
-        "https://user-media-prod-cdn.itsre-sumo.mozilla.net/uploads/products/2018-10-03-20-10-50-e35beb.png")
-    c.crawl(a)
+    print(cr)

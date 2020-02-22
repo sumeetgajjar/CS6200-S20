@@ -177,13 +177,15 @@ class CrawlingUtils:
     def _generate_urls_xml(cls, url_details: List[UrlDetail]) -> str:
         rows = []
         for url_detail in url_details:
-            rows.append('<r><u><![CDATA[{}]]></u>'.format(url_detail.canonical_url))
+            rows.append('<r><u><![CDATA[{}]]></u></r>'.format(url_detail.canonical_url))
         return "<rt>{}</rt>".format("".join(rows))
 
     @classmethod
     def _add_crawled_urls_to_mysql(cls, url_details: List[UrlDetail]):
         with Constants.MYSQL_ENGINE.connect() as conn:
-            conn.execute('call sp_insert_crawled_urls(@var_urls_xml:="?")', cls._generate_urls_xml(url_details))
+            result = conn.execute('call sp_insert_crawled_urls(@var_urls_xml:=%s)',
+                                  [cls._generate_urls_xml(url_details)])
+            logging.info("{} crawled urls inserted".format(result.rowcount))
 
     @classmethod
     def add_urls_to_crawled_list(cls, url_details: List[UrlDetail]):

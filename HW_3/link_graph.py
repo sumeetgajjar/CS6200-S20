@@ -1,8 +1,10 @@
+import logging
 from typing import List
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
 from HW_3.beans import Outlink
 from constants.constants import Constants
+from utils.utils import Utils
 
 
 class LinkGraph:
@@ -10,7 +12,8 @@ class LinkGraph:
     @classmethod
     def _insert_edges_to_mysql(cls, edges_xml: str):
         with Constants.MYSQL_ENGINE.connect() as conn:
-            conn.execute('call sp_insert_link_graph_edges(@var_edges_xml:="?")', edges_xml)
+            result = conn.execute('call sp_insert_link_graph_edges(@var_edges_xml:=%s)', [edges_xml])
+            logging.info("Added {} edge(s) to the link graph".format(result.rowcount))
 
     @classmethod
     def _generate_edges_xml(cls, src: UrlDetail, dests: List[UrlDetail]) -> str:
@@ -31,4 +34,5 @@ class LinkGraph:
 
 
 if __name__ == '__main__':
-    LinkGraph._insert_edges_to_mysql('')
+    Utils.configure_logging()
+    LinkGraph._insert_edges_to_mysql('<rt><r><s><![CDATA[sumeet-212]]></s><d><![CDATA[sumeet-2]]></d></r></rt>')
