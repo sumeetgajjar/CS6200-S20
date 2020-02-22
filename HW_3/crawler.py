@@ -57,13 +57,24 @@ class Crawler:
 
         return crawler_response
 
+    @classmethod
+    def _add_url_to_crawled_list(cls, crawler_response: CrawlerResponse):
+        url_details = [crawler_response.url_detail]
+        if crawler_response.redirected:
+            url_details.append(crawler_response.redirected_url)
+
+        CrawlingUtils.add_urls_to_crawled_list(url_details)
+
     def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
+        crawler_response = None
         try:
-            return self._crawl_helper(url_detail)
+            crawler_response = self._crawl_helper(url_detail)
+            if crawler_response:
+                self._add_url_to_crawled_list(crawler_response)
         except:
             logging.error("Error while crawling: {}".format(url_detail.canonical_url), exc_info=True)
 
-        return None
+        return crawler_response
 
 
 if __name__ == '__main__':
