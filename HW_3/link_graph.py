@@ -1,17 +1,15 @@
 from typing import List
 
-from sqlalchemy import create_engine
-
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
 from HW_3.beans import Outlink
+from constants.constants import Constants
 
 
 class LinkGraph:
-    _ENGINE = create_engine('mysql+mysqldb://cs6200:cs6200@127.0.0.1:3306/cs6200')
 
     @classmethod
     def _insert_edges_to_mysql(cls, edges_xml: str):
-        with cls._ENGINE.connect() as conn:
+        with Constants.MYSQL_ENGINE.connect() as conn:
             conn.execute('call sp_insert_link_graph_edges(@var_edges_xml:="?")', edges_xml)
 
     @classmethod

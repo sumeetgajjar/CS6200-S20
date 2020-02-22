@@ -143,9 +143,26 @@ class CrawlingUtils:
         cls.add_urls_to_crawled_list([url_detail])
 
     @classmethod
-    def add_urls_to_crawled_list(cls, url_details: List[UrlDetail]):
+    def _add_crawled_urls_to_redis(cls, url_details: List[UrlDetail]):
         with ConnectionFactory.create_redis_connection() as conn:
             conn.bfMAdd(Constants.CRAWLED_URLS_BF, *[url_detail.canonical_url for url_detail in url_details])
+
+    @classmethod
+    def _generate_urls_xml(cls, url_details: List[UrlDetail]) -> str:
+        rows = []
+        for url_detail in url_details:
+            rows.append('<r><u><![CDATA[{}]]></u>'.format(url_detail.canonical_url))
+        return "<rt>{}</rt>".format("".join(rows))
+
+    @classmethod
+    def _add_crawled_urls_to_mysql(cls, url_details: List[UrlDetail]):
+        with Constants.MYSQL_ENGINE.connect() as conn:
+            conn.execute('call sp_insert_crawled_urls(@var_urls_xml:="?")', cls._generate_urls_xml(url_details))
+
+    @classmethod
+    def add_urls_to_crawled_list(cls, url_details: List[UrlDetail]):
+        cls._add_crawled_urls_to_redis(url_details)
+        cls._add_crawled_urls_to_mysql(url_details)
 
     @classmethod
     def is_crawled(cls, url_detail: UrlDetail) -> bool:

@@ -1,3 +1,6 @@
+from sqlalchemy import create_engine
+
+
 class Constants:
     PROJECT_ROOT = '/home/sumeet/PycharmProjects/CS6200-S20'
     DATA_DIR = 'data'
@@ -40,6 +43,7 @@ class Constants:
     MYSQL_DATABASE = 'cs6200'
     MYSQL_USERNAME = 'cs6200'
     MYSQL_PASSWORD = 'cs6200'
+    MYSQL_ENGINE = create_engine('mysql+mysqldb://cs6200:cs6200@127.0.0.1:3306/cs6200')
 
     # Redis Config
     REDIS_HOST = '127.0.0.1'
