@@ -207,7 +207,7 @@ class UrlProcessor:
                     filtered_result = self.url_filtering_service.filter_already_crawled_links(url_details)
                     filtered_url_details = filtered_result.filtered
                     if filtered_url_details:
-                        crawler_responses = Utils.run_tasks_parallelly(self._process_crawler_response,
+                        crawler_responses = Utils.run_tasks_parallelly(self.crawler.crawl,
                                                                        filtered_url_details,
                                                                        Constants.NO_OF_THREADS_PER_URL_PROCESSOR)
 

@@ -2,7 +2,6 @@ import logging
 from typing import Tuple, Optional
 
 import requests
-from retrying import retry
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
 from HW_3.beans import CrawlerResponse
@@ -25,7 +24,6 @@ class Crawler:
 
         return 'text/html' in content_type, content_type, new_url_detail
 
-    @retry(stop_max_attempt_number=Constants.CRAWLER_RETRY, retry_on_exception=True)
     def _crawl_helper(self, url_detail: UrlDetail):
         rp = Utils.get_robots_txt(url_detail.host)
         if not rp.can_fetch("*", url_detail.canonical_url):
@@ -69,10 +67,13 @@ class Crawler:
         crawler_response = None
         try:
             crawler_response = self._crawl_helper(url_detail)
-            if crawler_response:
-                self._add_url_to_crawled_list(crawler_response)
         except:
             logging.error("Error while crawling: {}".format(url_detail.canonical_url), exc_info=True)
+        finally:
+            if crawler_response:
+                self._add_url_to_crawled_list(crawler_response)
+            else:
+                self._add_url_to_crawled_list(CrawlerResponse(url_detail))
 
         return crawler_response
 
@@ -82,5 +83,4 @@ if __name__ == '__main__':
     a = UrlCleaner().get_canonical_url("https://docs.sqlalchemy.org/en/13/core/connections.html")
     c = Crawler(UrlCleaner())
     cr = c.crawl(a)
-
     print(cr)
