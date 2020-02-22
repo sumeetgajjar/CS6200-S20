@@ -39,26 +39,59 @@ BEGIN
     </rt>
     ');
     */
-    #TODO write code to parse xml
+    declare v_row_index int unsigned default 0;
+    declare v_row_count int unsigned;
+    declare v_xpath_row varchar(255);
+    declare v_src nvarchar(1000);
+    declare v_dest nvarchar(1000);
 
-    create temporary table TMP
+    drop table if exists tmp;
+    create temporary table tmp
     (
         src       nvarchar(1000) not null,
         src_hash  varchar(40)    not null,
         dest      nvarchar(1000) not null,
         dest_hash varchar(40)    not null
-    );
+    ) ENGINE = MEMORY;
+
+    set v_row_count = extractValue(var_edges_xml, concat('count(/rt/r)'));
+
+    while v_row_index < v_row_count
+        do
+            set v_row_index = v_row_index + 1;
+            set v_xpath_row = concat('/rt/r[', v_row_index, ']');
+            set v_src = extractValue(var_edges_xml, concat(v_xpath_row, '/s'));
+            set v_dest = extractValue(var_edges_xml, concat(v_xpath_row, '/d'));
+            insert into tmp (src, src_hash, dest, dest_hash)
+            values (v_src, MD5(v_src), v_dest, MD5(v_dest));
+        end while;
 
     insert into cs6200.link_graph_edges(src, src_hash, dest, dest_hash)
     select src, src_hash, dest, dest_hash
-    from TMP
-    where not exists(select 1 from link_graph_edges as a where a.src_hash = src_hash and a.dest_hash = dest_hash);
+    from tmp a
+    where not exists(select 1 from link_graph_edges as b where b.src_hash = a.src_hash and b.dest_hash = a.dest_hash);
+
 END $$
 DELIMITER ;
 
-call sp_insert_link_graph_edges(@url := '1.testing_sumeet.comasd');
+call sp_insert_link_graph_edges(@var_edges_xml := '
+    <rt>
+        <r>
+            <s><![CDATA[src-1]]></s>
+            <d><![CDATA[des-1]]></d>
+        </r>
+        <r>
+            <s><![CDATA[src-1]]></s>
+            <d><![CDATA[des-2]]></d>
+        </r>
+        <r>
+            <s><![CDATA[des-2]]></s>
+            <d><![CDATA[des-1]]></d>
+        </r>
+    </rt>
+    ');
 select *
-from cs6200.url_ids;
+from cs6200.link_graph_edges;
 
 
 #####################################################################
