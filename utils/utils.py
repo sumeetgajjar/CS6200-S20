@@ -34,6 +34,10 @@ class Utils:
         return '{}/{}'.format(cls.get_ap_data_path(), Constants.DOCUMENT_ID_MAPPING_FILE_NAME)
 
     @classmethod
+    def get_crawled_response_dir(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.CRAWLED_RESPONSE_DIR)
+
+    @classmethod
     def create_ap_data_index(cls, ):
         EsUtils.create_es_index(name=Constants.AP_DATA_INDEX_NAME,
                                 index_config=EsIndexConfig.get_ap_data_index_config())

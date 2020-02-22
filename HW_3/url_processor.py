@@ -1,4 +1,7 @@
+import hashlib
+import json
 import logging
+import os
 import time
 from collections import defaultdict, Counter
 from typing import List
@@ -88,6 +91,9 @@ class UrlMapper:
 
 
 class UrlProcessor:
+    if not os.path.isdir(Utils.get_crawled_response_dir()):
+        logging.info("Creating the crawled response dir")
+        os.makedirs(Utils.get_crawled_response_dir())
 
     def __init__(self, processor_id, redis_queue_name) -> None:
         self.processor_id = processor_id
@@ -136,6 +142,26 @@ class UrlProcessor:
         logging.info("Removed {} urls".format(len(filtered_result.removed)))
         return filtered_result.filtered
 
+    @classmethod
+    def _save_crawled_response(cls, crawler_response: CrawlerResponse, title: str, cleaned_text: str):
+        data = {
+            'title': title,
+            'cleaned_text': cleaned_text,
+            'headers': crawler_response.headers,
+            'raw_html': crawler_response.raw_html,
+            'url': crawler_response.url_detail.canonical_url,
+            'org_url': crawler_response.url_detail.org_url,
+        }
+
+        if crawler_response.redirected:
+            data['redirected_org_url'] = crawler_response.redirected_url.org_url
+            data['redirected_url'] = crawler_response.redirected_url.canonical_url
+
+        file_name = '{}.json'.format(hashlib.md5(crawler_response.url_detail.canonical_url.encode()).hexdigest())
+        file_path = '{}/{}'.format(Utils.get_crawled_response_dir(), file_name)
+        with open(file_path, 'w') as file:
+            json.dump(data, file)
+
     def _process_crawler_response(self, crawler_response: CrawlerResponse):
         try:
             soup = BeautifulSoup(crawler_response.raw_html, features=Constants.HTML_PARSER)
@@ -149,7 +175,7 @@ class UrlProcessor:
             filtered_outlinks = self._filter_outlinks(outlinks)
             self.frontier_manager.add_to_queue(filtered_outlinks)
 
-            # TODO store the data and html response
+            self._save_crawled_response(crawler_response, title, cleaned_text)
 
         except Exception:
             logging.error("Error occurred while crawling: {}".format(crawler_response.url_detail.canonical_url),

@@ -7,6 +7,7 @@ class Constants:
     AP_DATA_PATH = 'AP_DATA'
     AP89_COLLECTION = 'ap89_collection'
     AP_DATA_INDEX_NAME = 'ap_data'
+    CRAWLED_RESPONSE_DIR = 'crawled_response'
     DOCUMENT_ID_MAPPING_FILE_NAME = 'document-id-mapping.json'
     AP_DATA_FILE_ENCODING = 'latin-1'
     PICKLE_PROTOCOL = 3
