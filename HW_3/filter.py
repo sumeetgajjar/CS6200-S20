@@ -63,16 +63,26 @@ class DomainRanker:
             return DomainRank(canonical_domain, self._DEFAULT_DOMAIN_RANK, self._DEFAULT_DOMAIN_RANK)
 
 
-# todo check if singleton required
 class UrlFilteringService:
-    # TODO contact us and other common stuff
-    # TODO ads
-    _KEYWORDS_TO_AVOID_IN_ANCHOR_TEXT = {'privacy policy', 'terms of use', 'privacy', 'ad choices', 'copyright',
-                                         'advertise', 'subscribe', 'rss', 'follow us', 'about us', 'contact'}
+    _KEYWORDS_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'privacy policy', 'ads', 'terms of use', 'privacy',
+                                         'ad choices', 'copyright', 'instagram', 'linkedin', 'career', 'api', 'jobs',
+                                         'terms', 'log in', 'register', 'sign up', 'create account', 'download', 'edit',
+                                         'cookie', 'about ', 'advertise', 'subscribe', 'rss', 'follow us', 'contact'}
+
+    def _filter_useless_links(self, outlinks: List[Outlink]) -> FilteredResult:
+        filtered_result = FilteredResult([], [])
+        for outlink in outlinks:
+            for keyword in self._KEYWORDS_TO_AVOID_IN_ANCHOR_TEXT:
+                if keyword in outlink.anchor_text:
+                    filtered_result.removed.append(outlink)
+                else:
+                    filtered_result.filtered.append(outlink)
+
+        return filtered_result
 
     def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
-        # todo do not remove already visited links
-        return FilteredResult(outlinks, [])
+        filtered_result = self._filter_useless_links(outlinks)
+        return filtered_result
 
     def filter_already_crawled_links(self, url_details: List[UrlDetail]) -> FilteredResult:
         filtered_result = FilteredResult([], [])
