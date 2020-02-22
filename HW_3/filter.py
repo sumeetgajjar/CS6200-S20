@@ -73,11 +73,15 @@ class UrlFilteringService:
         # todo do not remove already visited links
         return FilteredResult(outlinks, [])
 
-    def is_crawled(self, url_detail: UrlDetail) -> bool:
-        return len(self.filter_already_crawled_links([url_detail]).filtered) == 1
-
     def filter_already_crawled_links(self, url_details: List[UrlDetail]) -> FilteredResult:
-        return FilteredResult(url_details, [])
+        filtered_result = FilteredResult([], [])
+        for url_detail in url_details:
+            if CrawlingUtils.is_crawled(url_detail):
+                filtered_result.removed.append(url_detail)
+            else:
+                filtered_result.filtered.append(url_detail)
+
+        return filtered_result
 
 
 class CrawlingRateLimitingService(metaclass=SingletonMeta):

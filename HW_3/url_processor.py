@@ -94,7 +94,7 @@ class UrlProcessor:
         self.redis_queue_name = redis_queue_name
         self.url_cleaner = Factory.create_url_cleaner()
         self.url_filtering_service = Factory.create_url_filtering_service()
-        self.crawler = Crawler(self.url_cleaner, self.url_filtering_service)
+        self.crawler = Crawler(self.url_cleaner)
         self.frontier_manager = Factory.create_frontier_manager()
 
     @classmethod

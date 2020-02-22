@@ -6,16 +6,15 @@ from retrying import retry
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
 from HW_3.beans import CrawlerResponse
-from HW_3.filter import UrlFilteringService
+from HW_3.filter import CrawlingUtils
 from constants.constants import Constants
 from utils.utils import Utils
 
 
 class Crawler:
 
-    def __init__(self, url_cleaner: UrlCleaner, url_filtering_service: UrlFilteringService) -> None:
+    def __init__(self, url_cleaner: UrlCleaner) -> None:
         self.url_cleaner = url_cleaner
-        self.url_filtering_service = url_filtering_service
 
     def _is_html(self, url_detail: UrlDetail) -> Tuple[bool, str, UrlDetail]:
         head_response = requests.head(url_detail.canonical_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
@@ -47,7 +46,7 @@ class Crawler:
             crawler_response.redirected_url = new_url_detail
 
             url_detail = new_url_detail
-            if self.url_filtering_service.is_crawled(url_detail):
+            if CrawlingUtils.is_crawled(url_detail):
                 return None
 
         response = requests.get(url_detail.canonical_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
@@ -70,7 +69,7 @@ class Crawler:
 if __name__ == '__main__':
     Utils.configure_logging()
     a = UrlCleaner().get_canonical_url("https://docs.python.org/3/library/urllib.request.html")
-    c = Crawler(UrlCleaner(), UrlFilteringService())
+    c = Crawler(UrlCleaner())
     c.crawl(a)
 
     a = UrlCleaner().get_canonical_url(
