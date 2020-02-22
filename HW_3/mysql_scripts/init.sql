@@ -69,7 +69,10 @@ BEGIN
     insert into cs6200.link_graph_edges(src, src_hash, dest, dest_hash)
     select src, src_hash, dest, dest_hash
     from tmp a
-    where not exists(select 1 from link_graph_edges as b where b.src_hash = a.src_hash and b.dest_hash = a.dest_hash);
+    where not exists(select 1
+                     from cs6200.link_graph_edges as b
+                     where b.src_hash = a.src_hash
+                       and b.dest_hash = a.dest_hash);
 
 END $$
 DELIMITER ;
@@ -92,6 +95,86 @@ call sp_insert_link_graph_edges(@var_edges_xml := '
     ');
 select *
 from cs6200.link_graph_edges;
+
+
+drop table if exists cs6200.crawled_urls;
+create table if not exists cs6200.crawled_urls
+(
+    id        int primary key auto_increment,
+    url       nvarchar(1000) not null,
+    url_hash  varchar(40)    not null,
+    created   timestamp default CURRENT_TIMESTAMP,
+    updated   timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+    is_active tinyint   default 1,
+    index (url_hash)
+);
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `sp_insert_crawled_urls` $$
+CREATE
+    PROCEDURE `sp_insert_crawled_urls`(IN var_urls_xml nvarchar(1000))
+BEGIN
+    /*
+    call sp_insert_crawled_urls(@var_urls_xml:='
+    <rt>
+        <r>
+            <s><![CDATA[url-1]]></s>
+        </r>
+        <r>
+            <s><![CDATA[url-2]]></s>
+        </r>
+        <r>
+            <s><![CDATA[url-3]]></s>
+        </r>
+    </rt>
+    ');
+    */
+    declare v_row_index int unsigned default 0;
+    declare v_row_count int unsigned;
+    declare v_xpath_row varchar(255);
+    declare v_url nvarchar(1000);
+
+    drop table if exists tmp;
+    create temporary table tmp
+    (
+        url      nvarchar(1000) not null,
+        url_hash varchar(40)    not null
+    ) ENGINE = MEMORY;
+
+    set v_row_count = extractValue(var_urls_xml, concat('count(/rt/r)'));
+
+    while v_row_index < v_row_count
+        do
+            set v_row_index = v_row_index + 1;
+            set v_xpath_row = concat('/rt/r[', v_row_index, ']');
+            set v_url = extractValue(var_urls_xml, concat(v_xpath_row, '/u'));
+            insert into tmp (url, url_hash)
+            values (v_url, MD5(v_url));
+        end while;
+
+    insert into cs6200.crawled_urls(url, url_hash)
+    select url, url_hash
+    from tmp a
+    where not exists(select 1 from cs6200.crawled_urls as b where b.url_hash = a.url_hash);
+
+END $$
+DELIMITER ;
+
+call sp_insert_crawled_urls(@var_urls_xml := '
+    <rt>
+        <r>
+            <u><![CDATA[url-1]]></u>
+        </r>
+        <r>
+            <u><![CDATA[url-2]]></u>
+        </r>
+        <r>
+            <u><![CDATA[url-3]]></u>
+        </r>
+    </rt>
+    ');
+select *
+from cs6200.crawled_urls;
 
 
 #####################################################################
@@ -136,39 +219,6 @@ call sp_insert_url(@url := '1.testing_sumeet.comasd');
 select *
 from cs6200.url_ids;
 
-
-drop table if exists cs6200.crawled_urls;
-create table if not exists cs6200.crawled_urls
-(
-    id        int primary key auto_increment,
-    url_id    int not null,
-    created   timestamp default CURRENT_TIMESTAMP,
-    updated   timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
-    is_active tinyint   default 1,
-    index (url_id),
-    unique (url_id, is_active)
-);
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS `sp_insert_crawled_url` $$
-CREATE
-    PROCEDURE `sp_insert_crawled_url`(IN url_id int)
-BEGIN
-    /*
-    call sp_insert_crawled_url(@url_id:=1);
-    */
-    insert into cs6200.crawled_urls(url_id)
-    values (url_id);
-
-    select LAST_INSERT_ID() as id;
-END $$
-DELIMITER ;
-
-call sp_insert_crawled_url(@url_id := 1);
-call sp_insert_crawled_url(@url_id := 2);
-call sp_insert_crawled_url(@url_id := 3);
-select *
-from cs6200.crawled_urls;
 
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `sp_get_crawled_urls` $$
