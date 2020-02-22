@@ -69,9 +69,11 @@ class UrlFilteringService:
                                          'terms', 'log in', 'register', 'sign up', 'create account', 'download', 'edit',
                                          'cookie', 'about ', 'advertise', 'subscribe', 'rss', 'follow us', 'contact'}
 
-    def _filter_useless_links(self, outlinks: List[Outlink]) -> FilteredResult:
-        filtered_result = FilteredResult([], [])
-        for outlink in outlinks:
+    _DOMAINS_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin'}
+
+    def _filter_useless_links(self, filtered_result: FilteredResult) -> FilteredResult:
+
+        for outlink in filtered_result.filtered:
             for keyword in self._KEYWORDS_TO_AVOID_IN_ANCHOR_TEXT:
                 if keyword in outlink.anchor_text:
                     filtered_result.removed.append(outlink)
@@ -80,8 +82,22 @@ class UrlFilteringService:
 
         return filtered_result
 
+    def _filter_domains(self, filtered_result: FilteredResult) -> FilteredResult:
+
+        for outlink in filtered_result.filtered:
+            for domain in self._DOMAINS_TO_AVOID:
+                if domain in outlink.url_detail.domain:
+                    filtered_result.removed.append(outlink)
+                else:
+                    filtered_result.filtered.append(outlink)
+
+        return filtered_result
+
     def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
-        filtered_result = self._filter_useless_links(outlinks)
+        filtered = [].extend(outlinks)
+        filtered_result = FilteredResult(filtered, [])
+        filtered_result = self._filter_domains(filtered_result)
+        filtered_result = self._filter_useless_links(filtered_result)
         return filtered_result
 
     def filter_already_crawled_links(self, url_details: List[UrlDetail]) -> FilteredResult:
