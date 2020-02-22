@@ -144,14 +144,12 @@ class UrlProcessor:
                 title = soup.title.text
             cleaned_text = soup.text
 
-
-
             outlinks = self._extract_outlinks(crawler_response.url_detail, soup)
             self._update_link_graph(crawler_response, outlinks)
             filtered_outlinks = self._filter_outlinks(outlinks)
             self.frontier_manager.add_to_queue(filtered_outlinks)
 
-            # add data
+            # TODO store the data and html response
 
         except Exception:
             logging.error("Error occurred while crawling: {}".format(crawler_response.url_detail.canonical_url),

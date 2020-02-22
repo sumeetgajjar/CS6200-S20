@@ -65,9 +65,10 @@ class DomainRanker:
 
 # todo check if singleton required
 class UrlFilteringService:
-
     # TODO contact us and other common stuff
     # TODO ads
+    _KEYWORDS_TO_AVOID_IN_ANCHOR_TEXT = {'privacy policy', 'terms of use', 'privacy', 'ad choices', 'copyright',
+                                         'advertise', 'subscribe', 'rss', 'follow us', 'about us', 'contact'}
 
     def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
         # todo do not remove already visited links

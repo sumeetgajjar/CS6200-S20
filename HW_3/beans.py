@@ -18,7 +18,7 @@ class Outlink:
 
     def __init__(self, url_detail: UrlDetail, anchor_text: str) -> None:
         self.url_detail: UrlDetail = url_detail
-        self.anchor_text: str = anchor_text
+        self.anchor_text: str = anchor_text.strip().lower() if anchor_text else ''
 
 
 class FilteredResult:
