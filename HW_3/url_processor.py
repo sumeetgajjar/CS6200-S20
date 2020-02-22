@@ -132,9 +132,9 @@ class UrlProcessor:
         LinkGraph.add_edges(src_url_detail, outlinks)
 
     def _filter_outlinks(self, outlinks: List[Outlink]) -> List[Outlink]:
-        filtered_urls, removed_urls = self.url_filtering_service.filter_outlinks(outlinks)
-        # TODO log removed urls
-        return filtered_urls
+        filtered_result = self.url_filtering_service.filter_outlinks(outlinks)
+        logging.info("Removed {} urls".format(len(filtered_result.removed)))
+        return filtered_result.filtered
 
     def _process_crawler_response(self, crawler_response: CrawlerResponse):
         try:
