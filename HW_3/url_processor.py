@@ -123,12 +123,13 @@ class UrlProcessor:
         return outlinks
 
     @classmethod
-    def _update_link_graph(cls, curr_url_detail: UrlDetail, outlinks: List[Outlink]) -> None:
-        # TODO added edge between old url and new url if there is any redirection
-        graph = LinkGraph()
-        for outlink_tup in outlinks:
-            pass
-            # graph.add_edge(curr_url_detail, outlink_tup[0])
+    def _update_link_graph(cls, crawler_response: CrawlerResponse, outlinks: List[Outlink]) -> None:
+        src_url_detail = crawler_response.url_detail
+        if crawler_response.redirected:
+            LinkGraph.add_edge(src_url_detail, crawler_response.redirected_url)
+            src_url_detail = crawler_response.redirected_url
+
+        LinkGraph.add_edges(src_url_detail, outlinks)
 
     def _filter_outlinks(self, outlinks: List[Outlink]) -> List[Outlink]:
         filtered_urls, removed_urls = self.url_filtering_service.filter_outlinks(outlinks)
@@ -144,7 +145,7 @@ class UrlProcessor:
             cleaned_text = soup.text
 
             outlinks = self._extract_outlinks(crawler_response.url_detail, soup)
-            self._update_link_graph(crawler_response.url_detail, outlinks)
+            self._update_link_graph(crawler_response, outlinks)
             filtered_outlinks = self._filter_outlinks(outlinks)
             self.frontier_manager.add_to_queue(filtered_outlinks)
 
@@ -192,8 +193,3 @@ class UrlProcessor:
                 else:
                     logging.info('No urls to process, {} sleeping for 10 sec'.format(self.processor_id))
                     time.sleep(Constants.URL_PROCESSOR_SLEEP_TIME)
-
-
-if __name__ == '__main__':
-    Utils.configure_logging()
-    # UrlProcessor(1, "test_queue").start()
