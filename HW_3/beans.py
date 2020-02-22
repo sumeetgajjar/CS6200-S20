@@ -20,12 +20,18 @@ class Outlink:
         self.url_detail: UrlDetail = url_detail
         self.anchor_text: str = anchor_text.strip().lower() if anchor_text else ''
 
+    def __str__(self) -> str:
+        return 'Anchor Text:{}, UrlDetail:{}'.format(self.anchor_text, self.url_detail)
+
 
 class FilteredResult:
 
     def __init__(self, filtered, removed) -> None:
         self.filtered = filtered
         self.removed = removed
+
+    def __str__(self) -> str:
+        return 'Filtered:{}, Removed:{}'.format(self.filtered, self.removed)
 
 
 class CrawlerResponse:
@@ -36,3 +42,7 @@ class CrawlerResponse:
         self.headers: Optional[dict] = None
         self.redirected: bool = False
         self.redirected_url: Optional[UrlDetail] = None
+
+    def __str__(self) -> str:
+        return 'UrlDetail:{}, Header:{}, RedirectedUrlDetail:{}'.format(self.url_detail, self.headers,
+                                                                        self.redirected_url)
