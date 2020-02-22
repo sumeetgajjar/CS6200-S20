@@ -9,6 +9,7 @@ from urllib.robotparser import RobotFileParser
 
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner, UrlDetail
 from HW_3.beans import DomainRank, Outlink, FilteredResult
+from HW_3.connection_factory import ConnectionFactory
 from constants.constants import Constants
 from utils.decorators import timing
 from utils.singleton import SingletonMeta
@@ -119,3 +120,29 @@ class CrawlingRateLimitingService(metaclass=SingletonMeta):
                 filtered_result.filtered.append(url_detail)
 
         return filtered_result
+
+
+class CrawlingUtils:
+    with ConnectionFactory.create_redis_connection() as conn:
+        if not conn.exists(Constants.CRAWLED_URLS_BF):
+            logging.info("Creating Bloomfilter")
+            conn.bfCreate(Constants.CRAWLED_URLS_BF,
+                          Constants.CRAWLED_URLS_BF_ERROR_RATE,
+                          Constants.CRAWLED_URLS_BF_CAPACITY)
+            logging.info("Bloomfilter created")
+        else:
+            logging.info("Bloomfilter already exists")
+
+    @classmethod
+    def add_url_to_crawled_list(cls, url_detail: UrlDetail):
+        cls.add_urls_to_crawled_list([url_detail])
+
+    @classmethod
+    def add_urls_to_crawled_list(cls, url_details: List[UrlDetail]):
+        with ConnectionFactory.create_redis_connection() as conn:
+            conn.bfMAdd(Constants.CRAWLED_URLS_BF, *[url_detail.canonical_url for url_detail in url_details])
+
+    @classmethod
+    def is_crawled(cls, url_detail: UrlDetail) -> bool:
+        with ConnectionFactory.create_redis_connection() as conn:
+            return conn.bfExists(Constants.CRAWLED_URLS_BF, url_detail.canonical_url) == 1
