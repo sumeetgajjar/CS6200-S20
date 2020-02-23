@@ -84,3 +84,6 @@ class Constants:
 
     # Robots Txt
     ROBOTS_TXT_FILE_NAME = "robots.txt"
+
+    # Frontier Manager
+    FRONTIER_MANAGER_REDIS_QUEUE = "QUEUES::FRONTIER"

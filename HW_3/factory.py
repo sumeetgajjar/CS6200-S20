@@ -16,7 +16,7 @@ class Factory:
 
     @classmethod
     def create_frontier_manager(cls) -> FrontierManager:
-        return FrontierManager([])
+        return FrontierManager(cls.create_url_cleaner())
 
     @classmethod
     def create_url_filtering_service(cls) -> UrlFilteringService:
