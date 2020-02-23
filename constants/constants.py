@@ -8,6 +8,7 @@ class Constants:
     AP89_COLLECTION = 'ap89_collection'
     AP_DATA_INDEX_NAME = 'ap_data'
     CRAWLED_RESPONSE_DIR = 'crawled_response'
+    USER_AGENT_FILE_NAME = 'user-agents.txt'
     DOCUMENT_ID_MAPPING_FILE_NAME = 'document-id-mapping.json'
     AP_DATA_FILE_ENCODING = 'latin-1'
     PICKLE_PROTOCOL = 3
@@ -73,7 +74,7 @@ class Constants:
     # Url Processor configs
     URL_PROCESSOR_BATCH_SIZE_KEY = 'URL_PROCESSOR_BATCH_SIZE'
     URL_PROCESSOR_QUEUE_NAME_TEMPLATE = 'QUEUES::URL::PROCESSOR::{}'
-    URL_PROCESSOR_DEFAULT_BATCH_SIZE = 20
+    URL_PROCESSOR_DEFAULT_BATCH_SIZE = 10
     NO_OF_THREADS_PER_URL_PROCESSOR = 10
     NO_OF_URL_PROCESSORS = 10
     URL_PROCESSOR_SLEEP_TIME = 10  # seconds

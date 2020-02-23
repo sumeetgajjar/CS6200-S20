@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import Tuple, Optional
 
 import requests
@@ -10,13 +11,32 @@ from constants.constants import Constants
 from utils.utils import Utils
 
 
+class UserAgent:
+    with open(Utils.get_user_agent_file_path(), 'r') as file:
+        _USER_AGENTS = file.readlines()
+
+    @classmethod
+    def get_random_user_agent(cls) -> str:
+        return random.choice(cls._USER_AGENTS)
+
+
 class Crawler:
 
     def __init__(self, url_cleaner: UrlCleaner) -> None:
         self.url_cleaner = url_cleaner
 
+    @classmethod
+    def _get_request_headers(cls):
+        request_headers = requests.utils.default_headers()
+        request_headers.update({'User-Agent': UserAgent.get_random_user_agent()})
+        return request_headers
+
     def _is_html(self, url_detail: UrlDetail) -> Tuple[bool, str, UrlDetail]:
-        head_response = requests.head(url_detail.canonical_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
+
+        head_response = requests.head(url_detail.canonical_url,
+                                      timeout=Constants.CRAWLER_TIMEOUT,
+                                      allow_redirects=True,
+                                      headers=self._get_request_headers())
         head_response.raise_for_status()
 
         content_type = head_response.headers.get('content-type').strip()
@@ -47,7 +67,10 @@ class Crawler:
             if CrawlingUtils.is_crawled(url_detail):
                 return None
 
-        response = requests.get(url_detail.canonical_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
+        response = requests.get(url_detail.canonical_url,
+                                timeout=Constants.CRAWLER_TIMEOUT,
+                                allow_redirects=True,
+                                headers=self._get_request_headers())
         response.raise_for_status()
 
         crawler_response.headers = response.headers

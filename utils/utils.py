@@ -38,6 +38,10 @@ class Utils:
         return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.CRAWLED_RESPONSE_DIR)
 
     @classmethod
+    def get_user_agent_file_path(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.USER_AGENT_FILE_NAME)
+
+    @classmethod
     def create_ap_data_index(cls, ):
         EsUtils.create_es_index(name=Constants.AP_DATA_INDEX_NAME,
                                 index_config=EsIndexConfig.get_ap_data_index_config())
