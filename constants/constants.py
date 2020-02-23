@@ -57,7 +57,9 @@ class Constants:
     TOPIC_KEYWORDS = {'1521', 'AMERICAN', 'INDEPENDENCE', 'WAR'}
 
     # CRAWLING configs
-    MAX_URLS_TO_CRAWL = 60000
+    MAX_URLS_TO_CRAWL = 50000
+    MAX_URLS_TO_CRAWL_KEY = 'MAX_URLS_TO_CRAWL'
+    TOTAL_URL_CRAWLED_KEY = 'TOTAL_URL_CRAWLED'
     DEFAULT_CRAWL_DELAY = 1
     TAGS_TO_REMOVE = ['img', 'iframe', 'script', 'stylesheet', 'map', 'progress', 'video', 'audio', 'area', 'embed']
     ROBOTS_TXT_CACHE_SIZE = 2000
@@ -65,7 +67,6 @@ class Constants:
     # connection timeout and read timeout
     CRAWLER_TIMEOUT = (3, 20)
     CRAWLER_RETRY = 2
-    TOTAL_URL_CRAWLED_KEY = 'TOTAL_URL_CRAWLED'
 
     # Crawled Urls Bloom Filter configs
     CRAWLED_URLS_BF = 'CRAWLED_URLS_BF'

@@ -207,10 +207,14 @@ class UrlProcessor:
 
     def start(self):
         total_urls_crawled = 0
-        while total_urls_crawled < Constants.MAX_URLS_TO_CRAWL:
+        max_urls_to_crawl = Constants.MAX_URLS_TO_CRAWL
+        while total_urls_crawled < max_urls_to_crawl:
             with ConnectionFactory.create_redis_connection() as redis_conn:
                 total_urls_crawled = Utils.int(redis_conn.get(Constants.TOTAL_URL_CRAWLED_KEY), 0)
                 logging.info("Total urls crawled:{}".format(total_urls_crawled))
+                max_urls_to_crawl = Utils.int(redis_conn.get(Constants.MAX_URLS_TO_CRAWL_KEY),
+                                              Constants.MAX_URLS_TO_CRAWL)
+                logging.info("Max Urls to crawl:{}".format(max_urls_to_crawl))
 
                 urls_batch_size = self.get_batch_size(redis_conn)
 
