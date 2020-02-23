@@ -94,6 +94,7 @@ class UrlProcessor:
     if not os.path.isdir(Utils.get_crawled_response_dir()):
         logging.info("Creating the crawled response dir")
         os.makedirs(Utils.get_crawled_response_dir())
+        logging.info("Crawled response dir created")
 
     def __init__(self, processor_id, redis_queue_name) -> None:
         self.processor_id = processor_id
