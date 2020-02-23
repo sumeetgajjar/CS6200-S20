@@ -9,7 +9,6 @@ from urllib.parse import urlparse
 
 import redis
 from bs4 import BeautifulSoup
-from retrying import retry
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
 from HW_3.beans import Outlink, CrawlerResponse
@@ -42,7 +41,6 @@ class UrlMapper:
         return assigned_queue
 
     @classmethod
-    @retry(stop_max_attempt_number=Constants.URL_MAPPER_QUEUE_TO_REDIS_RETRY)
     def _queue_urls(cls, queue_name, urls_to_queue: dict, redis_conn: redis.Redis):
         with redis_conn.pipeline() as pipe:
             for url_to_queue, score in urls_to_queue.items():
@@ -65,30 +63,26 @@ class UrlMapper:
         rate_limited_url_details = []
 
         while True:
-            try:
-                with ConnectionFactory.create_redis_connection() as redis_conn:
-                    url_details = rate_limited_url_details
+            with ConnectionFactory.create_redis_connection() as redis_conn:
+                url_details = rate_limited_url_details
 
-                    url_processor_batch_size = UrlProcessor.get_batch_size(redis_conn)
-                    urls_batch_size = (url_processor_batch_size * Constants.NO_OF_URL_PROCESSORS) - len(url_details)
+                url_processor_batch_size = UrlProcessor.get_batch_size(redis_conn)
+                urls_batch_size = (url_processor_batch_size * Constants.NO_OF_URL_PROCESSORS) - len(url_details)
 
-                    if urls_batch_size > 0:
-                        url_details.extend(self.frontier_manager.get_urls_to_crawl(urls_batch_size))
+                if urls_batch_size > 0:
+                    url_details.extend(self.frontier_manager.get_urls_to_crawl(urls_batch_size))
 
-                    filtered_result = self.crawling_rate_limiting_service.filter(url_details)
-                    filtered_url_details = filtered_result.filtered
-                    rate_limited_url_details = filtered_result.removed
+                filtered_result = self.crawling_rate_limiting_service.filter(url_details)
+                filtered_url_details = filtered_result.filtered
+                rate_limited_url_details = filtered_result.removed
 
-                    if len(filtered_url_details) > 0:
-                        urls_queue_mapping = self._generate_urls_queue_mapping(filtered_url_details)
-                        for queue_name, urls_to_queue in urls_queue_mapping:
-                            self._queue_urls(queue_name, urls_to_queue, redis_conn)
-                    else:
-                        logging.info('No urls to queue, url mapper sleeping for 10 sec')
-                        time.sleep(Constants.URL_MAPPER_SLEEP_TIME)
-
-            except:
-                logging.error("Error occurred while queueing urls to url processor", exc_info=True)
+                if len(filtered_url_details) > 0:
+                    urls_queue_mapping = self._generate_urls_queue_mapping(filtered_url_details)
+                    for queue_name, urls_to_queue in urls_queue_mapping:
+                        self._queue_urls(queue_name, urls_to_queue, redis_conn)
+                else:
+                    logging.info('No urls to queue, url mapper sleeping for 10 sec')
+                    time.sleep(Constants.URL_MAPPER_SLEEP_TIME)
 
 
 class UrlProcessor:
