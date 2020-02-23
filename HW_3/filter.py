@@ -105,7 +105,6 @@ class UrlFilteringService:
                 new_filtered_result.filtered.append(outlink)
 
             url_details_set.add(outlink.url_detail)
-
         return new_filtered_result
 
     def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
@@ -125,6 +124,7 @@ class UrlFilteringService:
             else:
                 filtered_result.filtered.append(url_detail)
 
+        logging.info("Filtering {} already crawled url(s)".format(len(filtered_result.removed)))
         return filtered_result
 
 

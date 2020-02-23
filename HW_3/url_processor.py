@@ -127,24 +127,29 @@ class UrlProcessor:
                 outlink = Outlink(outlink_url_detail, a_element.text)
                 outlinks.append(outlink)
 
+        logging.info("Extracted {} outlink(s)".format(len(outlinks)))
         return outlinks
 
     @classmethod
     def _update_link_graph(cls, crawler_response: CrawlerResponse, outlinks: List[Outlink]) -> None:
+        logging.info("Updating link graph")
         src_url_detail = crawler_response.url_detail
         if crawler_response.redirected:
             LinkGraph.add_edge(src_url_detail, crawler_response.redirected_url)
             src_url_detail = crawler_response.redirected_url
 
         LinkGraph.add_edges(src_url_detail, outlinks)
+        logging.info("Link graph updated")
 
     def _filter_outlinks(self, outlinks: List[Outlink]) -> List[Outlink]:
+        logging.info("Filtering outlinks")
         filtered_result = self.url_filtering_service.filter_outlinks(outlinks)
         logging.info("Filtered {} outlink(s)".format(len(filtered_result.removed)))
         return filtered_result.filtered
 
     @classmethod
     def _save_crawled_response(cls, crawler_response: CrawlerResponse, title: str, cleaned_text: str):
+        logging.info("Persisting crawled response")
         data = {
             'title': title,
             'cleaned_text': cleaned_text,
@@ -162,6 +167,8 @@ class UrlProcessor:
         file_path = '{}/{}'.format(Utils.get_crawled_response_dir(), file_name)
         with open(file_path, 'w') as file:
             json.dump(data, file)
+
+        logging.info("Crawled response persisted")
 
     def _process_crawler_response(self, crawler_response: CrawlerResponse):
         try:
@@ -197,7 +204,8 @@ class UrlProcessor:
             with ConnectionFactory.create_redis_connection() as redis_conn:
                 urls_batch_size = self.get_batch_size(redis_conn)
 
-                urls_to_process = redis_conn.zrevrange(self.redis_queue_name, 0, urls_batch_size - 1, withscores=True)
+                urls_to_process = redis_conn.zrevrange(self.redis_queue_name, 0, urls_batch_size - 1)
+                logging.info("Fetched {} url(s) to process".format(len(urls_to_process)))
                 if urls_to_process:
                     url_details = [self.url_cleaner.get_canonical_url(url) for url in urls_to_process]
                     filtered_result = self.url_filtering_service.filter_already_crawled_links(url_details)

@@ -89,8 +89,13 @@ class Crawler:
 
     def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
         try:
+            logging.info("Crawling:{}".format(url_detail))
             crawler_response = self._crawl_helper(url_detail)
+            if crawler_response:
+                logging.info("Crawled:{}".format(url_detail))
+
             self._add_url_to_crawled_list(crawler_response)
+
             return crawler_response
         except HTTPError:
             logging.error("HTTPError while crawling: {}".format(url_detail.canonical_url), exc_info=True)
