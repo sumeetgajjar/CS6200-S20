@@ -5,7 +5,7 @@
 # TODO add logging wherever necessary
 # TODO write stuff to add to es
 # TODO write stuff to create link graph once processing is done
-
+import logging
 from multiprocessing.context import Process
 from typing import List
 
@@ -15,6 +15,7 @@ from utils.utils import Utils
 
 
 def init_url_processor(url_processor_id: int, url_processor_queue_name: str):
+    logging.info("Starting Url Processor, Id:{}, Queue:{}".format(url_processor_id, url_processor_queue_name))
     url_processor = UrlProcessor(url_processor_id, url_processor_queue_name)
     url_processor.start()
 
@@ -36,6 +37,7 @@ def init_url_mapper(url_processor_queue_names: List[str]):
 
 
 def url_mapper_init_wrapper(url_processor_queue_names):
+    logging.info("Starting Url Mapper")
     url_mapper_process = Process(target=init_url_mapper, args=url_processor_queue_names)
     url_mapper_process.start()
     return url_mapper_process
