@@ -16,7 +16,8 @@ class FrontierManager(metaclass=SingletonMeta):
     def get_urls_to_crawl(self, batch_size=20) -> List[UrlDetail]:
         with ConnectionFactory.create_redis_connection() as redis:
             urls = redis.zrevrange(Constants.FRONTIER_MANAGER_REDIS_QUEUE, 0, batch_size - 1)
-            redis.zrem(Constants.FRONTIER_MANAGER_REDIS_QUEUE, urls)
+            if urls:
+                redis.zrem(Constants.FRONTIER_MANAGER_REDIS_QUEUE, *urls)
         return [self.url_cleaner.get_canonical_url(url) for url in urls]
 
     def _score_outlinks(self, outlinks: List[Outlink]) -> Dict[str, float]:

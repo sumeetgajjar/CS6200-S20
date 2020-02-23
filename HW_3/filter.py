@@ -135,16 +135,13 @@ class CrawlingRateLimitingService(metaclass=SingletonMeta):
         self.domains_being_crawled = {}
 
     @classmethod
-    def _get_crawl_delay(cls, rp: RobotFileParser) -> int:
-        crawl_delay = rp.crawl_delay("*")
-        if crawl_delay:
-            try:
-                return int(crawl_delay)
-            except:
-                logging.error("Error occurred while parsing crawl_delay: {}".format(crawl_delay), exc_info=True)
-                pass
-
-        return Constants.DEFAULT_CRAWL_DELAY
+    def _get_crawl_delay(cls, url_detail: UrlDetail, rp: RobotFileParser) -> int:
+        try:
+            crawl_delay = rp.crawl_delay("*")
+            return int(crawl_delay)
+        except:
+            logging.error("Error occurred while parsing crawl_delay: {}".format(url_detail))
+            return Constants.DEFAULT_CRAWL_DELAY
 
     def _is_rate_limited(self, url_detail: UrlDetail) -> bool:
         rate_limited = False
@@ -152,7 +149,7 @@ class CrawlingRateLimitingService(metaclass=SingletonMeta):
         last_crawling_time = self.domains_being_crawled.get(domain)
         if last_crawling_time:
             rp = Utils.get_robots_txt(url_detail.host)
-            crawl_delay = self._get_crawl_delay(rp)
+            crawl_delay = self._get_crawl_delay(url_detail, rp)
             secs_to_wait = crawl_delay - (datetime.now() - last_crawling_time).total_seconds()
             if secs_to_wait > 0.0001:
                 rate_limited = True
@@ -168,7 +165,7 @@ class CrawlingRateLimitingService(metaclass=SingletonMeta):
             else:
                 filtered_result.filtered.append(url_detail)
 
-        logging.info("Rate limiting {} domain(s)".format(len(filtered_result.removed)))
+        logging.info("Rate limiting {} url(s)".format(len(filtered_result.removed)))
         return filtered_result
 
 

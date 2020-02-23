@@ -81,7 +81,7 @@ class UrlMapper:
 
                 if len(filtered_url_details) > 0:
                     urls_queue_mapping = self._generate_urls_queue_mapping(filtered_url_details)
-                    for queue_name, urls_to_queue in urls_queue_mapping:
+                    for queue_name, urls_to_queue in urls_queue_mapping.items():
                         self._queue_urls(queue_name, urls_to_queue, redis_conn)
                 else:
                     logging.info('No urls to queue, url mapper sleeping for 10 sec')
