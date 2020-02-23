@@ -177,8 +177,8 @@ class UrlProcessor:
             soup = BeautifulSoup(crawler_response.raw_html, features=Constants.HTML_PARSER)
             title = ''
             if soup.title:
-                title = soup.title.text if soup.title.text else ''
-            cleaned_text = soup.text
+                title = soup.title.text.strip() if soup.title.text else ''
+            cleaned_text = soup.text.strip()
 
             outlinks = self._extract_outlinks(crawler_response.url_detail, soup)
             self._update_link_graph(crawler_response, outlinks)
