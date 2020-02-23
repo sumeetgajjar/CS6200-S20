@@ -72,26 +72,36 @@ class UrlFilteringService:
     _DOMAINS_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin'}
 
     def _filter_useless_links(self, filtered_result: FilteredResult) -> FilteredResult:
-
+        new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
             for keyword in self._KEYWORDS_TO_AVOID_IN_ANCHOR_TEXT:
                 if keyword in outlink.anchor_text:
-                    filtered_result.removed.append(outlink)
+                    new_filtered_result.removed.append(outlink)
                 else:
-                    filtered_result.filtered.append(outlink)
+                    new_filtered_result.filtered.append(outlink)
 
-        return filtered_result
+        return new_filtered_result
 
     def _filter_domains(self, filtered_result: FilteredResult) -> FilteredResult:
-
+        new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
             for domain in self._DOMAINS_TO_AVOID:
                 if domain in outlink.url_detail.domain:
-                    filtered_result.removed.append(outlink)
+                    new_filtered_result.removed.append(outlink)
                 else:
-                    filtered_result.filtered.append(outlink)
+                    new_filtered_result.filtered.append(outlink)
 
-        return filtered_result
+        return new_filtered_result
+
+    @classmethod
+    def _filter_duplicate_outlinks(cls, filtered_result: FilteredResult):
+        new_filtered_result = FilteredResult([], filtered_result.removed)
+        url_details_set = {}
+        for outlink in filtered_result.filtered:
+            if outlink.url_detail in url_details_set:
+                new_filtered_result.removed.append(outlink)
+            else:
+                new_filtered_result.filtered.append(outlink)
 
     def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
         filtered = [].extend(outlinks)
