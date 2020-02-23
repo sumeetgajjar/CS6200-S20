@@ -65,6 +65,7 @@ class Constants:
     # connection timeout and read timeout
     CRAWLER_TIMEOUT = (3, 20)
     CRAWLER_RETRY = 2
+    TOTAL_URL_CRAWLED_KEY = 'TOTAL_URL_CRAWLED'
 
     # Crawled Urls Bloom Filter configs
     CRAWLED_URLS_BF = 'CRAWLED_URLS_BF'
