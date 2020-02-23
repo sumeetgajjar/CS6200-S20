@@ -78,6 +78,7 @@ class UrlMapper:
                 filtered_result = self.crawling_rate_limiting_service.filter(url_details)
                 filtered_url_details = filtered_result.filtered
                 rate_limited_url_details = filtered_result.removed
+                logging.info("Total rate limited urls:{}".format(len(rate_limited_url_details)))
 
                 if len(filtered_url_details) > 0:
                     urls_queue_mapping = self._generate_urls_queue_mapping(filtered_url_details)
