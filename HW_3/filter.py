@@ -64,33 +64,58 @@ class DomainRanker:
 
 
 class UrlFilteringService:
-    _KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'privacy policy', 'ads', 'terms of use',
+    _KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'privacy policy', 'ads', 'terms of use', 'mail',
                                                'privacy', 'ad choices', 'copyright', 'instagram', 'linkedin', 'career',
                                                'api', 'jobs', 'terms', 'log in', 'register', 'sign up', 'press',
                                                'create account', 'download', 'edit', 'cookie', 'about ', 'advertise',
                                                'subscribe', 'rss', 'follow us', 'contact'}
 
+    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'mailto'}
+
     _DOMAIN_SUBSTR_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin'}
 
-    def _filter_useless_links(self, filtered_result: FilteredResult) -> FilteredResult:
+    def _filter_useless_links_based_on_anchor_text(self, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
+            remove = False
             for keyword_str in self._KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT:
                 if keyword_str in outlink.anchor_text:
-                    new_filtered_result.removed.append(outlink)
-                else:
-                    new_filtered_result.filtered.append(outlink)
+                    remove = True
+
+            if remove:
+                new_filtered_result.removed.append(outlink)
+            else:
+                new_filtered_result.filtered.append(outlink)
+
+        return new_filtered_result
+
+    def _filter_useless_links_based_on_url(self, filtered_result: FilteredResult) -> FilteredResult:
+        new_filtered_result = FilteredResult([], filtered_result.removed)
+        for outlink in filtered_result.filtered:
+            remove = False
+            for keyword_str in self._KEYWORD_SUBSTR_TO_AVOID_IN_URL:
+                if keyword_str in outlink.url_detail.canonical_url:
+                    remove = True
+
+            if remove:
+                new_filtered_result.removed.append(outlink)
+            else:
+                new_filtered_result.filtered.append(outlink)
 
         return new_filtered_result
 
     def _filter_domains(self, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
+            remove = False
             for domain_str in self._DOMAIN_SUBSTR_TO_AVOID:
                 if domain_str in outlink.url_detail.domain:
-                    new_filtered_result.removed.append(outlink)
-                else:
-                    new_filtered_result.filtered.append(outlink)
+                    remove = True
+
+            if remove:
+                new_filtered_result.removed.append(outlink)
+            else:
+                new_filtered_result.filtered.append(outlink)
 
         return new_filtered_result
 
@@ -113,7 +138,8 @@ class UrlFilteringService:
         filtered = list(outlinks)
         filtered_result = FilteredResult(filtered, [])
         filtered_result = self._filter_domains(filtered_result)
-        filtered_result = self._filter_useless_links(filtered_result)
+        filtered_result = self._filter_useless_links_based_on_anchor_text(filtered_result)
+        filtered_result = self._filter_useless_links_based_on_url(filtered_result)
         return filtered_result
 
     @classmethod
@@ -135,12 +161,11 @@ class CrawlingRateLimitingService(metaclass=SingletonMeta):
         self.domains_being_crawled = {}
 
     @classmethod
-    def _get_crawl_delay(cls, url_detail: UrlDetail, rp: RobotFileParser) -> int:
+    def _get_crawl_delay(cls, rp: RobotFileParser) -> int:
         try:
             crawl_delay = rp.crawl_delay("*")
             return int(crawl_delay)
         except:
-            logging.error("Error occurred while parsing crawl_delay: {}".format(url_detail))
             return Constants.DEFAULT_CRAWL_DELAY
 
     def _is_rate_limited(self, url_detail: UrlDetail) -> bool:
@@ -149,7 +174,7 @@ class CrawlingRateLimitingService(metaclass=SingletonMeta):
         last_crawling_time = self.domains_being_crawled.get(domain)
         if last_crawling_time:
             rp = Utils.get_robots_txt(url_detail.host)
-            crawl_delay = self._get_crawl_delay(url_detail, rp)
+            crawl_delay = self._get_crawl_delay(rp)
             secs_to_wait = crawl_delay - (datetime.now() - last_crawling_time).total_seconds()
             if secs_to_wait > 0.0001:
                 rate_limited = True
@@ -212,3 +237,8 @@ class CrawlingUtils:
     def is_crawled(cls, url_detail: UrlDetail) -> bool:
         with ConnectionFactory.create_redis_connection() as conn:
             return conn.bfExists(Constants.CRAWLED_URLS_BF, url_detail.canonical_url) == 1
+
+
+if __name__ == '__main__':
+    print(UrlFilteringService().filter_outlinks(
+        [Outlink(UrlCleaner().get_canonical_url('https://linkedin.com/company/atlassian'), 'linkedin')]).filtered)

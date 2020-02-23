@@ -59,7 +59,7 @@ class Constants:
     # CRAWLING configs
     MAX_URLS_TO_CRAWL = 50000
     MAX_URLS_TO_CRAWL_KEY = 'MAX_URLS_TO_CRAWL'
-    TOTAL_URL_CRAWLED_KEY = 'TOTAL_URL_CRAWLED'
+    TOTAL_URL_CRAWLED_KEY = 'TOTAL_URLS_CRAWLED'
     DEFAULT_CRAWL_DELAY = 1
     TAGS_TO_REMOVE = ['img', 'iframe', 'script', 'stylesheet', 'map', 'progress', 'video', 'audio', 'area', 'embed']
     ROBOTS_TXT_CACHE_SIZE = 2000

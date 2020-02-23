@@ -20,8 +20,12 @@ class HW3:
     @classmethod
     def start_url_processor(cls, url_processor_id: int, url_processor_queue_name: str):
         logging.info('Starting Url Processor, Id:{}, Queue:"{}"'.format(url_processor_id, url_processor_queue_name))
-        url_processor = UrlProcessor(url_processor_id, url_processor_queue_name)
-        url_processor.start()
+        try:
+            url_processor = UrlProcessor(url_processor_id, url_processor_queue_name)
+            url_processor.start()
+        except:
+            logging.critical("Exiting Url Processor: {}".format(url_processor_id), exc_info=True)
+            raise
 
     @classmethod
     def url_processor_init_wrapper(cls, url_processor_init_infos):
@@ -33,8 +37,12 @@ class HW3:
     @classmethod
     def start_url_mapper(cls, url_processor_queue_names: List[str]):
         logging.info("Starting Url Mapper")
-        url_mapper = UrlMapper(url_processor_queue_names)
-        url_mapper.start()
+        try:
+            url_mapper = UrlMapper(url_processor_queue_names)
+            url_mapper.start()
+        except:
+            logging.critical("Exiting Url Mapper", exc_info=True)
+            raise
 
     @classmethod
     def url_mapper_init_wrapper(cls, url_processor_queue_names):
@@ -44,15 +52,26 @@ class HW3:
     def init_crawling(cls):
         url_processor_init_infos = [(i, Constants.URL_PROCESSOR_QUEUE_NAME_TEMPLATE.format(i))
                                     for i in range(1, Constants.NO_OF_URL_PROCESSORS + 1)]
-        # url_processor_futures = cls.url_processor_init_wrapper(url_processor_init_infos)
-
         url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]
-        url_mapper_future = cls.url_mapper_init_wrapper(url_processor_queue_names)
 
-        # cls._URL_MAPPER_POOL.shutdown(wait=True)
-        # cls._URL_PROCESSOR_POOL.shutdown(wait=True)
-        # url_mapper_future.result()
-        # result = [future.result() for future in url_processor_futures]
+        processor = True
+        mapper = True
+
+        url_processor_futures = []
+        if processor:
+            url_processor_futures = cls.url_processor_init_wrapper(url_processor_init_infos)
+
+        url_mapper_future = []
+        if mapper:
+            url_mapper_future = cls.url_mapper_init_wrapper(url_processor_queue_names)
+
+        if processor:
+            cls._URL_PROCESSOR_POOL.shutdown(wait=True)
+            result = [future.result() for future in url_processor_futures]
+
+        if mapper:
+            cls._URL_MAPPER_POOL.shutdown(wait=True)
+            url_mapper_future.result()
 
 
 if __name__ == '__main__':

@@ -116,7 +116,7 @@ class UrlProcessor:
     def _extract_outlinks(self, in_link: UrlDetail, soup: BeautifulSoup) -> List[Outlink]:
         outlinks = []
         for a_element in soup.find_all('a'):
-            outlink_url = a_element['href']
+            outlink_url = a_element.attrs.get('href')
             if outlink_url:
                 if self._is_absolute(outlink_url):
                     outlink_url_detail = self.url_cleaner.get_canonical_url(outlink_url)
@@ -233,11 +233,13 @@ class UrlProcessor:
                                                                        filtered_url_details,
                                                                        Constants.NO_OF_THREADS_PER_URL_PROCESSOR)
 
-                        for crawler_response in crawler_responses:
-                            self._process_crawler_response(crawler_response)
+                        filtered_crawler_responses = [response for response in crawler_responses if response]
+                        if filtered_crawler_responses:
+                            for crawler_response in filtered_crawler_responses:
+                                self._process_crawler_response(crawler_response)
 
-                        self._add_url_to_crawled_list(crawler_responses)
-                        redis_conn.incrby(Constants.TOTAL_URL_CRAWLED_KEY, len(crawler_responses))
+                            self._add_url_to_crawled_list(filtered_crawler_responses)
+                            redis_conn.incrby(Constants.TOTAL_URL_CRAWLED_KEY, len(filtered_crawler_responses))
 
                     self._remove_crawled_urls_from_redis_queue(url_details, redis_conn)
 
