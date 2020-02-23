@@ -14,7 +14,7 @@ from utils.utils import Utils
 
 class UserAgent:
     with open(Utils.get_user_agent_file_path(), 'r') as file:
-        _USER_AGENTS = file.readlines()
+        _USER_AGENTS = [line.strip() for line in file.readlines()]
 
     @classmethod
     def get_random_user_agent(cls) -> str:
@@ -74,18 +74,10 @@ class Crawler:
                                 headers=self._get_request_headers())
         response.raise_for_status()
 
-        crawler_response.headers = response.headers
+        crawler_response.headers = dict(response.headers)
         crawler_response.raw_html = response.text
 
         return crawler_response
-
-    @classmethod
-    def _add_url_to_crawled_list(cls, crawler_response: CrawlerResponse):
-        url_details = [crawler_response.url_detail]
-        if crawler_response.redirected:
-            url_details.append(crawler_response.redirected_url)
-
-        CrawlingUtils.add_urls_to_crawled_list(url_details)
 
     def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
         try:
@@ -94,12 +86,10 @@ class Crawler:
             if crawler_response:
                 logging.info("Crawled:{}".format(url_detail))
 
-            self._add_url_to_crawled_list(crawler_response)
-
             return crawler_response
         except HTTPError:
             logging.error("HTTPError while crawling: {}".format(url_detail.canonical_url), exc_info=True)
-            self._add_url_to_crawled_list(CrawlerResponse(url_detail))
+            CrawlingUtils.add_url_to_crawled_list(url_detail)
         except:
             logging.error("Error while crawling: {}".format(url_detail.canonical_url), exc_info=True)
 

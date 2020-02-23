@@ -66,7 +66,7 @@ class DomainRanker:
 class UrlFilteringService:
     _KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'privacy policy', 'ads', 'terms of use',
                                                'privacy', 'ad choices', 'copyright', 'instagram', 'linkedin', 'career',
-                                               'api', 'jobs', 'terms', 'log in', 'register', 'sign up',
+                                               'api', 'jobs', 'terms', 'log in', 'register', 'sign up', 'press',
                                                'create account', 'download', 'edit', 'cookie', 'about ', 'advertise',
                                                'subscribe', 'rss', 'follow us', 'contact'}
 
@@ -108,7 +108,7 @@ class UrlFilteringService:
         return new_filtered_result
 
     def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
-        filtered = [].extend(outlinks)
+        filtered = list(outlinks)
         filtered_result = FilteredResult(filtered, [])
         filtered_result = self._filter_duplicate_outlinks(filtered_result)
         filtered_result = self._filter_domains(filtered_result)

@@ -6,9 +6,9 @@ drop table if exists cs6200.link_graph_edges;
 create table if not exists cs6200.link_graph_edges
 (
     id        int auto_increment,
-    src       nvarchar(1000) not null,
+    src       nvarchar(2000) not null,
     src_hash  varchar(40)    not null,
-    dest      nvarchar(1000) not null,
+    dest      nvarchar(2000) not null,
     dest_hash varchar(40)    not null,
     created   timestamp default CURRENT_TIMESTAMP,
     updated   timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
@@ -23,7 +23,7 @@ create table if not exists cs6200.link_graph_edges
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `sp_insert_link_graph_edges` $$
 CREATE
-    PROCEDURE `sp_insert_link_graph_edges`(IN var_edges_xml nvarchar(1000))
+    PROCEDURE `sp_insert_link_graph_edges`(IN var_edges_xml LONGTEXT)
 BEGIN
     /*
     call sp_insert_link_graph_edges(@var_edges_xml:='
@@ -45,16 +45,16 @@ BEGIN
     */
     declare v_row_index int unsigned default 0;
     declare v_row_count int unsigned;
-    declare v_xpath_row varchar(255);
+    declare v_xpath_row nvarchar(4000);
     declare v_src nvarchar(1000);
     declare v_dest nvarchar(1000);
 
     drop table if exists tmp;
     create temporary table tmp
     (
-        src       nvarchar(1000) not null,
+        src       nvarchar(2000) not null,
         src_hash  varchar(40)    not null,
-        dest      nvarchar(1000) not null,
+        dest      nvarchar(2000) not null,
         dest_hash varchar(40)    not null
     ) ENGINE = MEMORY;
 
@@ -91,7 +91,7 @@ drop table if exists cs6200.crawled_urls;
 create table if not exists cs6200.crawled_urls
 (
     id        int auto_increment,
-    url       nvarchar(1000) not null,
+    url       nvarchar(2000) not null,
     url_hash  varchar(40)    not null,
     created   timestamp default CURRENT_TIMESTAMP,
     updated   timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
@@ -106,7 +106,7 @@ create table if not exists cs6200.crawled_urls
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `sp_insert_crawled_urls` $$
 CREATE
-    PROCEDURE `sp_insert_crawled_urls`(IN var_urls_xml nvarchar(1000))
+    PROCEDURE `sp_insert_crawled_urls`(IN var_urls_xml LONGTEXT)
 BEGIN
     /*
     call sp_insert_crawled_urls(@var_urls_xml:='
@@ -125,7 +125,7 @@ BEGIN
     */
     declare v_row_index int unsigned default 0;
     declare v_row_count int unsigned;
-    declare v_xpath_row varchar(255);
+    declare v_xpath_row nvarchar(2000);
     declare v_url nvarchar(1000);
 
     drop table if exists tmp;

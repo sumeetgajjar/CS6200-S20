@@ -16,6 +16,7 @@ from HW_3.beans import Outlink, CrawlerResponse
 from HW_3.connection_factory import ConnectionFactory
 from HW_3.crawler import Crawler
 from HW_3.factory import Factory
+from HW_3.filter import CrawlingUtils
 from HW_3.link_graph import LinkGraph
 from constants.constants import Constants
 from utils.utils import Utils
@@ -185,7 +186,6 @@ class UrlProcessor:
             self.frontier_manager.add_to_queue(filtered_outlinks)
 
             self._save_crawled_response(crawler_response, title, cleaned_text)
-
         except:
             logging.error("Error occurred while processing: {}".format(crawler_response.url_detail.canonical_url),
                           exc_info=True)
@@ -198,7 +198,18 @@ class UrlProcessor:
     def _remove_crawled_urls_from_redis_queue(self, url_details: List[UrlDetail], redis_conn):
         crawled_urls = [url_detail.canonical_url for url_detail in url_details]
         if crawled_urls:
-            redis_conn.zrem(self.redis_queue_name, crawled_urls)
+            redis_conn.zrem(self.redis_queue_name, *crawled_urls)
+
+    @classmethod
+    def _add_url_to_crawled_list(cls, crawler_responses: List[CrawlerResponse]):
+        url_details = []
+
+        for crawler_response in crawler_responses:
+            url_details.append(crawler_response.url_detail)
+            if crawler_response.redirected:
+                url_details.append(crawler_response.redirected_url)
+
+        CrawlingUtils.add_urls_to_crawled_list(url_details)
 
     def start(self):
         while True:
@@ -218,6 +229,8 @@ class UrlProcessor:
 
                         for crawler_response in crawler_responses:
                             self._process_crawler_response(crawler_response)
+
+                        self._add_url_to_crawled_list(crawler_responses)
 
                     self._remove_crawled_urls_from_redis_queue(url_details, redis_conn)
 
