@@ -95,22 +95,23 @@ class UrlFilteringService:
         return new_filtered_result
 
     @classmethod
-    def _filter_duplicate_outlinks(cls, filtered_result: FilteredResult) -> FilteredResult:
-        new_filtered_result = FilteredResult([], filtered_result.removed)
+    def filter_duplicate_outlinks(cls, outlinks: List[Outlink]) -> FilteredResult:
+        new_filtered_result = FilteredResult([], [])
         url_details_set = set()
-        for outlink in filtered_result.filtered:
+        for outlink in outlinks:
             if outlink.url_detail in url_details_set:
                 new_filtered_result.removed.append(outlink)
             else:
                 new_filtered_result.filtered.append(outlink)
 
             url_details_set.add(outlink.url_detail)
+
+        logging.info("Filtering {} duplicate url(s)".format(len(new_filtered_result.removed)))
         return new_filtered_result
 
     def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
         filtered = list(outlinks)
         filtered_result = FilteredResult(filtered, [])
-        filtered_result = self._filter_duplicate_outlinks(filtered_result)
         filtered_result = self._filter_domains(filtered_result)
         filtered_result = self._filter_useless_links(filtered_result)
         return filtered_result

@@ -13,6 +13,9 @@ class DomainRank:
     def __str__(self) -> str:
         return "Domain:{}, GlobalRank:{}, TldRank:{}".format(self.domain, self.global_rank, self.tld_rank)
 
+    def __repr__(self):
+        return self.__str__()
+
 
 class Outlink:
 
@@ -23,6 +26,9 @@ class Outlink:
     def __str__(self) -> str:
         return 'Anchor Text:{}, UrlDetail:{}'.format(self.anchor_text, self.url_detail)
 
+    def __repr__(self):
+        return self.__str__()
+
 
 class FilteredResult:
 
@@ -32,6 +38,9 @@ class FilteredResult:
 
     def __str__(self) -> str:
         return 'Filtered:{}, Removed:{}'.format(self.filtered, self.removed)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class CrawlerResponse:
@@ -46,3 +55,6 @@ class CrawlerResponse:
     def __str__(self) -> str:
         return 'UrlDetail:{}, Header:{}, RedirectedUrlDetail:{}'.format(self.url_detail, self.headers,
                                                                         self.redirected_url)
+
+    def __repr__(self):
+        return self.__str__()

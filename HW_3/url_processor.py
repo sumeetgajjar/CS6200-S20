@@ -121,16 +121,16 @@ class UrlProcessor:
             outlink_url = a_element['href']
             if outlink_url:
                 if self._is_absolute(outlink_url):
+                    outlink_url_detail = self.url_cleaner.get_canonical_url(outlink_url)
+                else:
                     outlink_url_detail = self.url_cleaner.transform_relative_url_to_absolute_url(in_link.canonical_url,
                                                                                                  outlink_url)
-                else:
-                    outlink_url_detail = self.url_cleaner.get_canonical_url(outlink_url)
 
                 outlink = Outlink(outlink_url_detail, a_element.text)
                 outlinks.append(outlink)
 
         logging.info("Extracted {} outlink(s)".format(len(outlinks)))
-        return outlinks
+        return self.url_filtering_service.filter_duplicate_outlinks(outlinks).filtered
 
     @classmethod
     def _update_link_graph(cls, crawler_response: CrawlerResponse, outlinks: List[Outlink]) -> None:
@@ -212,8 +212,12 @@ class UrlProcessor:
         CrawlingUtils.add_urls_to_crawled_list(url_details)
 
     def start(self):
-        while True:
+        total_urls_crawled = 0
+        while total_urls_crawled < Constants.MAX_URLS_TO_CRAWL:
             with ConnectionFactory.create_redis_connection() as redis_conn:
+                total_urls_crawled = Utils.int(redis_conn.get(Constants.TOTAL_URL_CRAWLED_KEY), 0)
+                logging.info("Total urls crawled:{}".format(total_urls_crawled))
+
                 urls_batch_size = self.get_batch_size(redis_conn)
 
                 urls_to_process = redis_conn.zrevrange(self.redis_queue_name, 0, urls_batch_size - 1)
@@ -231,6 +235,7 @@ class UrlProcessor:
                             self._process_crawler_response(crawler_response)
 
                         self._add_url_to_crawled_list(crawler_responses)
+                        redis_conn.incrby(Constants.TOTAL_URL_CRAWLED_KEY, len(crawler_responses))
 
                     self._remove_crawled_urls_from_redis_queue(url_details, redis_conn)
 
