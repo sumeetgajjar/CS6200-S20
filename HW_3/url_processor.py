@@ -181,7 +181,8 @@ class UrlProcessor:
             outlinks = self._extract_outlinks(crawler_response.url_detail, soup)
             self._update_link_graph(crawler_response, outlinks)
             filtered_outlinks = self._filter_outlinks(outlinks)
-            self.frontier_manager.add_to_queue(filtered_outlinks)
+            if filtered_outlinks:
+                self.frontier_manager.add_to_queue(filtered_outlinks)
 
             self._save_crawled_response(crawler_response, title, cleaned_text)
         except:

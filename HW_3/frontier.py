@@ -1,3 +1,4 @@
+import logging
 from typing import List, Dict
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
@@ -24,6 +25,7 @@ class FrontierManager(metaclass=SingletonMeta):
         return {outlink.url_detail.canonical_url: 1.0 for outlink in outlinks}
 
     def add_to_queue(self, outlinks: List[Outlink]):
+        logging.info("Adding {} url(s) to frontier".format(len(outlinks)))
         urls_scores = self._score_outlinks(outlinks)
         with ConnectionFactory.create_redis_connection() as redis:
             with redis.pipeline() as pipe:
