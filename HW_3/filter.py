@@ -168,6 +168,7 @@ class CrawlingRateLimitingService(metaclass=SingletonMeta):
             else:
                 filtered_result.filtered.append(url_detail)
 
+        logging.info("Rate limiting {} domain(s)".format(len(filtered_result.removed)))
         return filtered_result
 
 

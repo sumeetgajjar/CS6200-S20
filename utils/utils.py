@@ -51,7 +51,7 @@ class Utils:
         EsUtils.delete_es_index(name=Constants.AP_DATA_INDEX_NAME, ignore_unavailable=ignore_unavailable)
 
     @classmethod
-    def configure_logging(cls, level=logging.INFO):
+    def configure_logging(cls, level=logging.INFO, enable_logging_to_file=False, filepath=None):
         logger = getLogger()
         logger.setLevel(level)
 
@@ -60,6 +60,11 @@ class Utils:
         console_handler = StreamHandler()
         console_handler.setFormatter(log_formatter)
         logger.addHandler(console_handler)
+
+        if enable_logging_to_file:
+            file_handler = logging.FileHandler(filepath)
+            file_handler.setFormatter(log_formatter)
+            logger.addHandler(file_handler)
 
     @classmethod
     def split_list_into_sub_lists(cls, list_to_split, no_of_sub_lists: int = None, sub_list_size: int = None):

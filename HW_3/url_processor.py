@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import redis
 from bs4 import BeautifulSoup
+from retrying import retry
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
 from HW_3.beans import Outlink, CrawlerResponse
@@ -41,7 +42,9 @@ class UrlMapper:
         return assigned_queue
 
     @classmethod
+    @retry(stop_max_attempt_number=Constants.URL_MAPPER_QUEUE_TO_REDIS_RETRY)
     def _queue_urls(cls, queue_name, urls_to_queue: dict, redis_conn: redis.Redis):
+        logging.info("Queueing {} url(s) to {}".format(len(urls_to_queue), queue_name))
         with redis_conn.pipeline() as pipe:
             for url_to_queue, score in urls_to_queue.items():
                 pipe.zincrby(queue_name, score, url_to_queue)

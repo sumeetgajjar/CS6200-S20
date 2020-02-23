@@ -1,13 +1,16 @@
 # TODO make seed urls https
 # TODO write stuff to add to es
 # TODO write stuff to create link graph once processing is done
+from utils.utils import Utils
+
+Utils.configure_logging(enable_logging_to_file=True, filepath='hw_3_crawler.log')
+
 import concurrent.futures
 import logging
 from typing import List
 
 from HW_3.url_processor import UrlMapper, UrlProcessor
 from constants.constants import Constants
-from utils.utils import Utils
 
 
 class HW3:
@@ -39,18 +42,17 @@ class HW3:
 
     @classmethod
     def init_crawling(cls):
-        Utils.configure_logging()
         url_processor_init_infos = [(i, Constants.URL_PROCESSOR_QUEUE_NAME_TEMPLATE.format(i))
                                     for i in range(1, Constants.NO_OF_URL_PROCESSORS + 1)]
-        url_processor_futures = cls.url_processor_init_wrapper(url_processor_init_infos)
+        # url_processor_futures = cls.url_processor_init_wrapper(url_processor_init_infos)
 
-        # url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]
-        # url_mapper_future = cls.url_mapper_init_wrapper(url_processor_queue_names)
+        url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]
+        url_mapper_future = cls.url_mapper_init_wrapper(url_processor_queue_names)
 
         # cls._URL_MAPPER_POOL.shutdown(wait=True)
-        cls._URL_PROCESSOR_POOL.shutdown(wait=True)
-        result = [future.result() for future in url_processor_futures]
+        # cls._URL_PROCESSOR_POOL.shutdown(wait=True)
         # url_mapper_future.result()
+        # result = [future.result() for future in url_processor_futures]
 
 
 if __name__ == '__main__':
