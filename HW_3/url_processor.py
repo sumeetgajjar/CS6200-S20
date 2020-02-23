@@ -117,14 +117,15 @@ class UrlProcessor:
         outlinks = []
         for a_element in soup.find_all('a'):
             outlink_url = a_element['href']
-            if self._is_absolute(outlink_url):
-                outlink_url_detail = self.url_cleaner.transform_relative_url_to_absolute_url(in_link.canonical_url,
-                                                                                             outlink_url)
-            else:
-                outlink_url_detail = self.url_cleaner.get_canonical_url(outlink_url)
+            if outlink_url:
+                if self._is_absolute(outlink_url):
+                    outlink_url_detail = self.url_cleaner.transform_relative_url_to_absolute_url(in_link.canonical_url,
+                                                                                                 outlink_url)
+                else:
+                    outlink_url_detail = self.url_cleaner.get_canonical_url(outlink_url)
 
-            outlink = Outlink(outlink_url_detail, a_element.text)
-            outlinks.append(outlink)
+                outlink = Outlink(outlink_url_detail, a_element.text)
+                outlinks.append(outlink)
 
         return outlinks
 
@@ -139,7 +140,7 @@ class UrlProcessor:
 
     def _filter_outlinks(self, outlinks: List[Outlink]) -> List[Outlink]:
         filtered_result = self.url_filtering_service.filter_outlinks(outlinks)
-        logging.info("Removed {} urls".format(len(filtered_result.removed)))
+        logging.info("Filtered {} outlink(s)".format(len(filtered_result.removed)))
         return filtered_result.filtered
 
     @classmethod
@@ -167,7 +168,7 @@ class UrlProcessor:
             soup = BeautifulSoup(crawler_response.raw_html, features=Constants.HTML_PARSER)
             title = ''
             if soup.title:
-                title = soup.title.text
+                title = soup.title.text if soup.title.text else ''
             cleaned_text = soup.text
 
             outlinks = self._extract_outlinks(crawler_response.url_detail, soup)
@@ -177,8 +178,8 @@ class UrlProcessor:
 
             self._save_crawled_response(crawler_response, title, cleaned_text)
 
-        except Exception:
-            logging.error("Error occurred while crawling: {}".format(crawler_response.url_detail.canonical_url),
+        except:
+            logging.error("Error occurred while processing: {}".format(crawler_response.url_detail.canonical_url),
                           exc_info=True)
 
     @classmethod
@@ -186,12 +187,8 @@ class UrlProcessor:
         return Utils.int(redis_conn.get(Constants.URL_PROCESSOR_BATCH_SIZE_KEY),
                          Constants.URL_PROCESSOR_DEFAULT_BATCH_SIZE)
 
-    def _remove_crawled_urls_from_redis_queue(self, crawler_responses: List[CrawlerResponse], redis_conn):
-        crawled_urls = []
-        for crawler_response in crawler_responses:
-            if crawler_response:
-                crawled_urls.append(crawler_response.url_detail.canonical_url)
-
+    def _remove_crawled_urls_from_redis_queue(self, url_details: List[UrlDetail], redis_conn):
+        crawled_urls = [url_detail.canonical_url for url_detail in url_details]
         if crawled_urls:
             redis_conn.zrem(self.redis_queue_name, crawled_urls)
 
@@ -199,9 +196,8 @@ class UrlProcessor:
         while True:
             with ConnectionFactory.create_redis_connection() as redis_conn:
                 urls_batch_size = self.get_batch_size(redis_conn)
-                urls_batch_size -= 1
 
-                urls_to_process = redis_conn.zrevrange(self.redis_queue_name, 0, urls_batch_size, withscores=True)
+                urls_to_process = redis_conn.zrevrange(self.redis_queue_name, 0, urls_batch_size - 1, withscores=True)
                 if urls_to_process:
                     url_details = [self.url_cleaner.get_canonical_url(url) for url in urls_to_process]
                     filtered_result = self.url_filtering_service.filter_already_crawled_links(url_details)
@@ -211,11 +207,11 @@ class UrlProcessor:
                                                                        filtered_url_details,
                                                                        Constants.NO_OF_THREADS_PER_URL_PROCESSOR)
 
-                        self._remove_crawled_urls_from_redis_queue(crawler_responses, redis_conn)
-
                         for crawler_response in crawler_responses:
                             self._process_crawler_response(crawler_response)
 
+                    self._remove_crawled_urls_from_redis_queue(url_details, redis_conn)
+
                 else:
-                    logging.info('No urls to process, {} sleeping for 10 sec'.format(self.processor_id))
+                    logging.info('No urls to process, Url Processor:{} sleeping for 10 sec'.format(self.processor_id))
                     time.sleep(Constants.URL_PROCESSOR_SLEEP_TIME)

@@ -3,6 +3,7 @@ import random
 from typing import Tuple, Optional
 
 import requests
+from requests import HTTPError
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
 from HW_3.beans import CrawlerResponse
@@ -87,18 +88,17 @@ class Crawler:
         CrawlingUtils.add_urls_to_crawled_list(url_details)
 
     def crawl(self, url_detail: UrlDetail) -> Optional[CrawlerResponse]:
-        crawler_response = None
         try:
             crawler_response = self._crawl_helper(url_detail)
+            self._add_url_to_crawled_list(crawler_response)
+            return crawler_response
+        except HTTPError:
+            logging.error("HTTPError while crawling: {}".format(url_detail.canonical_url), exc_info=True)
+            self._add_url_to_crawled_list(CrawlerResponse(url_detail))
         except:
             logging.error("Error while crawling: {}".format(url_detail.canonical_url), exc_info=True)
-        finally:
-            if crawler_response:
-                self._add_url_to_crawled_list(crawler_response)
-            else:
-                self._add_url_to_crawled_list(CrawlerResponse(url_detail))
 
-        return crawler_response
+        return None
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ from typing import List
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
 from HW_3.beans import Outlink
+from HW_3.factory import Factory
 from constants.constants import Constants
 from utils.utils import Utils
 
@@ -35,4 +36,5 @@ class LinkGraph:
 
 if __name__ == '__main__':
     Utils.configure_logging()
-    LinkGraph._insert_edges_to_mysql('<rt><r><s><![CDATA[sumeet-212]]></s><d><![CDATA[sumeet-2]]></d></r></rt>')
+    LinkGraph.add_edge(Factory.create_url_cleaner().get_canonical_url('testing-src-6200.com'),
+                       Factory.create_url_cleaner().get_canonical_url('testing-dest-6200.com'))

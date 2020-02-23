@@ -64,18 +64,19 @@ class DomainRanker:
 
 
 class UrlFilteringService:
-    _KEYWORDS_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'privacy policy', 'ads', 'terms of use', 'privacy',
-                                         'ad choices', 'copyright', 'instagram', 'linkedin', 'career', 'api', 'jobs',
-                                         'terms', 'log in', 'register', 'sign up', 'create account', 'download', 'edit',
-                                         'cookie', 'about ', 'advertise', 'subscribe', 'rss', 'follow us', 'contact'}
+    _KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'privacy policy', 'ads', 'terms of use',
+                                               'privacy', 'ad choices', 'copyright', 'instagram', 'linkedin', 'career',
+                                               'api', 'jobs', 'terms', 'log in', 'register', 'sign up',
+                                               'create account', 'download', 'edit', 'cookie', 'about ', 'advertise',
+                                               'subscribe', 'rss', 'follow us', 'contact'}
 
-    _DOMAINS_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin'}
+    _DOMAIN_SUBSTR_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin'}
 
     def _filter_useless_links(self, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
-            for keyword in self._KEYWORDS_TO_AVOID_IN_ANCHOR_TEXT:
-                if keyword in outlink.anchor_text:
+            for keyword_str in self._KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT:
+                if keyword_str in outlink.anchor_text:
                     new_filtered_result.removed.append(outlink)
                 else:
                     new_filtered_result.filtered.append(outlink)
@@ -85,8 +86,8 @@ class UrlFilteringService:
     def _filter_domains(self, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
-            for domain in self._DOMAINS_TO_AVOID:
-                if domain in outlink.url_detail.domain:
+            for domain_str in self._DOMAIN_SUBSTR_TO_AVOID:
+                if domain_str in outlink.url_detail.domain:
                     new_filtered_result.removed.append(outlink)
                 else:
                     new_filtered_result.filtered.append(outlink)
@@ -94,23 +95,29 @@ class UrlFilteringService:
         return new_filtered_result
 
     @classmethod
-    def _filter_duplicate_outlinks(cls, filtered_result: FilteredResult):
+    def _filter_duplicate_outlinks(cls, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
-        url_details_set = {}
+        url_details_set = set()
         for outlink in filtered_result.filtered:
             if outlink.url_detail in url_details_set:
                 new_filtered_result.removed.append(outlink)
             else:
                 new_filtered_result.filtered.append(outlink)
 
+            url_details_set.add(outlink.url_detail)
+
+        return new_filtered_result
+
     def filter_outlinks(self, outlinks: List[Outlink]) -> FilteredResult:
         filtered = [].extend(outlinks)
         filtered_result = FilteredResult(filtered, [])
+        filtered_result = self._filter_duplicate_outlinks(filtered_result)
         filtered_result = self._filter_domains(filtered_result)
         filtered_result = self._filter_useless_links(filtered_result)
         return filtered_result
 
-    def filter_already_crawled_links(self, url_details: List[UrlDetail]) -> FilteredResult:
+    @classmethod
+    def filter_already_crawled_links(cls, url_details: List[UrlDetail]) -> FilteredResult:
         filtered_result = FilteredResult([], [])
         for url_detail in url_details:
             if CrawlingUtils.is_crawled(url_detail):
