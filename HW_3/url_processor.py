@@ -170,7 +170,7 @@ class UrlProcessor:
         with open(file_path, 'w') as file:
             json.dump(data, file)
 
-        logging.info("Crawled response persisted")
+        logging.info("Crawled response persisted:{}".format(file_path))
 
     def _process_crawler_response(self, crawler_response: CrawlerResponse):
         try:
