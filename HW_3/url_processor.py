@@ -4,6 +4,7 @@ import logging
 import os
 import time
 from collections import defaultdict, Counter
+from datetime import datetime
 from typing import List
 from urllib.parse import urlparse
 
@@ -162,6 +163,7 @@ class UrlProcessor:
             'raw_html': crawler_response.raw_html,
             'url': crawler_response.url_detail.canonical_url,
             'org_url': crawler_response.url_detail.org_url,
+            'timestamp': datetime.now()
         }
 
         if crawler_response.redirected:
