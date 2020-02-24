@@ -70,7 +70,7 @@ class UrlFilteringService:
                                                'create account', 'download', 'edit', 'cookie', 'about ', 'advertise',
                                                'subscribe', 'rss', 'follow us', 'contact'}
 
-    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'mailto'}
+    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'mailto', 'issue', 'ticket', 'changelog'}
 
     _DOMAIN_SUBSTR_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin'}
 
