@@ -12,7 +12,6 @@ class FrontierManager(metaclass=SingletonMeta):
 
     def __init__(self, url_cleaner: UrlCleaner) -> None:
         self.url_cleaner = url_cleaner
-        self.seed_urls = []
 
     def get_urls_to_crawl(self, batch_size=20) -> List[UrlDetail]:
         with ConnectionFactory.create_redis_connection() as redis:
@@ -21,11 +20,24 @@ class FrontierManager(metaclass=SingletonMeta):
                 redis.zrem(Constants.FRONTIER_MANAGER_REDIS_QUEUE, *urls)
         return [self.url_cleaner.get_canonical_url(url) for url in urls]
 
+    @classmethod
+    def _update_inlinks_count(cls, outlinks: List[Outlink]):
+        with ConnectionFactory.create_redis_connection() as redis:
+            with redis.pipeline() as pipe:
+                for outlink in outlinks:
+                    pipe.hincrby(Constants.DOMAIN_INLINKS_COUNT_KEY, outlink.url_detail.domain)
+                pipe.execute()
+
+                for outlink in outlinks:
+                    pipe.hincrby(Constants.URL_INLINKS_COUNT_KEY, outlink.url_detail.canonical_url)
+                pipe.execute()
+
     def _score_outlinks(self, outlinks: List[Outlink]) -> Dict[str, float]:
         return {outlink.url_detail.canonical_url: 1.0 for outlink in outlinks}
 
     def add_to_queue(self, outlinks: List[Outlink]):
         logging.info("Adding {} url(s) to frontier".format(len(outlinks)))
+        self._update_inlinks_count(outlinks)
         urls_scores = self._score_outlinks(outlinks)
         with ConnectionFactory.create_redis_connection() as redis:
             with redis.pipeline() as pipe:

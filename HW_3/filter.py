@@ -16,7 +16,7 @@ from utils.singleton import SingletonMeta
 from utils.utils import Utils
 
 
-class DomainRanker:
+class DomainRanker(metaclass=SingletonMeta):
     _DEFAULT_DOMAIN_RANK = sys.maxsize
     _RAW_DOMAIN_RANK_FILE_PATH = '/home/sumeet/PycharmProjects/CS6200-S20/CS6200_S20_SHARED/domain_rankings.csv'
     _PROCESSED_DOMAIN_RANK_FILE_NAME = 'processed_domain_ranking.json'
