@@ -1,7 +1,7 @@
 import logging
 import re
 from collections import defaultdict
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
 from HW_3.beans import Outlink
@@ -82,16 +82,46 @@ class FrontierManager(metaclass=SingletonMeta):
         union_set_len = len(anchor_link_set) + len(Constants.TOPIC_KEYWORDS) + len(intersection_set)
         return len(intersection_set) / union_set_len
 
-    def _get_keyword_url_relevance(self, outlinks: List[Outlink]) -> dict:
-        relevance = defaultdict(float)
-        for outlink in outlinks:
-            relevance[outlink.url_detail.canonical_url] += (self._compute_jacard_similarity_anchor_text(outlink)) * 1000
-            relevance[outlink.url_detail.canonical_url] += self._compute_jacard_similarity_anchor_link(outlink) * 1000
+    @classmethod
+    def _get_relevance_from_redis(cls, outlinks: List[Outlink]) -> Tuple[Dict[str, float], Dict[str, float]]:
+        url_relevance = defaultdict(float)
+        domain_relevance = defaultdict(float)
+        with ConnectionFactory.create_redis_connection() as redis:
+            domain_relevance_result = redis.hmget(Constants.DOMAIN_RELEVANCE_KEY,
+                                                  [outlink.url_detail.domain for outlink in outlinks])
+            url_relevance_result = redis.hmget(Constants.URL_RELEVANCE_KEY,
+                                               [outlink.url_detail.canonical_url for outlink in outlinks])
+        for i in range(len(outlinks)):
+            if domain_relevance_result[i]:
+                domain_relevance[outlinks[i].url_detail.domain] += domain_relevance_result[i]
+            if url_relevance_result[i]:
+                url_relevance[outlinks[i].url_detail.canonical_url] += url_relevance_result[i]
 
-        return relevance
+        return domain_relevance, url_relevance
+
+    @classmethod
+    def _update_relevance_in_redis(cls, domain_relevance, url_relevance):
+        with ConnectionFactory.create_redis_connection() as redis:
+            redis.hmset(Constants.DOMAIN_RELEVANCE_KEY, domain_relevance)
+            redis.hmset(Constants.URL_RELEVANCE_KEY, url_relevance)
+
+    def _get_relevance(self, outlinks: List[Outlink]) -> Tuple[Dict[str, float], Dict[str, float]]:
+        domain_relevance, url_relevance = self._get_relevance_from_redis(outlinks)
+        for outlink in outlinks:
+            anchor_text_relevance = self._compute_jacard_similarity_anchor_text(outlink)
+            url_relevance[outlink.url_detail.canonical_url] += (anchor_text_relevance * 1000)
+            domain_relevance[outlink.url_detail.domain] += anchor_text_relevance
+
+            anchor_link_relevance = self._compute_jacard_similarity_anchor_link(outlink)
+            url_relevance[outlink.url_detail.canonical_url] += (anchor_link_relevance * 1000)
+            domain_relevance[outlink.url_detail.domain] += anchor_link_relevance
+
+        return domain_relevance, url_relevance
 
     def _generate_outlink_score(self, outlinks: List[Outlink],
-                                domain_inlinks, url_inlinks, domain_ranks, relevance) -> Dict[str, float]:
+                                domain_inlinks, url_inlinks,
+                                domain_ranks,
+                                domain_relevance, url_relevance) -> Dict[str, float]:
         # TODO add logic to weight score here
         return {}
 
@@ -101,9 +131,13 @@ class FrontierManager(metaclass=SingletonMeta):
             url_inlinks = self._get_url_inlinks_count(outlinks, redis)
 
         domain_ranks = self._get_domain_ranks(outlinks)
-        relevance = self._get_keyword_url_relevance(outlinks)
+        domain_relevance, url_relevance = self._get_relevance(outlinks)
+        self._update_relevance_in_redis(domain_relevance, url_relevance)
 
-        return self._generate_outlink_score(outlinks, domain_inlinks, url_inlinks, domain_ranks, relevance)
+        return self._generate_outlink_score(outlinks,
+                                            domain_inlinks, url_inlinks,
+                                            domain_ranks,
+                                            domain_relevance, url_relevance)
 
     def add_to_queue(self, outlinks: List[Outlink]):
         logging.info("Adding {} url(s) to frontier".format(len(outlinks)))
