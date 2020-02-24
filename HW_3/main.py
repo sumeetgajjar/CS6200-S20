@@ -2,7 +2,9 @@
 # TODO write stuff to create link graph once processing is done
 import concurrent.futures
 import logging
-from typing import List
+import signal
+import sys
+from typing import List, Optional
 
 from utils.utils import Utils
 
@@ -15,6 +17,18 @@ from constants.constants import Constants
 class HW3:
     _URL_MAPPER_POOL = concurrent.futures.ProcessPoolExecutor(1)
     _URL_PROCESSOR_POOL = concurrent.futures.ProcessPoolExecutor(Constants.NO_OF_URL_PROCESSORS)
+    _URL_MAPPER: Optional[UrlMapper] = None
+
+    @classmethod
+    def _add_signal_handler(cls):
+        signal.signal(signal.SIGINT, cls._exit_gracefully)
+        signal.signal(signal.SIGTERM, cls._exit_gracefully)
+
+    @classmethod
+    def _exit_gracefully(cls, signum, frame):
+        if cls._URL_MAPPER:
+            cls._URL_MAPPER.queue_rate_limited_urls_to_frontier()
+        sys.exit(1)
 
     @classmethod
     def start_url_processor(cls, url_processor_id: int, url_processor_queue_name: str):
@@ -37,8 +51,8 @@ class HW3:
     def start_url_mapper(cls, url_processor_queue_names: List[str]):
         logging.info("Starting Url Mapper")
         try:
-            url_mapper = UrlMapper(url_processor_queue_names)
-            url_mapper.start()
+            cls._URL_MAPPER = UrlMapper(url_processor_queue_names)
+            cls._URL_MAPPER.start()
         except:
             logging.critical("Exiting Url Mapper", exc_info=True)
             raise
@@ -49,6 +63,7 @@ class HW3:
 
     @classmethod
     def init_crawling(cls):
+        cls._add_signal_handler()
         url_processor_init_infos = [(i, Constants.URL_PROCESSOR_QUEUE_NAME_TEMPLATE.format(i))
                                     for i in range(1, Constants.NO_OF_URL_PROCESSORS + 1)]
         url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]

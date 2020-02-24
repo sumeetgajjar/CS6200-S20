@@ -115,3 +115,13 @@ class FrontierManager(metaclass=SingletonMeta):
                     pipe.zincrby(Constants.FRONTIER_MANAGER_REDIS_QUEUE, score, url)
 
                 pipe.execute()
+
+    @classmethod
+    def add_rate_limited_urls(cls, rate_limited_urls: List[UrlDetail]):
+        with ConnectionFactory.create_redis_connection() as redis:
+            with redis.pipeline() as pipe:
+                for url in rate_limited_urls:
+                    pipe.zincrby(Constants.FRONTIER_MANAGER_REDIS_QUEUE, Constants.RATE_LIMITED_URL_WEIGHT,
+                                 url.canonical_url)
+
+                pipe.execute()

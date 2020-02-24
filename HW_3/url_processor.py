@@ -31,6 +31,7 @@ class UrlMapper:
         self.url_processor_queue_names_set = set(url_processor_queue_names)
         self.domain_url_processor_mapping = {}
         self.next_queue_to_assign_url = 0
+        self.rate_limited_url_details = []
 
     def _get_queue_for_domain(self, domain: str) -> str:
         assigned_queue = self.domain_url_processor_mapping.get(domain)
@@ -62,12 +63,16 @@ class UrlMapper:
 
         return urls_queue_mapping
 
-    def start(self):
-        rate_limited_url_details = []
+    def queue_rate_limited_urls_to_frontier(self):
+        logging.info("Draining rate limited urls to frontier queue")
+        self.rate_limited_url_details.append(self.frontier_manager.url_cleaner.get_canonical_url("http://google.com"))
+        if self.rate_limited_url_details:
+            self.frontier_manager.add_rate_limited_urls(self.rate_limited_url_details)
 
+    def start(self):
         while True:
             with ConnectionFactory.create_redis_connection() as redis_conn:
-                url_details = rate_limited_url_details
+                url_details = self.rate_limited_url_details
 
                 url_processor_batch_size = UrlProcessor.get_batch_size(redis_conn)
                 urls_batch_size = (url_processor_batch_size * Constants.NO_OF_URL_PROCESSORS) - len(url_details)
@@ -77,8 +82,8 @@ class UrlMapper:
 
                 filtered_result = self.crawling_rate_limiting_service.filter(url_details)
                 filtered_url_details = filtered_result.filtered
-                rate_limited_url_details = filtered_result.removed
-                logging.info("Total rate limited urls:{}".format(len(rate_limited_url_details)))
+                self.rate_limited_url_details = filtered_result.removed
+                logging.info("Total rate limited urls:{}".format(len(self.rate_limited_url_details)))
 
                 if len(filtered_url_details) > 0:
                     urls_queue_mapping = self._generate_urls_queue_mapping(filtered_url_details)
@@ -148,7 +153,7 @@ class UrlProcessor:
         return filtered_result.filtered
 
     @classmethod
-    def _save_crawled_response(cls, crawler_response: CrawlerResponse, title: str, cleaned_text: str):
+    def _persist_crawled_response(cls, crawler_response: CrawlerResponse, title: str, cleaned_text: str):
         logging.info("Persisting crawled response")
         data = {
             'title': title,
@@ -184,7 +189,7 @@ class UrlProcessor:
             if filtered_outlinks:
                 self.frontier_manager.add_to_queue(filtered_outlinks)
 
-            self._save_crawled_response(crawler_response, title, cleaned_text)
+            self._persist_crawled_response(crawler_response, title, cleaned_text)
         except:
             logging.error("Error occurred while processing: {}".format(crawler_response.url_detail.canonical_url),
                           exc_info=True)
