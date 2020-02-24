@@ -46,7 +46,7 @@ function queue_seed() {
     done
 }
 
-while [ $# -ne 0 ];
+while [[ $# -ne 0 ]];
 do
    case $1 in
         refresh) refresh ;;
