@@ -1,5 +1,5 @@
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner
-from HW_3.filter import UrlFilteringService, CrawlingRateLimitingService
+from HW_3.filter import UrlFilteringService, CrawlingRateLimitingService, DomainRanker
 from HW_3.frontier import FrontierManager
 from utils.singleton import SingletonMeta
 
@@ -15,8 +15,12 @@ class Factory:
         return UrlCleanerSingleton()
 
     @classmethod
+    def create_domain_ranker(cls) -> DomainRanker:
+        return DomainRanker()
+
+    @classmethod
     def create_frontier_manager(cls) -> FrontierManager:
-        return FrontierManager(cls.create_url_cleaner())
+        return FrontierManager(cls.create_url_cleaner(), cls.create_domain_ranker())
 
     @classmethod
     def create_url_filtering_service(cls) -> UrlFilteringService:

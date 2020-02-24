@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from urllib.robotparser import RobotFileParser
 
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner, UrlDetail
@@ -51,7 +51,7 @@ class DomainRanker(metaclass=SingletonMeta):
                 domain = UrlCleaner.get_domain_from_url(row['Domain'])
                 self.domain_rankings[domain] = [int(row['GlobalRank']), int(row['TldRank'])]
 
-    def get_domain_rank(self, canonical_domain: str) -> DomainRank:
+    def get_domain_rank(self, canonical_domain: str) -> Optional[DomainRank]:
         """
         :param canonical_domain:
         :return: the domain rank
@@ -60,7 +60,7 @@ class DomainRanker(metaclass=SingletonMeta):
         if domain_rank_info:
             return DomainRank(canonical_domain, domain_rank_info[0], domain_rank_info[1])
         else:
-            return DomainRank(canonical_domain, self._DEFAULT_DOMAIN_RANK, self._DEFAULT_DOMAIN_RANK)
+            return None
 
 
 class UrlFilteringService:
