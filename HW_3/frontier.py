@@ -12,7 +12,7 @@ from utils.singleton import SingletonMeta
 
 
 class FrontierManager(metaclass=SingletonMeta):
-    _URL_SPLIT_REGEX = re.compile("\\W")
+    _URL_SPLIT_REGEX = re.compile("\\W|_")
 
     def __init__(self, url_cleaner: UrlCleaner, domain_ranker: DomainRanker) -> None:
         self.url_cleaner = url_cleaner
@@ -86,9 +86,14 @@ class FrontierManager(metaclass=SingletonMeta):
         relevance = defaultdict(float)
         for outlink in outlinks:
             relevance[outlink.url_detail.canonical_url] += (self._compute_jacard_similarity_anchor_text(outlink)) * 1000
-            relevance[outlink.url_detail.canonical_url] += self._compute_jacard_similarity_anchor_link(outlink) * 100
+            relevance[outlink.url_detail.canonical_url] += self._compute_jacard_similarity_anchor_link(outlink) * 1000
 
         return relevance
+
+    def _generate_outlink_score(self, outlinks: List[Outlink],
+                                domain_inlinks, url_inlinks, domain_ranks, relevance) -> Dict[str, float]:
+        # TODO add logic to weight score here
+        return {}
 
     def _score_outlinks(self, outlinks: List[Outlink]) -> Dict[str, float]:
         with ConnectionFactory.create_redis_connection() as redis:
@@ -98,7 +103,7 @@ class FrontierManager(metaclass=SingletonMeta):
         domain_ranks = self._get_domain_ranks(outlinks)
         relevance = self._get_keyword_url_relevance(outlinks)
 
-        return {outlink.url_detail.canonical_url: 1.0 for outlink in outlinks}
+        return self._generate_outlink_score(outlinks, domain_inlinks, url_inlinks, domain_ranks, relevance)
 
     def add_to_queue(self, outlinks: List[Outlink]):
         logging.info("Adding {} url(s) to frontier".format(len(outlinks)))

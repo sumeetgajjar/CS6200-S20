@@ -1,4 +1,3 @@
-# TODO make seed urls https
 # TODO write stuff to add to es
 # TODO write stuff to create link graph once processing is done
 from utils.utils import Utils
