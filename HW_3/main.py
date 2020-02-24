@@ -1,12 +1,12 @@
 # TODO write stuff to add to es
 # TODO write stuff to create link graph once processing is done
-from utils.utils import Utils
-
-Utils.configure_logging(enable_logging_to_file=True, filepath='hw_3_crawler.log')
-
 import concurrent.futures
 import logging
 from typing import List
+
+from utils.utils import Utils
+
+Utils.configure_logging(enable_logging_to_file=True, filepath='hw_3_crawler.log')
 
 from HW_3.url_processor import UrlMapper, UrlProcessor
 from constants.constants import Constants
