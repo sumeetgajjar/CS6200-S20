@@ -163,7 +163,7 @@ class UrlProcessor:
             'raw_html': crawler_response.raw_html,
             'url': crawler_response.url_detail.canonical_url,
             'org_url': crawler_response.url_detail.org_url,
-            'timestamp': datetime.now()
+            'timestamp': datetime.now().strftime(Constants.TIME_FORMAT)
         }
 
         if crawler_response.redirected:

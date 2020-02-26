@@ -30,8 +30,10 @@ class LinkGraph:
 
     @classmethod
     def add_edges(cls, src: UrlDetail, outlinks: List[Outlink]):
-        edges_xml = cls._generate_edges_xml(src, [outlink.url_detail for outlink in outlinks])
-        cls._insert_edges_to_mysql(edges_xml)
+        urls = [outlink.url_detail for outlink in outlinks]
+        for urls_batch in Utils.split_list_into_sub_lists(urls, sub_list_size=Constants.LINK_GRAPH_INSERT_BATCH_SIZE):
+            edges_xml = cls._generate_edges_xml(src, urls_batch)
+            cls._insert_edges_to_mysql(edges_xml)
 
 
 if __name__ == '__main__':

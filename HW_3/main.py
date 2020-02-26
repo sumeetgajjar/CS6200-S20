@@ -69,7 +69,7 @@ class HW3:
         url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]
 
         processor = True
-        mapper = True
+        mapper = False
 
         url_processor_futures = []
         if processor:

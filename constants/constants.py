@@ -80,6 +80,8 @@ class Constants:
     NO_OF_THREADS_PER_URL_PROCESSOR = 10
     NO_OF_URL_PROCESSORS = 10
     URL_PROCESSOR_SLEEP_TIME = 10  # seconds
+    TIME_FORMAT = "%d-%m-%Y-%H:%M:%S.%f"
+    LINK_GRAPH_INSERT_BATCH_SIZE = 2500
 
     # Url Mapper configs
     URL_MAPPER_QUEUE_TO_REDIS_RETRY = 3
