@@ -70,9 +70,9 @@ class UrlFilteringService:
                                                'create account', 'download', 'edit', 'cookie', 'about ', 'advertise',
                                                'subscribe', 'rss', 'follow us', 'contact'}
 
-    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'mailto', 'issue', 'ticket', 'changelog'}
+    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'mailto', 'issue', 'ticket', 'changelog', 'legal'}
 
-    _DOMAIN_SUBSTR_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin', 'github'}
+    _DOMAIN_SUBSTR_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin', 'github', 'amazon'}
 
     def _filter_useless_links_based_on_anchor_text(self, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
