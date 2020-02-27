@@ -108,6 +108,7 @@ class FrontierManager(metaclass=SingletonMeta):
     def _get_relevance(self, outlinks: List[Outlink]) -> Tuple[Dict[str, float], Dict[str, float]]:
         domain_relevance, url_relevance = self._get_relevance_from_redis(outlinks)
         for outlink in outlinks:
+            # TODO replace jacard with exists
             anchor_text_relevance = self._compute_jacard_similarity_anchor_text(outlink)
             url_relevance[outlink.url_detail.canonical_url] += (anchor_text_relevance * 1000)
             domain_relevance[outlink.url_detail.domain] += anchor_text_relevance
@@ -133,6 +134,8 @@ class FrontierManager(metaclass=SingletonMeta):
         domain_ranks = self._get_domain_ranks(outlinks)
         domain_relevance, url_relevance = self._get_relevance(outlinks)
         self._update_relevance_in_redis(domain_relevance, url_relevance)
+
+        # TODO calculate meta relevance
 
         return self._generate_outlink_score(outlinks,
                                             domain_inlinks, url_inlinks,

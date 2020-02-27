@@ -162,7 +162,9 @@ class UrlProcessor:
             'raw_html': crawler_response.raw_html,
             'url': crawler_response.url_detail.canonical_url,
             'org_url': crawler_response.url_detail.org_url,
-            'timestamp': datetime.now().strftime(Constants.TIME_FORMAT)
+            'timestamp': datetime.now().strftime(Constants.TIME_FORMAT),
+            'meta_keywords': crawler_response.meta_keywords,
+            'meta_description': crawler_response.meta_description
         }
 
         if crawler_response.redirected:
@@ -176,6 +178,22 @@ class UrlProcessor:
 
         logging.info("Crawled response persisted:{}".format(file_path))
 
+    @classmethod
+    def _extract_meta_info(cls, crawler_response: CrawlerResponse, soup: BeautifulSoup) -> None:
+        # TODO test this
+        for meta_element in soup.find_all('meta'):
+            meta_element_name = meta_element.attrs.get('name')
+            if meta_element_name:
+                meta_element_name = meta_element_name.strip().lower()
+                if meta_element_name == 'keywords':
+                    keywords_text = meta_element.attrs.get('content')
+                    if keywords_text:
+                        crawler_response.meta_keywords.update(keywords_text.strip().lower().split(','))
+                elif meta_element_name == 'description':
+                    description_text = meta_element.attrs.get('content')
+                    if description_text:
+                        crawler_response.meta_description = description_text.strip().lower()
+
     def _process_crawler_response(self, crawler_response: CrawlerResponse):
         try:
             soup = BeautifulSoup(crawler_response.raw_html, features=Constants.HTML_PARSER)
@@ -183,6 +201,7 @@ class UrlProcessor:
             if soup.title:
                 title = soup.title.text.strip() if soup.title.text else ''
             cleaned_text = soup.text.strip()
+            self._extract_meta_info(crawler_response, soup)
 
             outlinks = self._extract_outlinks(crawler_response.url_detail, soup)
             self._update_link_graph(crawler_response, outlinks)

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Set
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail
 
@@ -51,6 +51,8 @@ class CrawlerResponse:
         self.headers: Optional[dict] = None
         self.redirected: bool = False
         self.redirected_url: Optional[UrlDetail] = None
+        self.meta_keywords: Set[str] = set()
+        self.meta_description: str = None
 
     def __str__(self) -> str:
         return 'UrlDetail:{}, Header:{}, RedirectedUrlDetail:{}'.format(self.url_detail, self.headers,
