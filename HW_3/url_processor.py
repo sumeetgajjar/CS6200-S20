@@ -1,4 +1,3 @@
-import hashlib
 import json
 import logging
 import os
@@ -170,7 +169,7 @@ class UrlProcessor:
             data['redirected_org_url'] = crawler_response.redirected_url.org_url
             data['redirected_url'] = crawler_response.redirected_url.canonical_url
 
-        file_name = '{}.json'.format(hashlib.md5(crawler_response.url_detail.canonical_url.encode()).hexdigest())
+        file_name = '{}.json'.format(crawler_response.url_detail.id)
         file_path = '{}/{}'.format(Utils.get_crawled_response_dir(), file_name)
         with open(file_path, 'w') as file:
             json.dump(data, file)
