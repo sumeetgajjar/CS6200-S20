@@ -13,7 +13,6 @@ create table if not exists cs6200.link_graph_edges
     created   timestamp default CURRENT_TIMESTAMP,
     updated   timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
     is_active tinyint   default 1,
-    index (src_hash, dest_hash),
     primary key (id, is_active)
 ) partition by list (is_active)(
     partition p_active values in (1),
@@ -52,10 +51,8 @@ BEGIN
     drop table if exists tmp;
     create temporary table tmp
     (
-        src       nvarchar(2000) not null,
-        src_hash  varchar(40)    not null,
-        dest      nvarchar(2000) not null,
-        dest_hash varchar(40)    not null
+        src  nvarchar(2000) not null,
+        dest nvarchar(2000) not null
     ) ENGINE = MEMORY;
 
     set v_row_count = extractValue(var_edges_xml, concat('count(/rt/r)'));
@@ -66,17 +63,13 @@ BEGIN
             set v_xpath_row = concat('/rt/r[', v_row_index, ']');
             set v_src = extractValue(var_edges_xml, concat(v_xpath_row, '/s'));
             set v_dest = extractValue(var_edges_xml, concat(v_xpath_row, '/d'));
-            insert into tmp (src, src_hash, dest, dest_hash)
-            values (v_src, MD5(v_src), v_dest, MD5(v_dest));
+            insert into tmp (src, dest)
+            values (v_src, v_dest);
         end while;
 
     insert into cs6200.link_graph_edges(src, src_hash, dest, dest_hash)
-    select src, src_hash, dest, dest_hash
-    from tmp a
-    where not exists(select 1
-                     from cs6200.link_graph_edges as b
-                     where b.src_hash = a.src_hash
-                       and b.dest_hash = a.dest_hash);
+    select src, MD5(src), dest, MD5(dest)
+    from tmp a;
 
 END $$
 DELIMITER ;
