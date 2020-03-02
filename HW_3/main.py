@@ -9,6 +9,7 @@ import sys
 from typing import List, Optional
 
 from CS6200_S20_SHARED.es_inserter import LinkGraphReader
+from CS6200_S20_SHARED.url_cleaner import UrlCleaner
 from utils.utils import Utils
 
 Utils.configure_logging(enable_logging_to_file=True, filepath='hw_3_crawler.log')
@@ -95,11 +96,22 @@ class HW3:
         link_graph_csv_path = Utils.get_link_graph_csv_path()
         if override or not os.path.isfile(link_graph_csv_path):
             with Constants.MYSQL_ENGINE.connect() as conn:
-                result = conn.execute("SELECT a.src, a.dest FROM link_graph_edges as a")
+                # TODO: verify this
+                result = conn.execute("""
+                                        select a.src, a.dest, b.url_hash is not null as is_crawled
+                                        from cs6200.link_graph_edges a
+                                        left join cs6200.crawled_urls b
+                                        on a.dest_hash = b.url_hash
+                                      """)
                 with open(link_graph_csv_path, 'w') as file:
+                    url_cleaner = UrlCleaner()
                     csv_writer = csv.writer(file)
-                    csv_writer.writerow(result.keys())
-                    csv_writer.writerows(result)
+                    csv_writer.writerow(['src', 'dest'])
+                    for row in result:
+                        dest = row[1]
+                        if not row[2]:
+                            dest = url_cleaner.get_canonical_url(dest).domain
+                        csv_writer.writerow([row[0], dest])
 
                 logging.info("Number of rows exported to csv: {}".format(result.rowcount))
 
