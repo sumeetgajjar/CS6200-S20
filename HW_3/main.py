@@ -1,11 +1,14 @@
 # TODO write stuff to add to es
 # TODO write stuff to create link graph once processing is done
 import concurrent.futures
+import csv
 import logging
+import os
 import signal
 import sys
 from typing import List, Optional
 
+from CS6200_S20_SHARED.es_inserter import LinkGraphReader
 from utils.utils import Utils
 
 Utils.configure_logging(enable_logging_to_file=True, filepath='hw_3_crawler.log')
@@ -87,6 +90,26 @@ class HW3:
             cls._URL_MAPPER_POOL.shutdown(wait=True)
             url_mapper_future.result()
 
+    @classmethod
+    def _create_link_graph_csv(cls, override=False):
+        link_graph_csv_path = Utils.get_link_graph_csv_path()
+        if override or not os.path.isfile(link_graph_csv_path):
+            with Constants.MYSQL_ENGINE.connect() as conn:
+                result = conn.execute("SELECT a.src, a.dest FROM link_graph_edges as a")
+                with open(link_graph_csv_path, 'w') as file:
+                    csv_writer = csv.writer(file)
+                    csv_writer.writerow(result.keys())
+                    csv_writer.writerows(result)
+
+                logging.info("Number of rows exported to csv: {}".format(result.rowcount))
+
+    @classmethod
+    def insert_data_into_es(cls):
+        Utils.configure_logging()
+        cls._create_link_graph_csv(override=True)
+        link_graph_reader = LinkGraphReader(Utils.get_link_graph_csv_path())
+
 
 if __name__ == '__main__':
-    HW3.init_crawling()
+    # HW3.init_crawling()
+    HW3.insert_data_into_es()

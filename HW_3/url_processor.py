@@ -139,7 +139,7 @@ class UrlProcessor:
     def _update_link_graph(cls, crawler_response: CrawlerResponse, outlinks: List[Outlink]) -> None:
         logging.info("Updating link graph")
         src_url_detail = crawler_response.url_detail
-        if crawler_response.redirected:
+        if crawler_response.is_redirected:
             LinkGraph.add_edge(src_url_detail, crawler_response.redirected_url)
             src_url_detail = crawler_response.redirected_url
 
@@ -167,7 +167,7 @@ class UrlProcessor:
             'meta_description': crawler_response.meta_description
         }
 
-        if crawler_response.redirected:
+        if crawler_response.is_redirected:
             data['redirected_org_url'] = crawler_response.redirected_url.org_url
             data['redirected_url'] = crawler_response.redirected_url.canonical_url
 
@@ -230,7 +230,7 @@ class UrlProcessor:
 
         for crawler_response in crawler_responses:
             url_details.append(crawler_response.url_detail)
-            if crawler_response.redirected:
+            if crawler_response.is_redirected:
                 url_details.append(crawler_response.redirected_url)
 
         CrawlingUtils.add_urls_to_crawled_list(url_details)

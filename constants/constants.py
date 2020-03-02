@@ -10,6 +10,7 @@ class Constants:
     CRAWLED_RESPONSE_DIR = 'crawled_response'
     USER_AGENT_FILE_NAME = 'user-agents.txt'
     DOCUMENT_ID_MAPPING_FILE_NAME = 'document-id-mapping.json'
+    LINK_GRAPH_CSV_FILE_NAME = 'link-graph.csv'
     AP_DATA_FILE_ENCODING = 'latin-1'
     PICKLE_PROTOCOL = 3
 

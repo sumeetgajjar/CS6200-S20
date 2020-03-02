@@ -61,7 +61,7 @@ class Crawler:
             logging.info("Url redirection detected, changing url detail: {}->{}".format(url_detail.canonical_url,
                                                                                         new_url_detail.canonical_url))
 
-            crawler_response.redirected = True
+            crawler_response.is_redirected = True
             crawler_response.redirected_url = new_url_detail
 
             url_detail = new_url_detail

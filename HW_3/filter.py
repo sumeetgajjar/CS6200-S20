@@ -64,11 +64,11 @@ class DomainRanker(metaclass=SingletonMeta):
 
 
 class UrlFilteringService:
-    _KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'privacy policy', 'ads', 'terms of use', 'mail',
-                                               'privacy', 'ad choices', 'copyright', 'instagram', 'linkedin', 'career',
-                                               'api', 'jobs', 'terms', 'log in', 'register', 'sign up', 'press',
-                                               'create account', 'download', 'edit', 'cookie', 'about ', 'advertise',
-                                               'subscribe', 'rss', 'follow us', 'contact'}
+    _KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'ads', 'terms of use', 'mail',
+                                               'privacy', 'policy', 'ad choices', 'copyright', 'instagram', 'linkedin',
+                                               'career', 'api', 'jobs', 'terms', 'log in', 'register', 'sign up',
+                                               'press', 'create account', 'download', 'edit', 'cookie', 'about ',
+                                               'advertise', 'subscribe', 'rss', 'follow us', 'contact'}
 
     _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'mailto', 'issue', 'ticket', 'changelog', 'legal'}
 

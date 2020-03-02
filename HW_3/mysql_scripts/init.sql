@@ -76,8 +76,21 @@ DELIMITER ;
 
 call sp_insert_link_graph_edges(
         @var_edges_xml := '<rt><r><s><![CDATA[sumeet-1]]></s><d><![CDATA[sumeet-1]]></d></r></rt>');
+
 select *
+from cs6200.link_graph_edges
+where dest = 'https://en.wikipedia.org/wiki/Balkans_Campaign_(World_War_I)';
+
+select count(distinct src_hash, dest_hash)
 from cs6200.link_graph_edges;
+
+select src, dest, count(*)
+from cs6200.link_graph_edges
+group by src, dest
+having count(*) > 1;
+
+select * from cs6200.link_graph_edges
+where dest = 'https://en.wikipedia.org/wiki/Assyrian_Genocide'
 
 
 drop table if exists cs6200.crawled_urls;

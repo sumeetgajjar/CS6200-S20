@@ -49,10 +49,10 @@ class CrawlerResponse:
         self.url_detail: UrlDetail = url_detail
         self.raw_html: Optional[str] = None
         self.headers: Optional[dict] = None
-        self.redirected: bool = False
+        self.is_redirected: bool = False
         self.redirected_url: Optional[UrlDetail] = None
         self.meta_keywords: Set[str] = set()
-        self.meta_description: str = None
+        self.meta_description: Optional[str] = None
 
     def __str__(self) -> str:
         return 'UrlDetail:{}, Header:{}, RedirectedUrlDetail:{}'.format(self.url_detail, self.headers,
