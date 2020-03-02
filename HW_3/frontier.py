@@ -142,6 +142,7 @@ class FrontierManager(metaclass=SingletonMeta):
                                             domain_ranks,
                                             domain_relevance, url_relevance)
 
+    # TODO: use the queue instead of sorted sets redis
     def add_to_queue(self, outlinks: List[Outlink]):
         logging.info("Adding {} url(s) to frontier".format(len(outlinks)))
         self._update_inlinks_count(outlinks)
