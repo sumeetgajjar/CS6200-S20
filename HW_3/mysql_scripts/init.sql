@@ -91,8 +91,8 @@ from cs6200.link_graph_edges
 group by src, dest
 having count(*) > 1;
 
-select *
-from cs6200.link_graph_edges
+select count(1)
+from cs6200.link_graph_edges;
 where dest = 'https://en.wikipedia.org/wiki/Assyrian_Genocide'
 
 

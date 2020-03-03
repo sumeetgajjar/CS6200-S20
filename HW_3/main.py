@@ -76,7 +76,7 @@ class HW3:
         url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]
 
         processor = True
-        mapper = False
+        mapper = True
 
         url_processor_futures = []
         if processor:
@@ -152,9 +152,13 @@ class HW3:
         Utils.configure_logging()
         cls._create_link_graph_csv(override=False)
         link_graph_reader = LinkGraphReader(Utils.get_link_graph_csv_path())
+
+        crawled_file_paths = cls._get_crawled_file_paths()
+        crawled_data = cls._get_crawled_data(crawled_file_paths, link_graph_reader)
+
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
         es_inserter.init_index()
-        es_inserter.bulk_insert()
+        es_inserter.bulk_insert(crawled_data, chunk_size=1000)
 
 
 if __name__ == '__main__':

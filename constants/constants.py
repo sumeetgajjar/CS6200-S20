@@ -87,7 +87,7 @@ class Constants:
 
     # Url Mapper configs
     URL_MAPPER_QUEUE_TO_REDIS_RETRY = 3
-    URL_MAPPER_SLEEP_TIME = 10  # seconds
+    URL_MAPPER_SLEEP_TIME = 1  # seconds
 
     # Robots Txt
     ROBOTS_TXT_FILE_NAME = "robots.txt"

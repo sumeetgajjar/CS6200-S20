@@ -30,10 +30,13 @@ class LinkGraph:
 
     @classmethod
     def add_edges(cls, src: UrlDetail, outlinks: List[Outlink]):
-        urls = [outlink.url_detail for outlink in outlinks]
-        for urls_batch in Utils.split_list_into_sub_lists(urls, sub_list_size=Constants.LINK_GRAPH_INSERT_BATCH_SIZE):
-            edges_xml = cls._generate_edges_xml(src, urls_batch)
-            cls._insert_edges_to_mysql(edges_xml)
+        with Constants.MYSQL_ENGINE.connect() as conn:
+            result = conn.execute("""
+                                  insert into cs6200.link_graph_edges(src, src_hash, dest, dest_hash)
+                                  values (%s, %s, %s, %s) 
+                                  """, [(src.canonical_url, src.id, o.url_detail.canonical_url, o.url_detail.id)
+                                        for o in outlinks])
+            logging.info("Added {} edge(s) to the link graph".format(result.rowcount))
 
 
 if __name__ == '__main__':
