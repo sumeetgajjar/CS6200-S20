@@ -65,7 +65,6 @@ class UrlMapper:
 
     def queue_rate_limited_urls_to_frontier(self):
         logging.info("Draining rate limited urls to frontier queue")
-        self.rate_limited_url_details.append(self.frontier_manager.url_cleaner.get_canonical_url("http://google.com"))
         if self.rate_limited_url_details:
             self.frontier_manager.add_rate_limited_urls(self.rate_limited_url_details)
 
@@ -90,7 +89,8 @@ class UrlMapper:
                     for queue_name, urls_to_queue in urls_queue_mapping.items():
                         self._queue_urls(queue_name, urls_to_queue, redis_conn)
                 else:
-                    logging.info('No urls to queue, url mapper sleeping for 10 sec')
+                    logging.info(
+                        'No urls to queue, url mapper sleeping for {} sec(s)'.format(Constants.URL_MAPPER_SLEEP_TIME))
                     time.sleep(Constants.URL_MAPPER_SLEEP_TIME)
 
 
@@ -163,7 +163,7 @@ class UrlProcessor:
             'url': crawler_response.url_detail.canonical_url,
             'org_url': crawler_response.url_detail.org_url,
             'timestamp': datetime.now().strftime(Constants.TIME_FORMAT),
-            'meta_keywords': crawler_response.meta_keywords,
+            'meta_keywords': list(crawler_response.meta_keywords),
             'meta_description': crawler_response.meta_description
         }
 

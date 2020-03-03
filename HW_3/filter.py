@@ -64,22 +64,21 @@ class DomainRanker(metaclass=SingletonMeta):
 
 
 class UrlFilteringService:
-    _KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT = {'facebook', 'twitter', 'ads', 'terms of use', 'mail',
-                                               'privacy', 'policy', 'ad choices', 'copyright', 'instagram', 'linkedin',
-                                               'career', 'api', 'jobs', 'terms', 'log in', 'register', 'sign up',
-                                               'press', 'create account', 'download', 'edit', 'cookie', 'about ',
-                                               'advertise', 'subscribe', 'rss', 'follow us', 'contact'}
-
-    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'mailto', 'issue', 'ticket', 'changelog', 'legal'}
+    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'facebook', 'twitter', 'ads', 'terms of use', 'mail',
+                                       'privacy', 'policy', 'ad choices', 'copyright', 'instagram', 'linkedin',
+                                       'career', 'api', 'jobs', 'terms', 'log in', 'register', 'sign up',
+                                       'press', 'create account', 'download', 'edit', 'cookie', 'about ',
+                                       'advertise', 'subscribe', 'rss', 'follow us', 'contact',
+                                       'mailto', 'issue', 'ticket', 'changelog', 'legal'}
 
     _DOMAIN_SUBSTR_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin', 'github', 'amazon'}
 
-    def _filter_useless_links_based_on_anchor_text(self, filtered_result: FilteredResult) -> FilteredResult:
+    def _filter_useless_links(self, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
             remove = False
-            for keyword_str in self._KEYWORD_SUBSTR_TO_AVOID_IN_ANCHOR_TEXT:
-                if keyword_str in outlink.anchor_text:
+            for keyword_str in self._KEYWORD_SUBSTR_TO_AVOID_IN_URL:
+                if keyword_str in outlink.anchor_text or keyword_str in outlink.url_detail.canonical_url:
                     remove = True
 
             if remove:
@@ -138,8 +137,7 @@ class UrlFilteringService:
         filtered = list(outlinks)
         filtered_result = FilteredResult(filtered, [])
         filtered_result = self._filter_domains(filtered_result)
-        filtered_result = self._filter_useless_links_based_on_anchor_text(filtered_result)
-        filtered_result = self._filter_useless_links_based_on_url(filtered_result)
+        filtered_result = self._filter_useless_links(filtered_result)
         return filtered_result
 
     @classmethod

@@ -138,8 +138,7 @@ class FrontierManager(metaclass=SingletonMeta):
     def get_urls_to_crawl(self, batch_size=20) -> List[UrlDetail]:
         with ConnectionFactory.create_redis_connection() as redis:
             with redis.pipeline() as pipe:
-                batch_size = batch_size - 1
-                urls = redis.lrange(Constants.FRONTIER_MANAGER_REDIS_QUEUE, 0, batch_size)
+                urls = redis.lrange(Constants.FRONTIER_MANAGER_REDIS_QUEUE, 0, batch_size - 1)
                 redis.ltrim(Constants.FRONTIER_MANAGER_REDIS_QUEUE, batch_size, -1)
                 pipe.execute()
 
