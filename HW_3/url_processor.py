@@ -162,7 +162,9 @@ class UrlProcessor:
             'raw_html': crawler_response.raw_html,
             'url': crawler_response.url_detail.canonical_url,
             'org_url': crawler_response.url_detail.org_url,
-            'timestamp': datetime.now().strftime(Constants.TIME_FORMAT),
+            'is_redirected': crawler_response.is_redirected,
+            'redirected_url': crawler_response.redirected_url.canonical_url if crawler_response.is_redirected else None,
+            'crawled_time': datetime.now().strftime(Constants.TIME_FORMAT),
             'meta_keywords': list(crawler_response.meta_keywords),
             'meta_description': crawler_response.meta_description
         }

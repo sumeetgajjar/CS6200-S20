@@ -2,13 +2,16 @@
 # TODO write stuff to create link graph once processing is done
 import concurrent.futures
 import csv
+import glob
+import json
 import logging
 import os
 import signal
 import sys
 from typing import List, Optional
 
-from CS6200_S20_SHARED.es_inserter import LinkGraphReader
+from CS6200_S20_SHARED.es_inserter import LinkGraphReader, EsInserter
+from CS6200_S20_SHARED.shared_beans import ElasticSearchInput
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner
 from utils.utils import Utils
 
@@ -116,10 +119,42 @@ class HW3:
                 logging.info("Number of rows exported to csv: {}".format(result.rowcount))
 
     @classmethod
+    def _get_crawled_file_paths(cls) -> List[str]:
+        crawled_file_paths = glob.glob('{}/*.json'.format(Utils.get_crawled_response_dir()))
+        logging.info("{} crawled file(s)".format(len(crawled_file_paths)))
+        return crawled_file_paths
+
+    @classmethod
+    def _get_crawled_data(cls, crawled_file_paths, link_graph_reader: LinkGraphReader):
+        url_cleaner = UrlCleaner()
+        for path in crawled_file_paths:
+            with open(path, 'r') as file:
+                data = json.load(file)
+                yield ElasticSearchInput(
+                    url_detail=url_cleaner.get_canonical_url(data['url']),
+                    org_url=data['org_url'],
+                    raw_html=data['raw_html'],
+                    headers=data['headers'],
+                    is_redirected=data['is_redirected'],
+                    redirected_url=url_cleaner.get_canonical_url(data['redirected_url']) if data[
+                        'is_redirected'] else None,
+                    title=data['title'],
+                    cleaned_text=data['cleaned_text'],
+                    crawled_time=data['crawled_time'],
+                    crawled_by='sumeet',
+                    link_info=link_graph_reader.get_linkinfo(data['url']),
+                    meta_keywords=data['meta_keywords'],
+                    meta_description=data['meta_description']
+                )
+
+    @classmethod
     def insert_data_into_es(cls):
         Utils.configure_logging()
-        cls._create_link_graph_csv(override=True)
+        cls._create_link_graph_csv(override=False)
         link_graph_reader = LinkGraphReader(Utils.get_link_graph_csv_path())
+        es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
+        es_inserter.init_index()
+        es_inserter.bulk_insert()
 
 
 if __name__ == '__main__':

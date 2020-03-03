@@ -14,7 +14,7 @@ ES_CLIENT = None
 class EsUtils:
 
     @classmethod
-    def get_es_client(cls, timeout: int = Constants.TIMEOUT):
+    def get_es_client(cls, timeout: int = Constants.ES_TIMEOUT):
         global ES_CLIENT
         if True:  # not ES_CLIENT:
             logging.debug("Creating the ES client")
@@ -98,7 +98,7 @@ class EsUtils:
 
     @classmethod
     @timing
-    def get_termvectors(cls, index_name: str, document_ids: list, timeout: int = Constants.TIMEOUT) -> dict:
+    def get_termvectors(cls, index_name: str, document_ids: list, timeout: int = Constants.ES_TIMEOUT) -> dict:
         es_client = cls.get_es_client(timeout)
         response = es_client.mtermvectors(index=index_name, body=cls.get_mtermvector_query(document_ids))
         return response['docs']
