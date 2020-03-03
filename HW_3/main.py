@@ -8,6 +8,7 @@ import logging
 import os
 import signal
 import sys
+from datetime import datetime
 from typing import List, Optional
 
 from CS6200_S20_SHARED.es_inserter import LinkGraphReader, EsInserter
@@ -140,7 +141,7 @@ class HW3:
                         'is_redirected'] else None,
                     title=data['title'],
                     cleaned_text=data['cleaned_text'],
-                    crawled_time=data['crawled_time'],
+                    crawled_time=datetime.strptime(data['crawled_time'], Constants.TIME_FORMAT),
                     crawled_by='sumeet',
                     link_info=link_graph_reader.get_linkinfo(data['url']),
                     meta_keywords=data['meta_keywords'],
@@ -149,7 +150,6 @@ class HW3:
 
     @classmethod
     def insert_data_into_es(cls):
-        Utils.configure_logging()
         cls._create_link_graph_csv(override=False)
         link_graph_reader = LinkGraphReader(Utils.get_link_graph_csv_path())
 
@@ -157,10 +157,10 @@ class HW3:
         crawled_data = cls._get_crawled_data(crawled_file_paths, link_graph_reader)
 
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
-        es_inserter.init_index()
+        # es_inserter.init_index()
         es_inserter.bulk_insert(crawled_data, chunk_size=1000)
 
 
 if __name__ == '__main__':
-    HW3.init_crawling()
-    # HW3.insert_data_into_es()
+    # HW3.init_crawling()
+    HW3.insert_data_into_es()
