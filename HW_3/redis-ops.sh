@@ -42,7 +42,7 @@ function queue_seed() {
     for SEED in ${SEED_URLS[@]};
     do
         echo "Queueing ${SEED}"
-        redis-cli zincrby ${FRONTIER_QUEUE} 1000000 ${SEED}
+        redis-cli lpush ${FRONTIER_QUEUE} "{\"url\": \"${SEED}\", \"wave\": 0}"
     done
 }
 
