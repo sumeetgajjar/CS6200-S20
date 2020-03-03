@@ -18,13 +18,6 @@ class FrontierManager(metaclass=SingletonMeta):
         self.url_cleaner = url_cleaner
         self.domain_ranker = domain_ranker
 
-    def get_urls_to_crawl(self, batch_size=20) -> List[UrlDetail]:
-        with ConnectionFactory.create_redis_connection() as redis:
-            urls = redis.zrevrange(Constants.FRONTIER_MANAGER_REDIS_QUEUE, 0, batch_size - 1)
-            if urls:
-                redis.zrem(Constants.FRONTIER_MANAGER_REDIS_QUEUE, *urls)
-        return [self.url_cleaner.get_canonical_url(url) for url in urls]
-
     @classmethod
     def _update_inlinks_count(cls, outlinks: List[Outlink]):
         with ConnectionFactory.create_redis_connection() as redis:
@@ -142,24 +135,24 @@ class FrontierManager(metaclass=SingletonMeta):
                                             domain_ranks,
                                             domain_relevance, url_relevance)
 
-    # TODO: use the queue instead of sorted sets redis
+    def get_urls_to_crawl(self, batch_size=20) -> List[UrlDetail]:
+        with ConnectionFactory.create_redis_connection() as redis:
+            with redis.pipeline() as pipe:
+                batch_size = batch_size - 1
+                urls = redis.lrange(Constants.FRONTIER_MANAGER_REDIS_QUEUE, 0, batch_size)
+                redis.ltrim(Constants.FRONTIER_MANAGER_REDIS_QUEUE, batch_size, -1)
+                pipe.execute()
+
+        # TODO: add scoring logic here
+        return [self.url_cleaner.get_canonical_url(url) for url in urls]
+
     def add_to_queue(self, outlinks: List[Outlink]):
         logging.info("Adding {} url(s) to frontier".format(len(outlinks)))
         self._update_inlinks_count(outlinks)
-        urls_scores = self._score_outlinks(outlinks)
         with ConnectionFactory.create_redis_connection() as redis:
-            with redis.pipeline() as pipe:
-                for url, score in urls_scores.items():
-                    pipe.zincrby(Constants.FRONTIER_MANAGER_REDIS_QUEUE, score, url)
-
-                pipe.execute()
+            redis.rpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE, *[o.url_detail.canonical_url for o in outlinks])
 
     @classmethod
     def add_rate_limited_urls(cls, rate_limited_urls: List[UrlDetail]):
         with ConnectionFactory.create_redis_connection() as redis:
-            with redis.pipeline() as pipe:
-                for url in rate_limited_urls:
-                    pipe.zincrby(Constants.FRONTIER_MANAGER_REDIS_QUEUE, Constants.RATE_LIMITED_URL_WEIGHT,
-                                 url.canonical_url)
-
-                pipe.execute()
+            redis.lpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE, *[url.canonical_url for url in rate_limited_urls])
