@@ -64,37 +64,25 @@ class DomainRanker(metaclass=SingletonMeta):
 
 
 class UrlFilteringService:
-    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'facebook', 'twitter', 'ads', 'terms of use', 'mail',
+    _KEYWORD_SUBSTR_TO_AVOID_IN_URL = {'facebook', 'twitter', 'ads', 'terms of use', 'mail', 'print', 'download',
                                        'privacy', 'policy', 'ad choices', 'copyright', 'instagram', 'linkedin',
-                                       'career', 'api', 'jobs', 'terms', 'log in', 'register', 'sign up',
-                                       'press', 'create account', 'download', 'edit', 'cookie', 'about ',
-                                       'advertise', 'subscribe', 'rss', 'follow us', 'contact',
-                                       'mailto', 'issue', 'ticket', 'changelog', 'legal'}
+                                       'career', 'api', 'jobs', 'terms', 'log in', 'register', 'sign up', 'login',
+                                       'press', 'create account', 'download', 'edit', 'cookie', 'about ', 'donate ',
+                                       'advertise', 'subscribe', 'rss', 'follow us', 'contact', 'subscribe', 'charity',
+                                       'mailto', 'issue', 'ticket', 'changelog', 'legal', 'terms ', 'BookSources'}
 
-    _DOMAIN_SUBSTR_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin', 'github', 'amazon'}
+    _DOMAIN_SUBSTR_TO_AVOID = {'facebook', 'twitter', 'google', 'linkedin', 'github', 'amazon', 'youtube', 'instagram',
+                               'pinterest', 'worldcat.org'}
 
     def _filter_useless_links(self, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
             remove = False
+            canonical_url_lowered = outlink.url_detail.canonical_url.lower()
             for keyword_str in self._KEYWORD_SUBSTR_TO_AVOID_IN_URL:
-                if keyword_str in outlink.anchor_text or keyword_str in outlink.url_detail.canonical_url:
+                if keyword_str in outlink.anchor_text or keyword_str in canonical_url_lowered:
                     remove = True
-
-            if remove:
-                new_filtered_result.removed.append(outlink)
-            else:
-                new_filtered_result.filtered.append(outlink)
-
-        return new_filtered_result
-
-    def _filter_useless_links_based_on_url(self, filtered_result: FilteredResult) -> FilteredResult:
-        new_filtered_result = FilteredResult([], filtered_result.removed)
-        for outlink in filtered_result.filtered:
-            remove = False
-            for keyword_str in self._KEYWORD_SUBSTR_TO_AVOID_IN_URL:
-                if keyword_str in outlink.url_detail.canonical_url:
-                    remove = True
+                    break
 
             if remove:
                 new_filtered_result.removed.append(outlink)
@@ -107,9 +95,11 @@ class UrlFilteringService:
         new_filtered_result = FilteredResult([], filtered_result.removed)
         for outlink in filtered_result.filtered:
             remove = False
+            domain_lowered = outlink.url_detail.domain.lower()
             for domain_str in self._DOMAIN_SUBSTR_TO_AVOID:
-                if domain_str in outlink.url_detail.domain:
+                if domain_str in domain_lowered:
                     remove = True
+                    break
 
             if remove:
                 new_filtered_result.removed.append(outlink)

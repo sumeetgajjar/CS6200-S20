@@ -56,7 +56,8 @@ class Constants:
     REDIS_SOCKET_TIMEOUT = 10
     REDIS_SEPARATOR = "::"
 
-    TOPIC_KEYWORDS = {'1521', 'AMERICAN', 'INDEPENDENCE', 'WAR'}
+    TOPIC_KEYWORDS = {'1521', 'america', 'independence', 'war', 'revolution', 'father', 'founding', 'history',
+                      'united', 'declaration', 'states'}
 
     # CRAWLING configs
     MAX_URLS_TO_CRAWL = 50000
