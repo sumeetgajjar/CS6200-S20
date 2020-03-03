@@ -1,6 +1,7 @@
 import concurrent.futures
 import datetime
 import gc
+import json
 import logging
 import math
 import uuid
@@ -9,6 +10,9 @@ from logging import getLogger, Formatter, StreamHandler
 from urllib.parse import urljoin
 from urllib.robotparser import RobotFileParser
 
+import redis
+
+from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
 from HW_1.es_index_config import EsIndexConfig
 from HW_1.es_utils import EsUtils
 from constants.constants import Constants
@@ -16,6 +20,7 @@ from utils.decorators import timing
 
 
 class Utils:
+    _URL_CLEANER = UrlCleaner()
 
     @classmethod
     def get_data_dir_abs_path(cls):
@@ -158,3 +163,34 @@ class Utils:
         rp.set_url(robots_txt_url)
         rp.read()
         return rp
+
+    @classmethod
+    def pop_from_redis_list(cls, queue_name: str, redis_client: redis.Redis, no_of_items_to_pop: int):
+        with redis_client.pipeline() as pipe:
+            popped_items = pipe.lrange(queue_name, 0, no_of_items_to_pop - 1)
+            pipe.ltrim(queue_name, no_of_items_to_pop, -1)
+            pipe.execute()
+
+        return popped_items
+
+    @classmethod
+    def serialize_url_detail(cls, url_detail: UrlDetail, add_rate_limited=False):
+        data = {
+            'url': url_detail.canonical_url,
+            'wave': url_detail.wave
+        }
+        if add_rate_limited:
+            data['rate_limited'] = True
+
+        return json.dumps(data)
+
+    @classmethod
+    def deserialize_url_detail(cls, json_str: str) -> UrlDetail:
+        data = json.loads(json_str)
+        url_detail = cls._URL_CLEANER.get_canonical_url(data['url'])
+        setattr(url_detail, 'wave', data['wave'])
+
+        if data.get('rate_limited'):
+            setattr(url_detail, 'rate_limited', True)
+
+        return url_detail

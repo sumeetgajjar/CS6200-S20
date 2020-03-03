@@ -2,9 +2,9 @@ import json
 import logging
 import os
 import time
-from collections import defaultdict, Counter
+from collections import defaultdict
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 from urllib.parse import urlparse
 
 import redis
@@ -44,20 +44,16 @@ class UrlMapper:
 
     @classmethod
     @retry(stop_max_attempt_number=Constants.URL_MAPPER_QUEUE_TO_REDIS_RETRY)
-    def _queue_urls(cls, queue_name, urls_to_queue: dict, redis_conn: redis.Redis):
+    def _queue_urls(cls, queue_name, urls_to_queue: List[UrlDetail], redis_conn: redis.Redis):
         logging.info("Queueing {} url(s) to {}".format(len(urls_to_queue), queue_name))
-        with redis_conn.pipeline() as pipe:
-            for url_to_queue, score in urls_to_queue.items():
-                pipe.zincrby(queue_name, score, url_to_queue)
+        redis_conn.rpush(queue_name, *[Utils.serialize_url_detail(url_detail) for url_detail in urls_to_queue])
 
-            pipe.execute()
-
-    def _generate_urls_queue_mapping(self, url_details) -> dict:
-        urls_queue_mapping = defaultdict(Counter)
+    def _generate_urls_queue_mapping(self, url_details) -> Dict[str, List[UrlDetail]]:
+        urls_queue_mapping = defaultdict(list)
         for url_detail in url_details:
             assigned_queue = self._get_queue_for_domain(url_detail.domain)
             if assigned_queue in self.url_processor_queue_names_set:
-                urls_queue_mapping[assigned_queue][url_detail.canonical_url] += 1
+                urls_queue_mapping[assigned_queue].append(url_detail)
             else:
                 raise RuntimeError("Invalid Queue name found: {}".format(assigned_queue))
 
@@ -135,6 +131,7 @@ class UrlProcessor:
                     outlink_url_detail = self.url_cleaner.transform_relative_url_to_absolute_url(in_link.canonical_url,
                                                                                                  outlink_url)
 
+                setattr(outlink_url_detail, 'wave', in_link.wave + 1)
                 outlink = Outlink(outlink_url_detail, a_element.text)
                 outlinks.append(outlink)
 
@@ -172,7 +169,8 @@ class UrlProcessor:
             'redirected_url': crawler_response.redirected_url.canonical_url if crawler_response.is_redirected else None,
             'crawled_time': datetime.now().strftime(Constants.TIME_FORMAT),
             'meta_keywords': list(crawler_response.meta_keywords),
-            'meta_description': crawler_response.meta_description
+            'meta_description': crawler_response.meta_description,
+            'wave': crawler_response.url_detail.wave
         }
 
         if crawler_response.is_redirected:
@@ -256,10 +254,10 @@ class UrlProcessor:
 
                 urls_batch_size = self.get_batch_size(redis_conn)
 
-                urls_to_process = redis_conn.zrevrange(self.redis_queue_name, 0, urls_batch_size - 1)
+                urls_to_process = redis_conn.lrange(self.redis_queue_name, 0, urls_batch_size - 1)
                 logging.info("Fetched {} url(s) to process".format(len(urls_to_process)))
                 if urls_to_process:
-                    url_details = [self.url_cleaner.get_canonical_url(url) for url in urls_to_process]
+                    url_details = [Utils.deserialize_url_detail(url) for url in urls_to_process]
                     filtered_result = self.url_filtering_service.filter_already_crawled_links(url_details)
                     filtered_url_details = filtered_result.filtered
                     if filtered_url_details:
@@ -275,7 +273,7 @@ class UrlProcessor:
                             self._add_url_to_crawled_list(filtered_crawler_responses)
                             redis_conn.incrby(Constants.TOTAL_URL_CRAWLED_KEY, len(filtered_crawler_responses))
 
-                    self._remove_crawled_urls_from_redis_queue(url_details, redis_conn)
+                    redis_conn.ltrim(self.redis_queue_name, urls_batch_size, -1)
 
                 else:
                     logging.info('No urls to process, Url Processor:{} sleeping for 10 sec'.format(self.processor_id))

@@ -145,7 +145,8 @@ class HW3:
                     crawled_by='sumeet',
                     link_info=link_graph_reader.get_linkinfo(data['url']),
                     meta_keywords=data['meta_keywords'],
-                    meta_description=data['meta_description']
+                    meta_description=data['meta_description'],
+                    wave=data['wave']
                 )
 
     @classmethod

@@ -9,6 +9,7 @@ from HW_3.connection_factory import ConnectionFactory
 from HW_3.filter import DomainRanker
 from constants.constants import Constants
 from utils.singleton import SingletonMeta
+from utils.utils import Utils
 
 
 class FrontierManager(metaclass=SingletonMeta):
@@ -135,23 +136,24 @@ class FrontierManager(metaclass=SingletonMeta):
                                             domain_ranks,
                                             domain_relevance, url_relevance)
 
-    def get_urls_to_crawl(self, batch_size=20) -> List[UrlDetail]:
+    def get_urls_to_crawl(self, batch_size=1000) -> List[UrlDetail]:
         with ConnectionFactory.create_redis_connection() as redis:
-            with redis.pipeline() as pipe:
-                urls = redis.lrange(Constants.FRONTIER_MANAGER_REDIS_QUEUE, 0, batch_size - 1)
-                redis.ltrim(Constants.FRONTIER_MANAGER_REDIS_QUEUE, batch_size, -1)
-                pipe.execute()
+            serialized_urls = Utils.pop_from_redis_list(Constants.FRONTIER_MANAGER_REDIS_QUEUE, redis, batch_size)
 
+        urls_to_crawl = [Utils.deserialize_url_detail(url) for url in serialized_urls]
+        # TODO: check rate limited
         # TODO: add scoring logic here
-        return [self.url_cleaner.get_canonical_url(url) for url in urls]
+        return urls_to_crawl
 
     def add_to_queue(self, outlinks: List[Outlink]):
         logging.info("Adding {} url(s) to frontier".format(len(outlinks)))
         self._update_inlinks_count(outlinks)
         with ConnectionFactory.create_redis_connection() as redis:
-            redis.rpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE, *[o.url_detail.canonical_url for o in outlinks])
+            redis.rpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE,
+                        *[Utils.serialize_url_detail(outlink.url_detail) for outlink in outlinks])
 
     @classmethod
     def add_rate_limited_urls(cls, rate_limited_urls: List[UrlDetail]):
         with ConnectionFactory.create_redis_connection() as redis:
-            redis.lpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE, *[url.canonical_url for url in rate_limited_urls])
+            redis.lpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE,
+                        *[Utils.serialize_url_detail(url, add_rate_limited=True) for url in rate_limited_urls])
