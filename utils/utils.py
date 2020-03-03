@@ -167,9 +167,9 @@ class Utils:
     @classmethod
     def pop_from_redis_list(cls, queue_name: str, redis_client: redis.Redis, no_of_items_to_pop: int):
         with redis_client.pipeline() as pipe:
-            popped_items = pipe.lrange(queue_name, 0, no_of_items_to_pop - 1)
+            pipe.lrange(queue_name, 0, no_of_items_to_pop - 1)
             pipe.ltrim(queue_name, no_of_items_to_pop, -1)
-            pipe.execute()
+            popped_items = pipe.execute()[0]
 
         return popped_items
 

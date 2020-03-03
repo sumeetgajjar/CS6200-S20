@@ -163,5 +163,5 @@ class HW3:
 
 
 if __name__ == '__main__':
-    # HW3.init_crawling()
-    HW3.insert_data_into_es()
+    HW3.init_crawling()
+    # HW3.insert_data_into_es()
