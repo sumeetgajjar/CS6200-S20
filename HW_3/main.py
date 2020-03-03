@@ -157,7 +157,7 @@ class HW3:
         crawled_data = cls._get_crawled_data(crawled_file_paths, link_graph_reader)
 
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
-        # es_inserter.init_index()
+        # es_inserter.init_index(True)
         es_inserter.bulk_insert(crawled_data, chunk_size=1000)
 
 
