@@ -69,7 +69,9 @@ class UrlMapper:
             self.frontier_manager.add_rate_limited_urls(self.rate_limited_url_details)
 
     def start(self):
-        while True:
+        total_urls_crawled = 0
+        max_urls_to_crawl = Constants.MAX_URLS_TO_CRAWL
+        while total_urls_crawled < max_urls_to_crawl:
             with ConnectionFactory.create_redis_connection() as redis_conn:
                 url_details = self.rate_limited_url_details
 
@@ -92,6 +94,10 @@ class UrlMapper:
                     logging.info(
                         'No urls to queue, url mapper sleeping for {} sec(s)'.format(Constants.URL_MAPPER_SLEEP_TIME))
                     time.sleep(Constants.URL_MAPPER_SLEEP_TIME)
+
+                total_urls_crawled = Utils.int(redis_conn.get(Constants.TOTAL_URL_CRAWLED_KEY), 0)
+                max_urls_to_crawl = Utils.int(redis_conn.get(Constants.MAX_URLS_TO_CRAWL_KEY),
+                                              Constants.MAX_URLS_TO_CRAWL)
 
 
 class UrlProcessor:
