@@ -24,10 +24,10 @@ function refresh() {
     redis-cli set ${URL_PROCESSOR_BATCH_SIZE_KEY} 10
 
     redis-cli del ${CRAWLED_URLS_BF_KEY} \
-                  ${TOTAL_URLS_CRAWLED_KEY}
-#                  ${URL_INLINKS_COUNT_KEY} \
-#                  ${DOMAIN_INLINKS_COUNT_KEY} \
-#                  ${URL_RELEVANCE_KEY}
+                  ${TOTAL_URLS_CRAWLED_KEY} \
+                  ${URL_INLINKS_COUNT_KEY} \
+                  ${DOMAIN_INLINKS_COUNT_KEY} \
+                  ${URL_RELEVANCE_KEY}
 
     for QUEUE in $(redis-cli keys ${QUEUES_PREFIX});
     do

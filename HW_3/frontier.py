@@ -41,7 +41,7 @@ class FrontierManager(metaclass=SingletonMeta):
 
         domain_inlinks = []
         for i in range(len(url_details)):
-            domain_inlinks[i] = result[i] if result[i] else 0
+            domain_inlinks.append(result[i] if result[i] else 0)
 
         return np.array(domain_inlinks, dtype=np.float)
 
@@ -51,7 +51,7 @@ class FrontierManager(metaclass=SingletonMeta):
 
         url_inlinks = []
         for i in range(len(url_details)):
-            url_inlinks[i] = result[i] if result[i] else 0
+            url_inlinks.append(result[i] if result[i] else 0)
 
         return np.array(url_inlinks, dtype=np.float)
 
@@ -59,7 +59,7 @@ class FrontierManager(metaclass=SingletonMeta):
         domain_ranks = []
         for i in range(len(url_details)):
             domain_rank = self.domain_ranker.get_domain_rank(url_details[i].domain)
-            domain_ranks[i] = domain_rank.global_rank if domain_rank else self.domain_ranker.max_rank
+            domain_ranks.append(domain_rank.global_rank if domain_rank else self.domain_ranker.max_rank)
 
         return np.array(domain_ranks, dtype=np.float)
 
