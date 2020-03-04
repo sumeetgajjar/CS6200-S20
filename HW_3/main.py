@@ -1,5 +1,3 @@
-# TODO write stuff to add to es
-# TODO write stuff to create link graph once processing is done
 import concurrent.futures
 import csv
 import glob
@@ -77,7 +75,7 @@ class HW3:
         url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]
 
         processor = True
-        mapper = True
+        mapper = False
 
         url_processor_futures = []
         if processor:
@@ -158,10 +156,11 @@ class HW3:
         crawled_data = cls._get_crawled_data(crawled_file_paths, link_graph_reader)
 
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
-        # es_inserter.init_index(True)
+        es_inserter.init_index(True)
         es_inserter.bulk_insert(crawled_data, chunk_size=1000)
 
 
 if __name__ == '__main__':
-    HW3.init_crawling()
-    # HW3.insert_data_into_es()
+    # HW3.init_crawling()
+    # TODO: boost score in index
+    HW3.insert_data_into_es()

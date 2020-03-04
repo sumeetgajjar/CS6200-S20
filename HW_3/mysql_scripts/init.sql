@@ -91,8 +91,12 @@ from cs6200.link_graph_edges
 group by src, dest
 having count(*) > 1;
 
-select count(1)
+select count(*)
 from cs6200.link_graph_edges;
+
+select *
+from information_schema.TABLES a where a.TABLE_NAME = 'link_graph_edges';
+
 where dest = 'https://en.wikipedia.org/wiki/Assyrian_Genocide'
 
 

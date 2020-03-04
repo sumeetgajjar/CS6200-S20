@@ -189,7 +189,6 @@ class UrlProcessor:
 
     @classmethod
     def _extract_meta_info(cls, crawler_response: CrawlerResponse, soup: BeautifulSoup) -> None:
-        # TODO test this
         for meta_element in soup.find_all('meta'):
             meta_element_name = meta_element.attrs.get('name')
             if meta_element_name:
@@ -258,6 +257,8 @@ class UrlProcessor:
                 urls_batch_size = self.get_batch_size(redis_conn)
 
                 urls_to_process = redis_conn.lrange(self.redis_queue_name, 0, urls_batch_size - 1)
+                urls_batch_size = min(urls_batch_size, len(urls_to_process))
+
                 logging.info("Fetched {} url(s) to process".format(len(urls_to_process)))
                 if urls_to_process:
                     url_details = [Utils.deserialize_url_detail(url) for url in urls_to_process]
