@@ -131,6 +131,9 @@ class FrontierManager(metaclass=SingletonMeta):
         return new_filtered_result
 
     def _filter_non_relevant_urls(self, filtered_result: FilteredResult) -> FilteredResult:
+        if not filtered_result.removed:
+            return filtered_result
+
         domain_relevance, url_relevance = self._get_relevance_from_redis(filtered_result.removed)
 
         new_filtered_result = FilteredResult(filtered_result.filtered, [])
@@ -143,6 +146,9 @@ class FrontierManager(metaclass=SingletonMeta):
         return new_filtered_result
 
     def _filter_urls_based_on_scores(self, filtered_result: FilteredResult) -> FilteredResult:
+        if not filtered_result.removed:
+            return filtered_result
+
         new_filtered_result = FilteredResult(filtered_result.filtered, [])
 
         urls_still_in_question = filtered_result.removed
@@ -179,8 +185,9 @@ class FrontierManager(metaclass=SingletonMeta):
             filtered_result = self._filter_urls_for_crawling(urls_to_crawl)
 
             redis_conn.ltrim(Constants.FRONTIER_MANAGER_REDIS_QUEUE, batch_size, -1)
-            redis_conn.rpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE,
-                             *[Utils.serialize_url_detail(url) for url in filtered_result.removed])
+            if filtered_result.removed:
+                redis_conn.rpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE,
+                                 *[Utils.serialize_url_detail(url) for url in filtered_result.removed])
 
         return filtered_result.filtered
 
