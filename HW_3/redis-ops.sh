@@ -36,7 +36,7 @@ function status() {
     QUEUES=$(redis-cli keys ${QUEUES_PREFIX})
     for QUEUE in ${QUEUES};
     do
-        echo "${QUEUE} -> $(redis-cli zcard ${QUEUE})"
+        echo "${QUEUE} -> $(redis-cli llen ${QUEUE})"
     done
 }
 
