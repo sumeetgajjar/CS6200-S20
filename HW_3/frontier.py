@@ -93,16 +93,9 @@ class FrontierManager(metaclass=SingletonMeta):
 
         return domain_relevance, url_relevance
 
-    @classmethod
-    def _update_relevance_in_redis(cls, domain_relevance, url_relevance):
-        with ConnectionFactory.create_redis_connection() as redis:
-            redis.hmset(Constants.DOMAIN_RELEVANCE_KEY, domain_relevance)
-            redis.hmset(Constants.URL_RELEVANCE_KEY, url_relevance)
-
-    def _get_relevance(self, outlinks: List[Outlink]) -> Tuple[Dict[str, float], Dict[str, float]]:
-        domain_relevance, url_relevance = self._get_relevance_from_redis(outlinks)
+    def _update_relevance(self, outlinks: List[Outlink]):
+        domain_relevance, url_relevance = defaultdict(float), defaultdict(float)
         for outlink in outlinks:
-            # TODO replace jacard with exists
             anchor_text_relevance = self._compute_jacard_similarity_anchor_text(outlink)
             url_relevance[outlink.url_detail.canonical_url] += (anchor_text_relevance * 1000)
             domain_relevance[outlink.url_detail.domain] += anchor_text_relevance
@@ -110,6 +103,18 @@ class FrontierManager(metaclass=SingletonMeta):
             anchor_link_relevance = self._compute_jacard_similarity_anchor_link(outlink)
             url_relevance[outlink.url_detail.canonical_url] += (anchor_link_relevance * 1000)
             domain_relevance[outlink.url_detail.domain] += anchor_link_relevance
+
+        with ConnectionFactory.create_redis_connection() as redis_conn:
+            with redis_conn.pipeline() as pipe:
+                for domain, score in domain_relevance.items():
+                    pipe.hincrby(Constants.DOMAIN_RELEVANCE_KEY, domain, score)
+                pipe.execute()
+                logging.info("Domain relevance updated")
+
+                for url, score in url_relevance.items():
+                    pipe.hincrby(Constants.URL_RELEVANCE_KEY, url, score)
+                pipe.execute()
+                logging.info("Url relevance updated")
 
         return domain_relevance, url_relevance
 
@@ -126,9 +131,6 @@ class FrontierManager(metaclass=SingletonMeta):
             url_inlinks = self._get_url_inlinks_count(outlinks, redis)
 
         domain_ranks = self._get_domain_ranks(outlinks)
-        domain_relevance, url_relevance = self._get_relevance(outlinks)
-        self._update_relevance_in_redis(domain_relevance, url_relevance)
-
         # TODO calculate meta relevance
 
         return self._generate_outlink_score(outlinks,
@@ -148,6 +150,8 @@ class FrontierManager(metaclass=SingletonMeta):
     def add_to_queue(self, outlinks: List[Outlink]):
         logging.info("Adding {} url(s) to frontier".format(len(outlinks)))
         self._update_inlinks_count(outlinks)
+        self._update_relevance(outlinks)
+
         with ConnectionFactory.create_redis_connection() as redis:
             redis.rpush(Constants.FRONTIER_MANAGER_REDIS_QUEUE,
                         *[Utils.serialize_url_detail(outlink.url_detail) for outlink in outlinks])
