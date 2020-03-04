@@ -130,11 +130,11 @@ class FrontierManager(metaclass=SingletonMeta):
 
         return new_filtered_result
 
-    @classmethod
-    def _filter_non_relevant_urls(cls, filtered_result: FilteredResult,
-                                  url_relevance: Dict[str, float]) -> FilteredResult:
-        new_filtered_result = FilteredResult([], filtered_result.removed)
-        for url_detail in filtered_result.filtered:
+    def _filter_non_relevant_urls(self, filtered_result: FilteredResult) -> FilteredResult:
+        domain_relevance, url_relevance = self._get_relevance_from_redis(filtered_result.removed)
+
+        new_filtered_result = FilteredResult(filtered_result.filtered, [])
+        for url_detail in filtered_result.removed:
             if url_detail.canonical_url in url_relevance:
                 new_filtered_result.filtered.append(url_detail)
             else:
@@ -167,8 +167,7 @@ class FrontierManager(metaclass=SingletonMeta):
         filtered_result = self.url_filtering_service.filter_already_crawled_links(url_details)
         filtered_result = self._filter_wave_0_1_or_rate_limited_urls(filtered_result)
 
-        domain_relevance, url_relevance = self._get_relevance_from_redis(url_details)
-        filtered_result = self._filter_non_relevant_urls(filtered_result, url_relevance)
+        filtered_result = self._filter_non_relevant_urls(filtered_result)
         filtered_result = self._filter_urls_based_on_scores(filtered_result)
         return filtered_result
 
