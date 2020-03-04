@@ -12,6 +12,7 @@ from urllib.robotparser import RobotFileParser
 
 import numpy as np
 import redis
+import requests
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
 from HW_1.es_index_config import EsIndexConfig
@@ -158,12 +159,16 @@ class Utils:
     @classmethod
     @lru_cache(maxsize=Constants.ROBOTS_TXT_CACHE_SIZE)
     def get_robots_txt(cls, host: str) -> RobotFileParser:
-        robots_txt_url = urljoin(host, Constants.ROBOTS_TXT_FILE_NAME)
-        logging.info("Fetching robots.txt: {}".format(robots_txt_url))
-        rp = RobotFileParser()
-        rp.set_url(robots_txt_url)
-        rp.read()
-        return rp
+        try:
+            robots_txt_url = urljoin(host, Constants.ROBOTS_TXT_FILE_NAME)
+            logging.info("Fetching robots.txt: {}".format(robots_txt_url))
+            response = requests.get(robots_txt_url, timeout=Constants.CRAWLER_TIMEOUT, allow_redirects=True)
+            rp = RobotFileParser()
+            rp.set_url(robots_txt_url)
+            rp.parse(response.text.splitlines())
+            return rp
+        except:
+            return RobotFileParser()
 
     @classmethod
     def pop_from_redis_list(cls, queue_name: str, redis_client: redis.Redis, no_of_items_to_pop: int):

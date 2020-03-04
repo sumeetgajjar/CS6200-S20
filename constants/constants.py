@@ -66,7 +66,7 @@ class Constants:
     TOTAL_URL_CRAWLED_KEY = 'TOTAL_URLS_CRAWLED'
     DEFAULT_CRAWL_DELAY = 1
     TAGS_TO_REMOVE = ['img', 'iframe', 'script', 'stylesheet', 'map', 'progress', 'video', 'audio', 'area', 'embed']
-    ROBOTS_TXT_CACHE_SIZE = 2000
+    ROBOTS_TXT_CACHE_SIZE = 20000
     HTML_PARSER = 'lxml'
     # connection timeout and read timeout
     CRAWLER_TIMEOUT = (3, 20)

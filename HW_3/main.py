@@ -76,7 +76,7 @@ class HW3:
                                     for i in range(1, Constants.NO_OF_URL_PROCESSORS + 1)]
         url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]
 
-        processor = False
+        processor = True
         mapper = True
 
         url_processor_futures = []
