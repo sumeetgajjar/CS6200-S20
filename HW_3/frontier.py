@@ -166,7 +166,6 @@ class FrontierManager(metaclass=SingletonMeta):
     def _filter_urls_for_crawling(self, url_details: List[UrlDetail]) -> FilteredResult:
         filtered_result = self.url_filtering_service.filter_already_crawled_links(url_details)
         filtered_result = self._filter_wave_0_1_or_rate_limited_urls(filtered_result)
-
         filtered_result = self._filter_non_relevant_urls(filtered_result)
         filtered_result = self._filter_urls_based_on_scores(filtered_result)
         return filtered_result
