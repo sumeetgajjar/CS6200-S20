@@ -8,6 +8,9 @@ CRAWLED_URLS_BF_KEY='CRAWLED_URLS_BF'
 TOTAL_URLS_CRAWLED_KEY='TOTAL_URLS_CRAWLED'
 QUEUES_PREFIX='QUEUES::*'
 FRONTIER_QUEUE='QUEUES::FRONTIER'
+DOMAIN_INLINKS_COUNT_KEY="DOMAIN_INLINKS_COUNT"
+URL_INLINKS_COUNT_KEY="URL_INLINKS_COUNT"
+URL_RELEVANCE_KEY='URL_RELEVANCE'
 SEED_URLS=("https://en.wikipedia.org/wiki/American_Revolutionary_War" \
            "https://www.history.com/topics/american-revolution/american-revolution-history" \
            "https://en.wikipedia.org/wiki/American_Revolution" \
@@ -20,7 +23,11 @@ function refresh() {
     redis-cli set ${MAX_URLS_TO_CRAWL_KEY} 60000
     redis-cli set ${URL_PROCESSOR_BATCH_SIZE_KEY} 10
 
-    redis-cli del ${CRAWLED_URLS_BF_KEY} ${TOTAL_URLS_CRAWLED_KEY}
+    redis-cli del ${CRAWLED_URLS_BF_KEY} \
+                  ${TOTAL_URLS_CRAWLED_KEY}
+#                  ${URL_INLINKS_COUNT_KEY} \
+#                  ${DOMAIN_INLINKS_COUNT_KEY} \
+#                  ${URL_RELEVANCE_KEY}
 
     for QUEUE in $(redis-cli keys ${QUEUES_PREFIX});
     do
@@ -32,6 +39,9 @@ function status() {
     echo "Max urls to crawl -> $(redis-cli get ${MAX_URLS_TO_CRAWL_KEY})"
     echo "Total urls crawled -> $(redis-cli get ${TOTAL_URLS_CRAWLED_KEY})"
     echo "Url processor batch size -> $(redis-cli get ${URL_PROCESSOR_BATCH_SIZE_KEY})"
+    echo "Url inlinks size -> $(redis-cli hlen ${URL_INLINKS_COUNT_KEY})"
+    echo "Domain inlinks size -> $(redis-cli hlen ${DOMAIN_INLINKS_COUNT_KEY})"
+    echo "Url relevance size -> $(redis-cli hlen ${URL_RELEVANCE_KEY})"
 
     QUEUES=$(redis-cli keys ${QUEUES_PREFIX})
     for QUEUE in ${QUEUES};

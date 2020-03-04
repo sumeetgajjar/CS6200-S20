@@ -56,9 +56,9 @@ class Constants:
     REDIS_SOCKET_TIMEOUT = 10
     REDIS_SEPARATOR = "::"
 
-    TOPIC_KEYWORDS = {'1521', '1776', 'allies', 'America', 'america', 'american', 'Britain', 'colonies', 'congress',
-                      'declaration', 'father', 'forces', 'founding', 'france', 'George', 'history', 'independence',
-                      'july', 'revolution', 'revolutionary', 'states', 'thirteen', 'united', 'war', 'Washington'}
+    TOPIC_KEYWORDS = {'1521', '1776', 'allies', 'america', 'britain', 'colonies', 'congress',
+                      'declaration', 'father', 'forces', 'founding', 'france', 'george', 'independence',
+                      'july', 'revolution', 'revolutionary', 'states', 'thirteen', 'united', 'war', 'washington'}
 
     # CRAWLING configs
     MAX_URLS_TO_CRAWL = 50000
@@ -99,6 +99,5 @@ class Constants:
     DOMAIN_INLINKS_COUNT_KEY = "DOMAIN_INLINKS_COUNT"
     URL_INLINKS_COUNT_KEY = "URL_INLINKS_COUNT"
     RATE_LIMITED_URL_WEIGHT = 100000
-    DOMAIN_RELEVANCE_KEY = 'DOMAIN_RELEVANCE'
     URL_RELEVANCE_KEY = 'URL_RELEVANCE'
     URLS_TO_CONSIDER_BASED_ON_SCORES = 100

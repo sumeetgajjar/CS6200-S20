@@ -1,7 +1,7 @@
 import logging
 import re
 from collections import defaultdict
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 import numpy as np
 
@@ -65,59 +65,44 @@ class FrontierManager(metaclass=SingletonMeta):
 
     @classmethod
     def _compute_jacard_similarity_anchor_text(cls, outlink: Outlink) -> float:
-        anchor_text_set = set(outlink.anchor_text.split(" "))
+        anchor_text_set = set(outlink.anchor_text.lower().split(" "))
         intersection_set = anchor_text_set.intersection(Constants.TOPIC_KEYWORDS)
         union_set_len = len(anchor_text_set) + len(Constants.TOPIC_KEYWORDS) + len(intersection_set)
         return len(intersection_set) / union_set_len
 
     @classmethod
     def _compute_jacard_similarity_anchor_link(cls, outlink: Outlink) -> float:
-        anchor_link_set = set(cls._URL_SPLIT_REGEX.split(outlink.url_detail.canonical_url))
+        anchor_link_set = set(cls._URL_SPLIT_REGEX.split(outlink.url_detail.canonical_url.lower()))
         intersection_set = anchor_link_set.intersection(Constants.TOPIC_KEYWORDS)
         union_set_len = len(anchor_link_set) + len(Constants.TOPIC_KEYWORDS) + len(intersection_set)
         return len(intersection_set) / union_set_len
 
     @classmethod
-    def _get_relevance_from_redis(cls, url_details: List[UrlDetail]) -> Tuple[Dict[str, float], Dict[str, float]]:
+    def _get_relevance_from_redis(cls, url_details: List[UrlDetail]) -> Dict[str, float]:
         url_relevance = defaultdict(float)
-        domain_relevance = defaultdict(float)
         with ConnectionFactory.create_redis_connection() as redis:
-            domain_relevance_result = redis.hmget(Constants.DOMAIN_RELEVANCE_KEY,
-                                                  [url_detail.domain for url_detail in url_details])
             url_relevance_result = redis.hmget(Constants.URL_RELEVANCE_KEY,
                                                [url_detail.canonical_url for url_detail in url_details])
         for i in range(len(url_details)):
-            if domain_relevance_result[i]:
-                domain_relevance[url_details[i].domain] += domain_relevance_result[i]
             if url_relevance_result[i]:
-                url_relevance[url_details[i].canonical_url] += url_relevance_result[i]
+                url_relevance[url_details[i].canonical_url] = float(url_relevance_result[i])
 
-        return domain_relevance, url_relevance
+        return url_relevance
 
-    def _update_relevance(self, outlinks: List[Outlink]):
-        domain_relevance, url_relevance = defaultdict(float), defaultdict(float)
+    def _update_relevance(self, outlinks: List[Outlink]) -> None:
+        relevant_urls = set()
         for outlink in outlinks:
-            anchor_text_relevance = self._compute_jacard_similarity_anchor_text(outlink)
-            url_relevance[outlink.url_detail.canonical_url] += (anchor_text_relevance * 1000)
-            domain_relevance[outlink.url_detail.domain] += anchor_text_relevance
-
-            anchor_link_relevance = self._compute_jacard_similarity_anchor_link(outlink)
-            url_relevance[outlink.url_detail.canonical_url] += (anchor_link_relevance * 1000)
-            domain_relevance[outlink.url_detail.domain] += anchor_link_relevance
+            anchor_text_relevance = int(self._compute_jacard_similarity_anchor_text(outlink) * 10)
+            anchor_link_relevance = int(self._compute_jacard_similarity_anchor_link(outlink) * 10)
+            if anchor_link_relevance > 1 or anchor_text_relevance > 1:
+                relevant_urls.add(outlink.url_detail.canonical_url)
 
         with ConnectionFactory.create_redis_connection() as redis_conn:
             with redis_conn.pipeline() as pipe:
-                for domain, score in domain_relevance.items():
-                    pipe.hincrby(Constants.DOMAIN_RELEVANCE_KEY, domain, score)
-                pipe.execute()
-                logging.info("Domain relevance updated")
-
-                for url, score in url_relevance.items():
-                    pipe.hincrby(Constants.URL_RELEVANCE_KEY, url, score)
+                for url in relevant_urls:
+                    pipe.hincrby(Constants.URL_RELEVANCE_KEY, url)
                 pipe.execute()
                 logging.info("Url relevance updated")
-
-        return domain_relevance, url_relevance
 
     @classmethod
     def _filter_wave_0_1_or_rate_limited_urls(cls, filtered_result: FilteredResult) -> FilteredResult:
@@ -134,7 +119,7 @@ class FrontierManager(metaclass=SingletonMeta):
         if not filtered_result.removed:
             return filtered_result
 
-        domain_relevance, url_relevance = self._get_relevance_from_redis(filtered_result.removed)
+        url_relevance = self._get_relevance_from_redis(filtered_result.removed)
 
         new_filtered_result = FilteredResult(filtered_result.filtered, [])
         for url_detail in filtered_result.removed:
