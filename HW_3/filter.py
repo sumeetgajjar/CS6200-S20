@@ -25,6 +25,7 @@ class DomainRanker(metaclass=SingletonMeta):
     def __init__(self, override_old_data=False) -> None:
         self.domain_rankings = {}
         self._init_domain_rankings(override_old_data)
+        self.max_rank = max(self.domain_rankings.values(), key=lambda tup: tup[0])[0]
 
     @timing
     def _init_domain_rankings(self, override_old_data):

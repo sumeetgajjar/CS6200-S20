@@ -10,6 +10,7 @@ from logging import getLogger, Formatter, StreamHandler
 from urllib.parse import urljoin
 from urllib.robotparser import RobotFileParser
 
+import numpy as np
 import redis
 
 from CS6200_S20_SHARED.url_cleaner import UrlDetail, UrlCleaner
@@ -194,3 +195,10 @@ class Utils:
             setattr(url_detail, 'rate_limited', True)
 
         return url_detail
+
+    @classmethod
+    def normalize(cls, v):
+        norm = np.linalg.norm(v)
+        if norm == 0:
+            return v
+        return v / norm
