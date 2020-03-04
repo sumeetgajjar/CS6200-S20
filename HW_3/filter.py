@@ -186,15 +186,18 @@ class CrawlingRateLimitingService(metaclass=SingletonMeta):
 
 
 class CrawlingUtils:
-    with ConnectionFactory.create_redis_connection() as conn:
-        if not conn.exists(Constants.CRAWLED_URLS_BF):
-            logging.info("Creating Bloomfilter")
-            conn.bfCreate(Constants.CRAWLED_URLS_BF,
-                          Constants.CRAWLED_URLS_BF_ERROR_RATE,
-                          Constants.CRAWLED_URLS_BF_CAPACITY)
-            logging.info("Bloomfilter created")
-        else:
-            logging.info("Bloomfilter already exists")
+
+    @classmethod
+    def init_bloomfilter(cls):
+        with ConnectionFactory.create_redis_connection() as conn:
+            if not conn.exists(Constants.CRAWLED_URLS_BF):
+                logging.info("Creating Bloomfilter")
+                conn.bfCreate(Constants.CRAWLED_URLS_BF,
+                              Constants.CRAWLED_URLS_BF_ERROR_RATE,
+                              Constants.CRAWLED_URLS_BF_CAPACITY)
+                logging.info("Bloomfilter created")
+            else:
+                logging.info("Bloomfilter already exists")
 
     @classmethod
     def add_url_to_crawled_list(cls, url_detail: UrlDetail):

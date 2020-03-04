@@ -12,6 +12,7 @@ from typing import List, Optional
 from CS6200_S20_SHARED.es_inserter import LinkGraphReader, EsInserter
 from CS6200_S20_SHARED.shared_beans import ElasticSearchInput
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner
+from HW_3.filter import CrawlingUtils
 from utils.utils import Utils
 
 Utils.configure_logging(enable_logging_to_file=True, filepath='hw_3_crawler.log')
@@ -70,6 +71,7 @@ class HW3:
     @classmethod
     def init_crawling(cls):
         cls._add_signal_handler()
+        CrawlingUtils.init_bloomfilter()
         url_processor_init_infos = [(i, Constants.URL_PROCESSOR_QUEUE_NAME_TEMPLATE.format(i))
                                     for i in range(1, Constants.NO_OF_URL_PROCESSORS + 1)]
         url_processor_queue_names = [queue_name for _, queue_name in url_processor_init_infos]
@@ -152,7 +154,7 @@ class HW3:
         cls._create_link_graph_csv(override=False)
         link_graph_reader = LinkGraphReader(Utils.get_link_graph_csv_path())
 
-        crawled_file_paths = cls._get_crawled_file_paths()
+        crawled_file_paths = cls._get_crawled_file_paths()[:1]
         crawled_data = cls._get_crawled_data(crawled_file_paths, link_graph_reader)
 
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
