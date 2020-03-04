@@ -68,9 +68,9 @@ class Utils:
 
         log_formatter = Formatter("[%(process)d] %(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
-        # console_handler = StreamHandler()
-        # console_handler.setFormatter(log_formatter)
-        # logger.addHandler(console_handler)
+        console_handler = StreamHandler()
+        console_handler.setFormatter(log_formatter)
+        logger.addHandler(console_handler)
 
         if enable_logging_to_file:
             file_handler = logging.FileHandler(filepath)
