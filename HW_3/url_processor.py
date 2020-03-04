@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -81,6 +82,8 @@ class UrlMapper:
                 filtered_url_details = filtered_result.filtered
                 self.rate_limited_url_details = filtered_result.removed
                 logging.info("Total rate limited urls:{}".format(len(self.rate_limited_url_details)))
+                if random.randint(0, 100) < 1:
+                    logging.info("Rate limited urls: {}".format(self.rate_limited_url_details))
 
                 if len(filtered_url_details) > 0:
                     urls_queue_mapping = self._generate_urls_queue_mapping(filtered_url_details)

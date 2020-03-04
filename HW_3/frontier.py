@@ -61,7 +61,7 @@ class FrontierManager(metaclass=SingletonMeta):
             domain_rank = self.domain_ranker.get_domain_rank(url_details[i].domain)
             domain_ranks.append(domain_rank.global_rank if domain_rank else self.domain_ranker.max_rank)
 
-        return np.array(domain_ranks, dtype=np.float)
+        return 1 / np.array(domain_ranks, dtype=np.float)
 
     @classmethod
     def _compute_jacard_similarity_anchor_text(cls, outlink: Outlink) -> float:
@@ -108,7 +108,7 @@ class FrontierManager(metaclass=SingletonMeta):
     def _filter_wave_0_1_or_rate_limited_urls(cls, filtered_result: FilteredResult) -> FilteredResult:
         new_filtered_result = FilteredResult([], filtered_result.removed)
         for url_detail in filtered_result.filtered:
-            if url_detail.wave == 0 or url_detail.wave == 1 or getattr(url_detail, 'rate_limited'):
+            if url_detail.wave == 0 or url_detail.wave == 1 or getattr(url_detail, 'rate_limited', None):
                 new_filtered_result.filtered.append(url_detail)
             else:
                 new_filtered_result.removed.append(url_detail)
