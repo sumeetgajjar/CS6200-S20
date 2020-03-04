@@ -8,10 +8,12 @@ CRAWLED_URLS_BF_KEY='CRAWLED_URLS_BF'
 TOTAL_URLS_CRAWLED_KEY='TOTAL_URLS_CRAWLED'
 QUEUES_PREFIX='QUEUES::*'
 FRONTIER_QUEUE='QUEUES::FRONTIER'
-SEED_URLS=("http://en.wikipedia.org/wiki/American_Revolutionary_War" \
-            "http://www.history.com/topics/american-revolution/american-revolution-history" \
-            "http://en.wikipedia.org/wiki/American_Revolution" \
-            "http://www.revolutionary-war.net/causes-of-the-american-revolution.html")
+SEED_URLS=("https://en.wikipedia.org/wiki/American_Revolutionary_War" \
+           "https://www.history.com/topics/american-revolution/american-revolution-history" \
+           "https://en.wikipedia.org/wiki/American_Revolution" \
+           "https://www.revolutionary-war.net/causes-of-the-american-revolution.html" \
+           "https://www.britannica.com/event/American-Revolution" \
+	       "https://www.battlefields.org/learn/articles/overview-american-revolutionary-war")
 
 
 function refresh() {
