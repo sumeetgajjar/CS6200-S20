@@ -75,7 +75,7 @@ class UrlMapper:
                 url_processor_batch_size = UrlProcessor.get_batch_size(redis_conn)
                 urls_batch_size = (url_processor_batch_size * Constants.NO_OF_URL_PROCESSORS) - len(url_details)
 
-                if urls_batch_size > 0:
+                if urls_batch_size >= url_processor_batch_size:
                     url_details.extend(self.frontier_manager.get_urls_to_crawl(urls_batch_size))
 
                 filtered_result = self.crawling_rate_limiting_service.filter(url_details)

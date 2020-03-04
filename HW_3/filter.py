@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import List, Optional
 from urllib.robotparser import RobotFileParser
 
+from retrying import retry
+
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner, UrlDetail
 from HW_3.beans import DomainRank, Outlink, FilteredResult
 from HW_3.connection_factory import ConnectionFactory
@@ -211,6 +213,7 @@ class CrawlingUtils:
         return "<rt>{}</rt>".format("".join(rows))
 
     @classmethod
+    @retry(stop_max_attempt_number=2)
     def _add_crawled_urls_to_mysql(cls, url_details: List[UrlDetail]):
         with Constants.MYSQL_ENGINE.connect() as conn:
             result = conn.execute('call sp_insert_crawled_urls(@var_urls_xml:=%s)',
@@ -219,8 +222,11 @@ class CrawlingUtils:
 
     @classmethod
     def add_urls_to_crawled_list(cls, url_details: List[UrlDetail]):
-        cls._add_crawled_urls_to_redis(url_details)
-        cls._add_crawled_urls_to_mysql(url_details)
+        try:
+            cls._add_crawled_urls_to_redis(url_details)
+            cls._add_crawled_urls_to_mysql(url_details)
+        except:
+            logging.error("Error while inserting crawled urls", exc_info=True)
 
     @classmethod
     def is_crawled(cls, url_detail: UrlDetail) -> bool:
