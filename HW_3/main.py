@@ -150,16 +150,20 @@ class HW3:
                 )
 
     @classmethod
+    def _insert_data_into_es_helper(cls, crawled_file_paths: List[str], es_inserter: EsInserter):
+        link_graph_reader = LinkGraphReader(Utils.get_link_graph_csv_path())
+        crawled_data = cls._get_crawled_data(crawled_file_paths, link_graph_reader)
+        es_inserter.bulk_insert(crawled_data, chunk_size=100)
+
+    @classmethod
     def insert_data_into_es(cls):
         cls._create_link_graph_csv(override=False)
-        link_graph_reader = LinkGraphReader(Utils.get_link_graph_csv_path())
-
-        crawled_file_paths = cls._get_crawled_file_paths()[:1]
-        crawled_data = cls._get_crawled_data(crawled_file_paths, link_graph_reader)
+        crawled_file_paths = cls._get_crawled_file_paths()
 
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
         es_inserter.init_index(True)
-        es_inserter.bulk_insert(crawled_data, chunk_size=1000)
+        Utils.run_tasks_parallelly_in_chunks(cls._insert_data_into_es_helper, crawled_file_paths, 8,
+                                             es_inserter=es_inserter)
 
 
 if __name__ == '__main__':

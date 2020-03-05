@@ -17,7 +17,7 @@ class Constants:
 
     # ES related configs
     CHUNK_SIZE = 10000
-    ES_TIMEOUT = 10
+    ES_TIMEOUT = 30
 
     BYES_TO_PROCESS_AT_ONCE_FOR_COMPRESSION = 8192
     NO_OF_PARALLEL_INDEXING_TASKS = 10
