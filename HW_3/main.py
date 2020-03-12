@@ -100,7 +100,6 @@ class HW3:
         link_graph_csv_path = Utils.get_link_graph_csv_path()
         if override or not os.path.isfile(link_graph_csv_path):
             with Constants.MYSQL_ENGINE.connect() as conn:
-                # TODO: verify this
                 result = conn.execute("""
                                         select a.src, a.dest, b.url_hash is not null as is_crawled
                                         from cs6200.link_graph_edges a
@@ -168,5 +167,4 @@ class HW3:
 
 if __name__ == '__main__':
     # HW3.init_crawling()
-    # TODO: boost score in index
     HW3.insert_data_into_es()
