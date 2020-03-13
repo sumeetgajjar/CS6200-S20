@@ -104,22 +104,27 @@ class HW3:
 
         url_cleaner = UrlCleaner()
         for src_csv_path in ['/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_madhur.csv',
-                             '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_sumeet.csv']:
+                             '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_sumeet.csv',
+                             '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_saurabha.csv']:
             logging.info('Reading: {}'.format(src_csv_path))
             i = 0
             with open(src_csv_path, 'r') as src_csv:
                 csv_reader = csv.reader(src_csv)
                 for row in csv_reader:
                     try:
-                        src = row[0]
-                        dest = row[2]
+                        src_url_detail = url_cleaner.get_canonical_url(row[0])
+                        src = src_url_detail.canonical_url
+                        dest_url_detail = url_cleaner.get_canonical_url(row[2])
+                        dest = dest_url_detail.canonical_url
                         if dest not in crawled_url_set:
-                            dest = url_cleaner.get_canonical_url(dest).domain
+                            dest = dest_url_detail.domain
+
                         outlinks[src].add(dest)
 
-                        if i % 1000000 == 0:
+                        if i % 1000000 == 100:
                             logging.info("Processed {} edges".format(i))
                             logging.info("Outlinks dict size:{}".format(len(outlinks)))
+
                         i += 1
                     except:
                         logging.critical("Error in line: {}, {}".format(i, row), exc_info=True)
@@ -171,13 +176,15 @@ class HW3:
     def _read_crawled_urls_csv(cls) -> Set[str]:
         url_set = set()
 
-        for path in [('/home/sumeet/PycharmProjects/CS6200-S20/data/crawled_urls_sumeet.csv', 1),
+        url_cleaner = UrlCleaner()
+        for path in [('/home/sumeet/PycharmProjects/CS6200-S20/data/crawled_urls_saurabha.csv', 0),
+                     ('/home/sumeet/PycharmProjects/CS6200-S20/data/crawled_urls_sumeet.csv', 1),
                      ('/home/sumeet/PycharmProjects/CS6200-S20/data/crawled_urls_madhur.csv', 0)]:
 
             with open(path[0], 'r') as file:
                 csv_reader = csv.reader(file)
                 for row in csv_reader:
-                    url_set.add(row[path[1]].strip())
+                    url_set.add(url_cleaner.get_canonical_url(row[path[1]]).canonical_url)
 
         logging.info("Unique urls crawled: {}".format(len(url_set)))
         return url_set
@@ -193,7 +200,6 @@ class HW3:
 
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
         es_inserter.init_index(True)
-        es_inserter.bulk_insert()
         Utils.run_tasks_parallelly_in_chunks(cls._insert_data_into_es_helper, crawled_file_paths, 8,
                                              es_inserter=es_inserter)
 
