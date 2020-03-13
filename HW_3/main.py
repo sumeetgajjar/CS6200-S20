@@ -110,24 +110,27 @@ class HW3:
             i = 0
             with open(src_csv_path, 'r') as src_csv:
                 csv_reader = csv.reader(src_csv)
-                for row in csv_reader:
-                    try:
-                        src_url_detail = url_cleaner.get_canonical_url(row[0])
-                        src = src_url_detail.canonical_url
-                        dest_url_detail = url_cleaner.get_canonical_url(row[2])
-                        dest = dest_url_detail.canonical_url
-                        if dest not in crawled_url_set:
-                            dest = dest_url_detail.domain
+                try:
+                    for row in csv_reader:
+                        try:
+                            src_url_detail = url_cleaner.get_canonical_url(row[0])
+                            src = src_url_detail.canonical_url
+                            dest_url_detail = url_cleaner.get_canonical_url(row[2])
+                            dest = dest_url_detail.canonical_url
+                            if dest not in crawled_url_set:
+                                dest = dest_url_detail.domain
 
-                        outlinks[src].add(dest)
+                            outlinks[src].add(dest)
 
-                        if i % 1000000 == 100:
-                            logging.info("Processed {} edges".format(i))
-                            logging.info("Outlinks dict size:{}".format(len(outlinks)))
+                            if i % 1000000 == 0:
+                                logging.info("Processed {} edges".format(i))
+                                logging.info("Outlinks dict size:{}".format(len(outlinks)))
 
-                        i += 1
-                    except:
-                        logging.critical("Error in line: {}, {}".format(i, row), exc_info=True)
+                            i += 1
+                        except:
+                            logging.critical("Error in line: {}, {}".format(i, row), exc_info=True)
+                except:
+                    logging.critical("Error in line: {}, {}".format(i, row), exc_info=True)
 
         logging.info("Writing link graph to TSV")
         with open(link_graph_csv_path, 'w') as output_file:
