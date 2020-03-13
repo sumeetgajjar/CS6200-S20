@@ -3,16 +3,17 @@ import csv
 import glob
 import json
 import logging
-import os
 import signal
 import sys
+from collections import defaultdict
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Set
 
 from CS6200_S20_SHARED.es_inserter import LinkGraphReader, EsInserter
 from CS6200_S20_SHARED.shared_beans import ElasticSearchInput
 from CS6200_S20_SHARED.url_cleaner import UrlCleaner
 from HW_3.filter import CrawlingUtils
+from utils.decorators import timing
 from utils.utils import Utils
 
 Utils.configure_logging(enable_logging_to_file=True, filepath='hw_3_crawler.log')
@@ -96,27 +97,38 @@ class HW3:
             url_mapper_future.result()
 
     @classmethod
-    def _create_link_graph_csv(cls, override=False):
+    @timing
+    def _create_link_graph_csv(cls, crawled_url_set: Set[str]):
         link_graph_csv_path = Utils.get_link_graph_csv_path()
-        if override or not os.path.isfile(link_graph_csv_path):
-            with Constants.MYSQL_ENGINE.connect() as conn:
-                result = conn.execute("""
-                                        select a.src, a.dest, b.url_hash is not null as is_crawled
-                                        from cs6200.link_graph_edges a
-                                        left join cs6200.crawled_urls b
-                                        on a.dest_hash = b.url_hash
-                                      """)
-                with open(link_graph_csv_path, 'w') as file:
-                    url_cleaner = UrlCleaner()
-                    csv_writer = csv.writer(file)
-                    csv_writer.writerow(['src', 'dest'])
-                    for row in result:
-                        dest = row[1]
-                        if not row[2]:
-                            dest = url_cleaner.get_canonical_url(dest).domain
-                        csv_writer.writerow([row[0], dest])
+        outlinks = defaultdict(set)
 
-                logging.info("Number of rows exported to csv: {}".format(result.rowcount))
+        url_cleaner = UrlCleaner()
+        for src_csv_path in ['/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_madhur.csv',
+                             '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_sumeet.csv']:
+            logging.info('Reading: {}'.format(src_csv_path))
+            i = 0
+            with open(src_csv_path, 'r') as src_csv:
+                csv_reader = csv.reader(src_csv)
+                for row in csv_reader:
+                    try:
+                        src = row[0]
+                        dest = row[2]
+                        if dest not in crawled_url_set:
+                            dest = url_cleaner.get_canonical_url(dest).domain
+                        outlinks[src].add(dest)
+
+                        if i % 1000000 == 0:
+                            logging.info("Processed {} edges".format(i))
+                            logging.info("Outlinks dict size:{}".format(len(outlinks)))
+                        i += 1
+                    except:
+                        logging.critical("Error in line: {}, {}".format(i, row), exc_info=True)
+
+        logging.info("Writing link graph to TSV")
+        with open(link_graph_csv_path, 'w') as output_file:
+            csv_writer = csv.writer(output_file, delimiter='\t')
+            for src, dests in outlinks.items():
+                csv_writer.writerow([src, *dests])
 
     @classmethod
     def _get_crawled_file_paths(cls) -> List[str]:
@@ -155,16 +167,38 @@ class HW3:
         es_inserter.bulk_insert(crawled_data, chunk_size=100)
 
     @classmethod
+    @timing
+    def _read_crawled_urls_csv(cls) -> Set[str]:
+        url_set = set()
+
+        for path in [('/home/sumeet/PycharmProjects/CS6200-S20/data/crawled_urls_sumeet.csv', 1),
+                     ('/home/sumeet/PycharmProjects/CS6200-S20/data/crawled_urls_madhur.csv', 0)]:
+
+            with open(path[0], 'r') as file:
+                csv_reader = csv.reader(file)
+                for row in csv_reader:
+                    url_set.add(row[path[1]].strip())
+
+        logging.info("Unique urls crawled: {}".format(len(url_set)))
+        return url_set
+
+    @classmethod
+    def merge_crawled_urls(cls):
+        crawled_url_set = cls._read_crawled_urls_csv()
+        cls._create_link_graph_csv(crawled_url_set)
+
+    @classmethod
     def insert_data_into_es(cls):
-        cls._create_link_graph_csv(override=False)
         crawled_file_paths = cls._get_crawled_file_paths()
 
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
         es_inserter.init_index(True)
+        es_inserter.bulk_insert()
         Utils.run_tasks_parallelly_in_chunks(cls._insert_data_into_es_helper, crawled_file_paths, 8,
                                              es_inserter=es_inserter)
 
 
 if __name__ == '__main__':
     # HW3.init_crawling()
-    HW3.insert_data_into_es()
+    # HW3.insert_data_into_es()
+    HW3.merge_crawled_urls()

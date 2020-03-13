@@ -81,6 +81,9 @@ select a.*, b.url_hash is not null as is_crawled
 from cs6200.link_graph_edges a
          left join cs6200.crawled_urls b
                    on a.dest_hash = b.url_hash;
+
+select src, src_hash, dest, dest_hash from cs6200.link_graph_edges;
+
 where dest = 'https://en.wikipedia.org/wiki/Balkans_Campaign_(World_War_I)';
 
 select count(distinct src_hash, dest_hash)
@@ -98,7 +101,6 @@ select *
 from information_schema.TABLES a where a.TABLE_NAME = 'link_graph_edges';
 
 where dest = 'https://en.wikipedia.org/wiki/Assyrian_Genocide'
-
 
 drop table if exists cs6200.crawled_urls;
 create table if not exists cs6200.crawled_urls
