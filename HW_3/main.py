@@ -139,34 +139,48 @@ class HW3:
         outlinks = defaultdict(set)
 
         url_cleaner = UrlCleaner()
-        for src_csv_path in ['/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_madhur.csv',
-                             '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_sumeet.csv',
-                             '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_saurabha.csv']:
+        i = 1
+        for src_csv_path in [
+            '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_madhur.csv',
+            '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_sumeet.csv'
+        ]:
             logging.info('Reading: {}'.format(src_csv_path))
-            i = 0
-            with open(src_csv_path, 'r') as src_csv:
+            with open(src_csv_path, 'r', encoding='utf-8') as src_csv:
                 csv_reader = csv.reader(src_csv)
-                try:
-                    for row in csv_reader:
-                        try:
-                            src_url_detail = url_cleaner.get_canonical_url(row[0])
-                            src = src_url_detail.canonical_url
-                            dest_url_detail = url_cleaner.get_canonical_url(row[2])
-                            dest = dest_url_detail.canonical_url
-                            if dest not in crawled_url_set:
-                                dest = dest_url_detail.domain
+                for row in csv_reader:
+                    src = row[0]
+                    dest = row[2]
+                    if dest not in crawled_url_set:
+                        dest_url_detail = url_cleaner.get_canonical_url(dest)
+                        dest = dest_url_detail.domain
 
-                            outlinks[src].add(dest)
+                    outlinks[src].add(dest)
 
-                            if i % 1000000 == 0:
-                                logging.info("Processed {} edges".format(i))
-                                logging.info("Outlinks dict size:{}".format(len(outlinks)))
+                    if i % 1000000 == 0:
+                        logging.info("Processed {} edges".format(i))
+                        logging.info("Outlinks dict size:{}".format(len(outlinks)))
 
-                            i += 1
-                        except:
-                            logging.critical("Error in line: {}, {}".format(i, row), exc_info=True)
-                except:
-                    logging.critical("Error in line: {}, {}".format(i, row), exc_info=True)
+                    i += 1
+
+        json_path = '/home/sumeet/PycharmProjects/CS6200-S20/data/link_graph_edges_saurabha.csv'
+        logging.info('Reading: {}'.format(json_path))
+        with open(json_path, 'r', encoding='utf-8') as file:
+            for line in file:
+                row = json.loads(line)
+                src_url_detail = url_cleaner.get_canonical_url(row[0])
+                src = src_url_detail.canonical_url
+                dest_url_detail = url_cleaner.get_canonical_url(row[1])
+                dest = dest_url_detail.canonical_url
+                if dest not in crawled_url_set:
+                    dest = dest_url_detail.domain
+
+                outlinks[src].add(dest)
+
+                if i % 1000000 == 0:
+                    logging.info("Processed {} edges".format(i))
+                    logging.info("Outlinks dict size:{}".format(len(outlinks)))
+
+                i += 1
 
         logging.info("Writing link graph to TSV")
         with open(link_graph_csv_path, 'w') as output_file:
@@ -202,7 +216,7 @@ class HW3:
         crawled_file_paths = cls._get_crawled_file_paths()
 
         es_inserter = EsInserter("localhost", 9200, Constants.CRAWLED_DATA_INDEX_NAME, Constants.ES_TIMEOUT)
-        es_inserter.init_index(True)
+        # es_inserter.init_index(True)
         Utils.run_tasks_parallelly_in_chunks(cls._insert_data_into_es_helper, crawled_file_paths, 8,
                                              es_inserter=es_inserter)
 
