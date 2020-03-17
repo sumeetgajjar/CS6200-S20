@@ -62,8 +62,8 @@ class HW4:
         logging.info("PageRank for Other Data calculated")
 
     @classmethod
-    def _create_root_set(cls, linkgraph: LinkGraph, d=200, root_set_size=10000) -> Set[str]:
-        logging.info("Creating root set")
+    def _create_base_set(cls, linkgraph: LinkGraph, d=200, root_set_size=1000) -> Set[str]:
+        logging.info("Creating Base set")
         es_client = EsUtils.get_es_client()
         response = es_client.search(index=Constants.CRAWLED_DATA_INDEX_NAME, body={
             "query": {
@@ -72,7 +72,7 @@ class HW4:
                 }
             },
             "_source": ["url"],
-            "size": 1000
+            "size": root_set_size
         })
         root_urls = [r['_source']['url'] for r in response['hits']['hits']]
         root_set = set(root_urls)
@@ -86,7 +86,7 @@ class HW4:
             else:
                 root_set.update(random.choices(list(inlinks), k=d))
 
-        logging.info("Root set created, size:{}".format(len(root_set)))
+        logging.info("Base set created, size:{}".format(len(root_set)))
         return root_set
 
     @classmethod
@@ -106,7 +106,7 @@ class HW4:
     def run_HITS_on_crawled_data(cls):
         logging.info("Running HITS on crawled data")
         link_graph = LinkGraph(Utils.get_crawled_link_graph_csv_path())
-        root_set = cls._create_root_set(link_graph)
+        root_set = cls._create_base_set(link_graph, root_set_size=2000)
         authority_score, hub_score = HITS().calculate_hub_and_authority_score(link_graph, root_set)
         cls._write_HITS_score_to_file(authority_score, Utils.get_crawled_link_graph_HITS_authority_path())
         cls._write_HITS_score_to_file(hub_score, Utils.get_crawled_link_graph_HITS_hub_path())
@@ -115,6 +115,6 @@ class HW4:
 
 if __name__ == '__main__':
     Utils.configure_logging()
-    # HW4.run_page_rank_on_other_data()
-    # HW4.run_page_rank_on_crawled_data()
+    HW4.run_page_rank_on_other_data()
+    HW4.run_page_rank_on_crawled_data()
     HW4.run_HITS_on_crawled_data()
