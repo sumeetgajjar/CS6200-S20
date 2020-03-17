@@ -1,3 +1,4 @@
+import math
 from collections import defaultdict
 from typing import Tuple, Dict, Set
 
@@ -7,18 +8,29 @@ from utils.utils import LinkGraph
 class HITS:
 
     @classmethod
-    def _update_hub_score(cls, urls: Set[str], authority_score: Dict[str, float], linkgraph: LinkGraph) -> Dict[
-        str, float]:
-        pass
+    def _update_authority_score(cls, urls: Set[str], hub_scores: Dict[str, float],
+                                linkgraph: LinkGraph) -> Dict[str, float]:
+        authority_scores = {}
+        for p in urls:
+            for q in linkgraph.get_inlinks(p):
+                authority_scores[p] += hub_scores[q]
+
+        return authority_scores
 
     @classmethod
-    def _update_authority_score(cls, urls: Set[str], authority_score: Dict[str, float], linkgraph: LinkGraph) -> Dict[
-        str, float]:
-        pass
+    def _update_hub_score(cls, urls: Set[str], authority_scores: Dict[str, float],
+                          linkgraph: LinkGraph) -> Dict[str, float]:
+        hub_scores = {}
+        for p in urls:
+            for q in linkgraph.get_outlinks(p):
+                hub_scores[p] += authority_scores[q]
+
+        return hub_scores
 
     @classmethod
     def _normalize_scores(cls, scores: Dict[str, float]) -> Dict[str, float]:
-        return scores
+        denominator = math.sqrt(sum([x * x for x in scores.values()]))
+        return {url: score / denominator for url, score in scores.items()}
 
     @classmethod
     def _has_converged(cls):
