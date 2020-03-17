@@ -226,9 +226,10 @@ class Utils:
 
 class LinkGraph:
 
-    def __init__(self, csv_path: str, delimiter='\\s+') -> None:
+    def __init__(self, csv_path: str, inlinks_format: bool = False, delimiter='\\s+') -> None:
         self.csv_path = csv_path
         self.delimiter = re.compile(delimiter)
+        self.inlinks_format = inlinks_format
         self.links: Set[str] = set()
         self.inlinks: Dict[str, Set[str]] = defaultdict(set)
         self.outlinks: Dict[str, Set[str]] = defaultdict(set)
@@ -239,15 +240,25 @@ class LinkGraph:
         with open(self.csv_path, 'r') as file:
             for line in file:
                 row = self.delimiter.split(line.strip())
-                src = row[0].strip()
-                self.links.add(src)
-
-                dests = row[1:]
-                for dest in dests:
-                    dest = dest.strip()
-                    self.outlinks[src].add(dest)
-                    self.inlinks[dest].add(src)
+                if self.inlinks_format:
+                    dest = row[0].strip()
                     self.links.add(dest)
+
+                    srcs = row[1:]
+                    for src in srcs:
+                        self.outlinks[src].add(dest)
+                        self.inlinks[dest].add(src)
+                        self.links.add(src)
+                else:
+                    src = row[0].strip()
+                    self.links.add(src)
+
+                    dests = row[1:]
+                    for dest in dests:
+                        dest = dest.strip()
+                        self.outlinks[src].add(dest)
+                        self.inlinks[dest].add(src)
+                        self.links.add(dest)
 
         logging.info("Link graph loaded, total links:{}".format(len(self.links)))
 

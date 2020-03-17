@@ -56,8 +56,8 @@ class PageRank:
                 break
 
             sink_pr = 0.0
-            for sink_url in sink_urls:
-                sink_pr += pagerank[sink_url]
+            for p in sink_urls:
+                sink_pr += pagerank[p]
 
             new_pagerank = {}
             for p in linkgraph.get_all_links():
