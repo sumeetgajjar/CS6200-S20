@@ -48,9 +48,10 @@ class PageRank:
         pagerank = defaultdict(lambda: initial_pagerank)
 
         sink_urls = self._get_sink_urls(linkgraph)
+        i = 1
         while True:
             perplexity, converged = self.has_converged(linkgraph, pagerank)
-            logging.info("Perplexity:{}, Converged:{}".format(perplexity, converged))
+            logging.info("Iteration:{}, Perplexity:{}, Converged:{}".format(i, perplexity, converged))
             if converged:
                 break
 
@@ -70,6 +71,7 @@ class PageRank:
                         new_pagerank[p] += (d * pagerank[q] / L_q)
 
             pagerank = new_pagerank
+            i += 1
 
         self.perplexities = []
         return pagerank
