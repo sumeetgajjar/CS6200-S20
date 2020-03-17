@@ -21,7 +21,7 @@ class PageRank:
         entropy = -entropy
         return 2 ** entropy
 
-    def has_converged(self, linkgraph: LinkGraph, pagerank: Dict[str, float]) -> Tuple[float, bool]:
+    def _has_converged(self, linkgraph: LinkGraph, pagerank: Dict[str, float]) -> Tuple[float, bool]:
         perplexity = self._calculate_perplexity(linkgraph, pagerank)
         self.perplexities.append(perplexity)
 
@@ -50,7 +50,7 @@ class PageRank:
         sink_urls = self._get_sink_urls(linkgraph)
         i = 1
         while True:
-            perplexity, converged = self.has_converged(linkgraph, pagerank)
+            perplexity, converged = self._has_converged(linkgraph, pagerank)
             logging.info("Iteration:{}, Perplexity:{}, Converged:{}".format(i, perplexity, converged))
             if converged:
                 break
