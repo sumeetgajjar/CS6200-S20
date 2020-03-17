@@ -13,6 +13,8 @@ class Constants:
     DOCUMENT_ID_MAPPING_FILE_NAME = 'document-id-mapping.json'
     CRAWLED_LINK_GRAPH_CSV_FILE_NAME = 'link-graph.csv'
     CRAWLED_LINK_GRAPH_PAGERANK_FILE_NAME = 'crawled_link_graph_pagerank.csv'
+    CRAWLED_LINK_GRAPH_HITS_AUTHORITY_FILE_NAME = 'crawled_link_graph_HITS_authority.csv'
+    CRAWLED_LINK_GRAPH_HITS_HUB_FILE_NAME = 'crawled_link_graph_HITS_hub.csv'
     OTHER_LINK_GRAPH_CSV_FILE_NAME = 'wt2g_inlinks.txt'
     OTHER_LINK_GRAPH_PAGERANK_FILE_NAME = 'other_link_graph_pagerank.csv'
     AP_DATA_FILE_ENCODING = 'latin-1'

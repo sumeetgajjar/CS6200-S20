@@ -4,6 +4,7 @@ import random
 from typing import Dict, List, Set
 
 from HW_1.es_utils import EsUtils
+from HW_4.hits import HITS
 from HW_4.page_rank import PageRank
 from constants.constants import Constants
 from utils.decorators import timing
@@ -89,11 +90,26 @@ class HW4:
         return root_set
 
     @classmethod
+    def _write_HITS_score_to_file(cls, scores: Dict[str, float], filepath: str):
+        logging.info("Writing HITS scores to {}".format(filepath))
+        sorted_scores = [(url, score) for url, score in sorted(scores.items(), key=lambda tup: tup[1], reverse=True)]
+        top_500 = sorted_scores[:500]
+
+        with open(filepath, 'w') as file:
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(["webpageurl", "score"])
+            csv_writer.writerows(top_500)
+
+        logging.info("HITS scores written")
+
+    @classmethod
     def run_HITS_on_crawled_data(cls):
         logging.info("Running HITS on crawled data")
         link_graph = LinkGraph(Utils.get_crawled_link_graph_csv_path())
         root_set = cls._create_root_set(link_graph)
-
+        authority_score, hub_score = HITS().calculate_hub_and_authority_score(link_graph, root_set)
+        cls._write_HITS_score_to_file(authority_score, Utils.get_crawled_link_graph_HITS_authority_path())
+        cls._write_HITS_score_to_file(hub_score, Utils.get_crawled_link_graph_HITS_hub_path())
         logging.info("HITS executed on crawled data")
 
 

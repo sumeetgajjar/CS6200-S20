@@ -60,6 +60,14 @@ class Utils:
         return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.CRAWLED_LINK_GRAPH_PAGERANK_FILE_NAME)
 
     @classmethod
+    def get_crawled_link_graph_HITS_authority_path(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.CRAWLED_LINK_GRAPH_HITS_AUTHORITY_FILE_NAME)
+
+    @classmethod
+    def get_crawled_link_graph_HITS_hub_path(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.CRAWLED_LINK_GRAPH_HITS_HUB_FILE_NAME)
+
+    @classmethod
     def get_other_link_graph_csv_path(cls):
         return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.OTHER_LINK_GRAPH_CSV_FILE_NAME)
 
