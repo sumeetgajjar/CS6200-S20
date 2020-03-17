@@ -13,28 +13,22 @@ class HITS:
         self.h_perplexity: List[float] = []
 
     @classmethod
-    def _get_default_authority_scores(cls) -> Dict[str, float]:
-        return defaultdict(lambda: 1)
-
-    @classmethod
-    def _get_default_hub_scores(cls) -> Dict[str, float]:
-        return defaultdict(lambda: 1)
-
-    def _update_authority_score(self, urls: Set[str], hub_scores: Dict[str, float],
+    def _update_authority_score(cls, urls: Set[str], hub_scores: Dict[str, float],
                                 linkgraph: LinkGraph) -> Dict[str, float]:
-        authority_scores = self._get_default_authority_scores()
+        authority_scores = defaultdict(lambda: 0)
         for p in urls:
             for q in linkgraph.get_inlinks(p):
-                authority_scores[p] += hub_scores[q]
+                authority_scores[p] += hub_scores.get(q, 0)
 
         return authority_scores
 
-    def _update_hub_score(self, urls: Set[str], authority_scores: Dict[str, float],
+    @classmethod
+    def _update_hub_score(cls, urls: Set[str], authority_scores: Dict[str, float],
                           linkgraph: LinkGraph) -> Dict[str, float]:
-        hub_scores = self._get_default_hub_scores()
+        hub_scores = defaultdict(lambda: 0)
         for p in urls:
             for q in linkgraph.get_outlinks(p):
-                hub_scores[p] += authority_scores[q]
+                hub_scores[p] += authority_scores.get(q, 0)
 
         return hub_scores
 
@@ -80,8 +74,8 @@ class HITS:
     def calculate_hub_and_authority_score(self, linkgraph: LinkGraph, root_set: Set[str]) -> Tuple[Dict[str, float],
                                                                                                    Dict[str, float]]:
 
-        authority_scores = self._get_default_authority_scores()
-        hub_scores = self._get_default_hub_scores()
+        authority_scores = defaultdict(lambda: 1)
+        hub_scores = defaultdict(lambda: 1)
 
         i = 1
         while True:
