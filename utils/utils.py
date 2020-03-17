@@ -57,15 +57,15 @@ class Utils:
 
     @classmethod
     def get_crawled_link_graph_pagerank_path(cls):
-        return '{}/HW_4/result/{}'.format(Constants.PROJECT_ROOT, Constants.CRAWLED_LINK_GRAPH_PAGERANK_FILE_NAME)
+        return '{}/HW_4/results/{}'.format(Constants.PROJECT_ROOT, Constants.CRAWLED_LINK_GRAPH_PAGERANK_FILE_NAME)
 
     @classmethod
     def get_crawled_link_graph_HITS_authority_path(cls):
-        return '{}/HW_4/result/{}'.format(Constants.PROJECT_ROOT, Constants.CRAWLED_LINK_GRAPH_HITS_AUTHORITY_FILE_NAME)
+        return '{}/HW_4/results/{}'.format(Constants.PROJECT_ROOT, Constants.CRAWLED_LINK_GRAPH_HITS_AUTHORITY_FILE_NAME)
 
     @classmethod
     def get_crawled_link_graph_HITS_hub_path(cls):
-        return '{}/HW_4/result/{}'.format(Constants.PROJECT_ROOT, Constants.CRAWLED_LINK_GRAPH_HITS_HUB_FILE_NAME)
+        return '{}/HW_4/results/{}'.format(Constants.PROJECT_ROOT, Constants.CRAWLED_LINK_GRAPH_HITS_HUB_FILE_NAME)
 
     @classmethod
     def get_other_link_graph_csv_path(cls):
@@ -73,7 +73,7 @@ class Utils:
 
     @classmethod
     def get_other_link_graph_pagerank_path(cls):
-        return '{}/HW_4/result/{}'.format(Constants.PROJECT_ROOT, Constants.OTHER_LINK_GRAPH_PAGERANK_FILE_NAME)
+        return '{}/HW_4/results/{}'.format(Constants.PROJECT_ROOT, Constants.OTHER_LINK_GRAPH_PAGERANK_FILE_NAME)
 
     @classmethod
     def create_ap_data_index(cls, ):

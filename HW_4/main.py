@@ -103,6 +103,7 @@ class HW4:
         logging.info("HITS scores written")
 
     @classmethod
+    @timing
     def run_HITS_on_crawled_data(cls):
         logging.info("Running HITS on crawled data")
         link_graph = LinkGraph(Utils.get_crawled_link_graph_csv_path())
