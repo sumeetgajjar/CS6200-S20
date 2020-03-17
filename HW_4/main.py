@@ -51,7 +51,7 @@ class HW4:
     @timing
     def run_page_rank_on_other_data(cls):
         logging.info("Calculating PageRank for Other Data")
-        link_graph = LinkGraph(Utils.get_other_link_graph_csv_path())
+        link_graph = LinkGraph(Utils.get_other_link_graph_csv_path(), inlinks_format=True)
         pageranks = PageRank().calculate_pagerank_iteratively(link_graph)
         top_500_urls = cls._get_top_500_links(pageranks, link_graph)
         cls._export_pagerank_infos(top_500_urls, Utils.get_other_link_graph_pagerank_path())

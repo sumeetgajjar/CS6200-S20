@@ -246,6 +246,7 @@ class LinkGraph:
 
                     srcs = row[1:]
                     for src in srcs:
+                        src = src.strip()
                         self.outlinks[src].add(dest)
                         self.inlinks[dest].add(src)
                         self.links.add(src)
