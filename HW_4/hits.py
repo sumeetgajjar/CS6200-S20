@@ -9,8 +9,8 @@ from utils.utils import LinkGraph
 class HITS:
 
     def __init__(self) -> None:
-        self.a_perplexity: List[float] = []
-        self.h_perplexity: List[float] = []
+        self.a_entropy: List[float] = []
+        self.h_entropy: List[float] = []
 
     @classmethod
     def _update_authority_score(cls, urls: Set[str], hub_scores: Dict[str, float],
@@ -18,7 +18,7 @@ class HITS:
         authority_scores = defaultdict(lambda: 0)
         for p in urls:
             for q in linkgraph.get_inlinks(p):
-                authority_scores[p] += hub_scores.get(q, 0)
+                authority_scores[p] += hub_scores.get(q, 1)
 
         return authority_scores
 
@@ -28,7 +28,7 @@ class HITS:
         hub_scores = defaultdict(lambda: 0)
         for p in urls:
             for q in linkgraph.get_outlinks(p):
-                hub_scores[p] += authority_scores.get(q, 0)
+                hub_scores[p] += authority_scores.get(q, 1)
 
         return hub_scores
 
@@ -38,13 +38,13 @@ class HITS:
         return {url: score / denominator for url, score in scores.items()}
 
     @classmethod
-    def _calculate_perplexity(cls, scores: Dict[str, float]) -> float:
+    def _calculate_entropy(cls, scores: Dict[str, float]) -> float:
         entropy = 0.0
         for url, score in scores.items():
             entropy += score * math.log2(score)
 
         entropy = -entropy
-        return 2 ** entropy
+        return entropy
 
     def _has_converged(self, authority_scores: Dict[str, float],
                        hub_scores: Dict[str, float]) -> Tuple[float, bool, float, bool]:
@@ -54,7 +54,7 @@ class HITS:
             if len(perplexity) == 4:
                 _converged = True
                 for i in range(3):
-                    if int(perplexity[i]) != int(perplexity[i + 1]):
+                    if abs(perplexity[i] - perplexity[i + 1]) > 0.001:
                         _converged = False
                         break
 
@@ -62,14 +62,14 @@ class HITS:
 
             return _converged
 
-        a_perplexity = self._calculate_perplexity(authority_scores)
-        h_perplexity = self._calculate_perplexity(hub_scores)
-        self.a_perplexity.append(a_perplexity)
-        self.h_perplexity.append(h_perplexity)
-        a_converged = _converge_helper(self.a_perplexity)
-        h_converged = _converge_helper(self.h_perplexity)
+        a_entropy = self._calculate_entropy(authority_scores)
+        h_entropy = self._calculate_entropy(hub_scores)
+        self.a_entropy.append(a_entropy)
+        self.h_entropy.append(h_entropy)
+        a_converged = _converge_helper(self.a_entropy)
+        h_converged = _converge_helper(self.h_entropy)
 
-        return a_perplexity, a_converged, h_perplexity, h_converged
+        return a_entropy, a_converged, h_entropy, h_converged
 
     def calculate_hub_and_authority_score(self, linkgraph: LinkGraph, root_set: Set[str]) -> Tuple[Dict[str, float],
                                                                                                    Dict[str, float]]:
@@ -79,12 +79,12 @@ class HITS:
 
         i = 1
         while True:
-            a_perplexity, a_converged, h_perplexity, h_converged, = self._has_converged(authority_scores, hub_scores)
+            a_entropy, a_converged, h_entropy, h_converged = self._has_converged(authority_scores, hub_scores)
             logging.info(
-                "Iteration:{}, A_Perplexity:{}, A_Converged:{}, H_Perplexity:{}, H_Converged:{}".format(i, a_perplexity,
-                                                                                                        a_converged,
-                                                                                                        h_perplexity,
-                                                                                                        h_converged))
+                "Iteration:{}, A_Entropy:{}, A_Converged:{}, H_Entropy:{}, H_Converged:{}".format(i, a_entropy,
+                                                                                                  a_converged,
+                                                                                                  h_entropy,
+                                                                                                  h_converged))
 
             if a_converged and h_converged:
                 break
@@ -96,5 +96,5 @@ class HITS:
 
             i += 1
 
-        self.a_perplexity = []
+        self.a_entropy = []
         return authority_scores, hub_scores
