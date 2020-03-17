@@ -1,12 +1,15 @@
 import concurrent.futures
+import csv
 import datetime
 import gc
 import json
 import logging
 import math
 import uuid
+from collections import defaultdict
 from functools import lru_cache
 from logging import getLogger, Formatter, StreamHandler
+from typing import Set, Dict
 from urllib.parse import urljoin
 from urllib.robotparser import RobotFileParser
 
@@ -49,8 +52,20 @@ class Utils:
         return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.USER_AGENT_FILE_NAME)
 
     @classmethod
-    def get_link_graph_csv_path(cls):
-        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.LINK_GRAPH_CSV_FILE_NAME)
+    def get_crawled_link_graph_csv_path(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.CRAWLED_LINK_GRAPH_CSV_FILE_NAME)
+
+    @classmethod
+    def get_crawled_link_graph_pagerank_path(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.CRAWLED_LINK_GRAPH_PAGERANK_FILE_NAME)
+
+    @classmethod
+    def get_other_link_graph_csv_path(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.OTHER_LINK_GRAPH_CSV_FILE_NAME)
+
+    @classmethod
+    def get_other_link_graph_pagerank_path(cls):
+        return '{}/{}'.format(cls.get_data_dir_abs_path(), Constants.OTHER_LINK_GRAPH_PAGERANK_FILE_NAME)
 
     @classmethod
     def create_ap_data_index(cls, ):
@@ -207,3 +222,38 @@ class Utils:
         if norm == 0:
             return v
         return v / norm
+
+
+class LinkGraph:
+
+    def __init__(self, csv_path: str) -> None:
+        self.csv_path = csv_path
+        self.links: Set[str] = set()
+        self.inlinks: Dict[str, Set[str]] = defaultdict(set)
+        self.outlinks: Dict[str, Set[str]] = defaultdict(set)
+        self._load_csv()
+
+    def _load_csv(self):
+        logging.info("Loading link graph from:{}".format(self.csv_path))
+        with open(self.csv_path, 'r') as file:
+            csv_reader = csv.reader(file, delimiter='\t')
+            for row in csv_reader:
+                src = row[0]
+                self.links.add(src)
+
+                dests = row[1:]
+                for dest in dests:
+                    self.outlinks[src].add(dest)
+                    self.inlinks[dest].add(src)
+                    self.links.add(dest)
+
+        logging.info("Link graph loaded, total links:{}".format(len(self.links)))
+
+    def get_all_links(self):
+        return self.links
+
+    def get_inlinks(self, url: str) -> Set[str]:
+        return self.inlinks[url]
+
+    def get_outlinks(self, url: str) -> Set[str]:
+        return self.outlinks[url]

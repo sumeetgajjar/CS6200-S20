@@ -128,14 +128,14 @@ class HW3:
 
     @classmethod
     def _insert_data_into_es_helper(cls, crawled_file_paths: List[str], es_inserter: EsInserter):
-        link_graph_reader = LinkGraphReader(Utils.get_link_graph_csv_path())
+        link_graph_reader = LinkGraphReader(Utils.get_crawled_link_graph_csv_path())
         crawled_data = cls._get_crawled_data(crawled_file_paths, link_graph_reader)
         es_inserter.bulk_insert(crawled_data, chunk_size=100)
 
     @classmethod
     @timing
     def _create_link_graph_csv(cls, crawled_url_set: Set[str]):
-        link_graph_csv_path = Utils.get_link_graph_csv_path()
+        link_graph_csv_path = Utils.get_crawled_link_graph_csv_path()
         outlinks = defaultdict(set)
 
         url_cleaner = UrlCleaner()
