@@ -13,19 +13,25 @@ class HITS:
         self.h_perplexity: List[float] = []
 
     @classmethod
-    def _update_authority_score(cls, urls: Set[str], hub_scores: Dict[str, float],
+    def _get_default_authority_scores(cls) -> Dict[str, float]:
+        return defaultdict(lambda: 1)
+
+    @classmethod
+    def _get_default_hub_scores(cls) -> Dict[str, float]:
+        return defaultdict(lambda: 1)
+
+    def _update_authority_score(self, urls: Set[str], hub_scores: Dict[str, float],
                                 linkgraph: LinkGraph) -> Dict[str, float]:
-        authority_scores = {}
+        authority_scores = self._get_default_authority_scores()
         for p in urls:
             for q in linkgraph.get_inlinks(p):
                 authority_scores[p] += hub_scores[q]
 
         return authority_scores
 
-    @classmethod
-    def _update_hub_score(cls, urls: Set[str], authority_scores: Dict[str, float],
+    def _update_hub_score(self, urls: Set[str], authority_scores: Dict[str, float],
                           linkgraph: LinkGraph) -> Dict[str, float]:
-        hub_scores = {}
+        hub_scores = self._get_default_hub_scores()
         for p in urls:
             for q in linkgraph.get_outlinks(p):
                 hub_scores[p] += authority_scores[q]
@@ -73,10 +79,9 @@ class HITS:
 
     def calculate_hub_and_authority_score(self, linkgraph: LinkGraph, root_set: Set[str]) -> Tuple[Dict[str, float],
                                                                                                    Dict[str, float]]:
-        initial_authority_score = 1
-        initial_hub_score = 1
-        authority_scores = defaultdict(lambda: initial_authority_score)
-        hub_scores = defaultdict(lambda: initial_hub_score)
+
+        authority_scores = self._get_default_authority_scores()
+        hub_scores = self._get_default_hub_scores()
 
         i = 1
         while True:
@@ -90,8 +95,8 @@ class HITS:
             if a_converged and h_converged:
                 break
 
-            new_authority_score = self._update_authority_score(root_set, authority_scores, linkgraph)
-            new_hub_score = self._update_hub_score(root_set, hub_scores, linkgraph)
+            new_authority_score = self._update_authority_score(root_set, hub_scores, linkgraph)
+            new_hub_score = self._update_hub_score(root_set, authority_scores, linkgraph)
             authority_scores = self._normalize_scores(new_authority_score)
             hub_scores = self._normalize_scores(new_hub_score)
 
