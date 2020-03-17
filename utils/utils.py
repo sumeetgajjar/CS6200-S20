@@ -1,10 +1,10 @@
 import concurrent.futures
-import csv
 import datetime
 import gc
 import json
 import logging
 import math
+import re
 import uuid
 from collections import defaultdict
 from functools import lru_cache
@@ -226,8 +226,9 @@ class Utils:
 
 class LinkGraph:
 
-    def __init__(self, csv_path: str) -> None:
+    def __init__(self, csv_path: str, delimiter='\\s+') -> None:
         self.csv_path = csv_path
+        self.delimiter = re.compile(delimiter)
         self.links: Set[str] = set()
         self.inlinks: Dict[str, Set[str]] = defaultdict(set)
         self.outlinks: Dict[str, Set[str]] = defaultdict(set)
@@ -236,13 +237,14 @@ class LinkGraph:
     def _load_csv(self):
         logging.info("Loading link graph from:{}".format(self.csv_path))
         with open(self.csv_path, 'r') as file:
-            csv_reader = csv.reader(file, delimiter='\t')
-            for row in csv_reader:
-                src = row[0]
+            for line in file:
+                row = self.delimiter.split(line.strip())
+                src = row[0].strip()
                 self.links.add(src)
 
                 dests = row[1:]
                 for dest in dests:
+                    dest = dest.strip()
                     self.outlinks[src].add(dest)
                     self.inlinks[dest].add(src)
                     self.links.add(dest)

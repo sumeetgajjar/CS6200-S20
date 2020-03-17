@@ -39,6 +39,16 @@ class HW4:
 
     @classmethod
     @timing
+    def run_page_rank_on_crawled_data(cls):
+        logging.info("Calculating PageRank for Crawled Data")
+        link_graph = LinkGraph(Utils.get_crawled_link_graph_csv_path())
+        pageranks = PageRank().calculate_pagerank_iteratively(link_graph)
+        top_500_urls = cls._get_top_500_links(pageranks, link_graph)
+        cls._export_pagerank_infos(top_500_urls, Utils.get_crawled_link_graph_pagerank_path())
+        logging.info("PageRank for Crawled Data calculated")
+
+    @classmethod
+    @timing
     def run_page_rank_on_other_data(cls):
         logging.info("Calculating PageRank for Other Data")
         link_graph = LinkGraph(Utils.get_other_link_graph_csv_path())
@@ -51,3 +61,4 @@ class HW4:
 if __name__ == '__main__':
     Utils.configure_logging()
     HW4.run_page_rank_on_other_data()
+    HW4.run_page_rank_on_crawled_data()
