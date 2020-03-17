@@ -62,6 +62,7 @@ class Constants:
     TOPIC_KEYWORDS = {'1521', '1776', 'allies', 'america', 'britain', 'colonies', 'congress',
                       'declaration', 'father', 'forces', 'founding', 'france', 'george', 'independence',
                       'july', 'revolution', 'revolutionary', 'states', 'thirteen', 'united', 'war', 'washington'}
+    CRAWLING_TOPIC = "AMERICAN INDEPENDENCE WAR"
 
     # CRAWLING configs
     MAX_URLS_TO_CRAWL = 50000

@@ -1,8 +1,11 @@
 import csv
 import logging
-from typing import Dict, List
+import random
+from typing import Dict, List, Set
 
+from HW_1.es_utils import EsUtils
 from HW_4.page_rank import PageRank
+from constants.constants import Constants
 from utils.decorators import timing
 from utils.utils import Utils, LinkGraph
 
@@ -23,8 +26,8 @@ class HW4:
     def _get_top_500_links(cls, pageranks: Dict[str, float], linkgraph: LinkGraph):
         logging.info("Getting top 500 urls")
         temp = [PageRankInfo(url, pagerank, len(linkgraph.get_inlinks(url)), len(linkgraph.get_outlinks(url)))
-                for url, pagerank in sorted(pageranks.items(), key=lambda tup: tup[1])]
-        return temp[-500:]
+                for url, pagerank in sorted(pageranks.items(), key=lambda tup: tup[1], reverse=True)]
+        return temp[:500]
 
     @classmethod
     @timing
@@ -57,8 +60,45 @@ class HW4:
         cls._export_pagerank_infos(top_500_urls, Utils.get_other_link_graph_pagerank_path())
         logging.info("PageRank for Other Data calculated")
 
+    @classmethod
+    def _create_root_set(cls, linkgraph: LinkGraph, d=200, root_set_size=10000) -> Set[str]:
+        logging.info("Creating root set")
+        es_client = EsUtils.get_es_client()
+        response = es_client.search(index=Constants.CRAWLED_DATA_INDEX_NAME, body={
+            "query": {
+                "query_string": {
+                    "query": "1521 AMERICAN INDEPENDENCE WAR"
+                }
+            },
+            "_source": ["url"],
+            "size": 1000
+        })
+        root_urls = [r['_source']['url'] for r in response['hits']['hits']]
+        root_set = set(root_urls)
+
+        for url in root_urls:
+            root_set.update(linkgraph.get_outlinks(url))
+
+            inlinks = linkgraph.get_inlinks(url)
+            if len(inlinks) < d:
+                root_set.update(inlinks)
+            else:
+                root_set.update(random.choices(list(inlinks), k=d))
+
+        logging.info("Root set created, size:{}".format(len(root_set)))
+        return root_set
+
+    @classmethod
+    def run_HITS_on_crawled_data(cls):
+        logging.info("Running HITS on crawled data")
+        link_graph = LinkGraph(Utils.get_crawled_link_graph_csv_path())
+        root_set = cls._create_root_set(link_graph)
+
+        logging.info("HITS executed on crawled data")
+
 
 if __name__ == '__main__':
     Utils.configure_logging()
     HW4.run_page_rank_on_other_data()
-    # HW4.run_page_rank_on_crawled_data()
+    HW4.run_page_rank_on_crawled_data()
+    # HW4.run_HITS_on_crawled_data()
