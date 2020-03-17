@@ -61,4 +61,4 @@ class HW4:
 if __name__ == '__main__':
     Utils.configure_logging()
     HW4.run_page_rank_on_other_data()
-    HW4.run_page_rank_on_crawled_data()
+    # HW4.run_page_rank_on_crawled_data()

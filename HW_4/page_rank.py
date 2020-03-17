@@ -1,27 +1,59 @@
+import logging
+import math
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, List, Tuple
 
 from utils.utils import LinkGraph
 
 
 class PageRank:
 
+    def __init__(self) -> None:
+        self.perplexities: List[float] = []
+
     @classmethod
-    def has_converged(cls) -> bool:
-        # TODO implement this
-        return True
+    def _calculate_perplexity(cls, linkgraph: LinkGraph, pagerank: Dict[str, float]) -> float:
+        entropy = 0.0
+        for url in linkgraph.get_all_links():
+            url_pagerank = pagerank[url]
+            entropy += url_pagerank * math.log2(url_pagerank)
+
+        entropy = -entropy
+        return 2 ** entropy
+
+    def has_converged(self, linkgraph: LinkGraph, pagerank: Dict[str, float]) -> Tuple[float, bool]:
+        perplexity = self._calculate_perplexity(linkgraph, pagerank)
+        self.perplexities.append(perplexity)
+
+        converged = False
+        if len(self.perplexities) == 4:
+            converged = True
+            for i in range(3):
+                if int(self.perplexities[i]) != int(self.perplexities[i + 1]):
+                    converged = False
+                    break
+
+            del self.perplexities[0]
+
+        return perplexity, converged
 
     @classmethod
     def _get_sink_urls(cls, linkgraph: LinkGraph):
         return [url for url in linkgraph.get_all_links() if len(linkgraph.get_outlinks(url)) == 0]
 
     def calculate_pagerank_iteratively(self, linkgraph: LinkGraph, d: float = 0.85) -> Dict[str, float]:
+        self.perplexities = []
         N = len(linkgraph.get_all_links())
         initial_pagerank = 1 / N
-        pagerank = defaultdict(lambda _: initial_pagerank)
+        pagerank = defaultdict(lambda: initial_pagerank)
 
         sink_urls = self._get_sink_urls(linkgraph)
-        while not self.has_converged():
+        while True:
+            perplexity, converged = self.has_converged(linkgraph, pagerank)
+            logging.info("Perplexity:{}, Converged:{}".format(perplexity, converged))
+            if converged:
+                break
+
             sink_pr = 0.0
             for sink_url in sink_urls:
                 sink_pr += pagerank[sink_url]
@@ -39,4 +71,5 @@ class PageRank:
 
             pagerank = new_pagerank
 
+        self.perplexities = []
         return pagerank
