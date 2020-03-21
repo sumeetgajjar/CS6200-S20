@@ -49,16 +49,16 @@ class HITS:
     def _has_converged(self, authority_scores: Dict[str, float],
                        hub_scores: Dict[str, float]) -> Tuple[float, bool, float, bool]:
 
-        def _converge_helper(perplexity: List[float]):
+        def _converge_helper(entropy_list: List[float]):
             _converged = False
-            if len(perplexity) == 4:
+            if len(entropy_list) == 4:
                 _converged = True
                 for i in range(3):
-                    if abs(perplexity[i] - perplexity[i + 1]) > 0.001:
+                    if abs(entropy_list[i] - entropy_list[i + 1]) > 0.001:
                         _converged = False
                         break
 
-                del perplexity[0]
+                del entropy_list[0]
 
             return _converged
 
