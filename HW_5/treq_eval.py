@@ -51,7 +51,8 @@ class TREQEval:
         desc_sorted_scores = sorted(asc_sorted_doc_ids, key=lambda tup: tup[1], reverse=True)
         return map(lambda tup: tup[0], desc_sorted_scores)
 
-    def _print_stats(self, query_id, ret, rel, rel_ret, prec_at_recalls, mean_avg_precision, prec_at_cutoffs, r_prec):
+    def _print_stats(self, query_id, ret, rel, rel_ret, prec_at_recalls, mean_avg_precision, prec_at_cutoffs, r_prec,
+                     rec_at_cutoffs, f1_scores_at_cutoffs):
         result_str = ''
         result_str += "\nQueryid (Num):    {}\n".format(query_id)
         result_str += "Total number of documents over all queries\n"
@@ -72,18 +73,25 @@ class TREQEval:
         result_str += "    at 1.00       {0:.4f}\n".format(prec_at_recalls[10])
         result_str += "Average precision (non-interpolated) for all rel docs(averaged over queries)\n"
         result_str += "                  {0:.4f}\n".format(mean_avg_precision)
-        result_str += "Precision:\n"
-        result_str += "  At    5 docs:   {0:.4f}\n".format(prec_at_cutoffs[0])
-        result_str += "  At   10 docs:   {0:.4f}\n".format(prec_at_cutoffs[1])
-        result_str += "  At   15 docs:   {0:.4f}\n".format(prec_at_cutoffs[2])
-        result_str += "  At   20 docs:   {0:.4f}\n".format(prec_at_cutoffs[3])
-        result_str += "  At   30 docs:   {0:.4f}\n".format(prec_at_cutoffs[4])
-        result_str += "  At  100 docs:   {0:.4f}\n".format(prec_at_cutoffs[5])
-        result_str += "  At  200 docs:   {0:.4f}\n".format(prec_at_cutoffs[6])
-        result_str += "  At  500 docs:   {0:.4f}\n".format(prec_at_cutoffs[7])
-        result_str += "  At 1000 docs:   {0:.4f}\n".format(prec_at_cutoffs[8])
         result_str += "R-Precision (precision after R (= num_rel for a query) docs retrieved):\n"
         result_str += "    Exact:        {:.4}\n".format(r_prec)
+
+        mappings = {
+            'Precision': prec_at_cutoffs,
+            'Recall': rec_at_cutoffs,
+            'F1 Scores': f1_scores_at_cutoffs
+        }
+        for measure, measure_at_cutoff in mappings.items():
+            result_str += "{}:\n".format(measure)
+            result_str += "  At    5 docs:   {0:.4f}\n".format(measure_at_cutoff[0])
+            result_str += "  At   10 docs:   {0:.4f}\n".format(measure_at_cutoff[1])
+            result_str += "  At   15 docs:   {0:.4f}\n".format(measure_at_cutoff[2])
+            result_str += "  At   20 docs:   {0:.4f}\n".format(measure_at_cutoff[3])
+            result_str += "  At   30 docs:   {0:.4f}\n".format(measure_at_cutoff[4])
+            result_str += "  At  100 docs:   {0:.4f}\n".format(measure_at_cutoff[5])
+            result_str += "  At  200 docs:   {0:.4f}\n".format(measure_at_cutoff[6])
+            result_str += "  At  500 docs:   {0:.4f}\n".format(measure_at_cutoff[7])
+            result_str += "  At 1000 docs:   {0:.4f}\n".format(measure_at_cutoff[8])
 
         logging.info(result_str)
 
@@ -95,8 +103,12 @@ class TREQEval:
         tot_num_rel = 0
         tot_num_rel_ret = 0
         sum_prec_at_cutoffs = defaultdict(float)
+        sum_rec_at_cutoffs = defaultdict(float)
+        sum_f1_scores_at_cutoffs = defaultdict(float)
         sum_prec_at_recalls = defaultdict(float)
         avg_prec_at_cutoffs = defaultdict(float)
+        avg_rec_at_cutoffs = defaultdict(float)
+        avg_f1_scores_at_cutoffs = defaultdict(float)
         avg_prec_at_recalls = defaultdict(float)
         sum_avg_prec = 0
         sum_r_prec = 0
@@ -135,8 +147,18 @@ class TREQEval:
                 rec_list.append(final_recall)
 
             prec_at_cutoffs = []
+            rec_at_cutoffs = []
+            f1_scores_at_cutoffs = []
             for cutoff in self._CUTOFFS:
-                prec_at_cutoffs.append(prec_list[cutoff - 1])
+                ix = cutoff - 1
+                prec_at_cutoffs.append(prec_list[ix])
+                rec_at_cutoffs.append(rec_list[ix])
+
+                denominator = (prec_list[ix] + rec_list[ix])
+                if denominator:
+                    f1_scores_at_cutoffs.append((2 * prec_list[ix] * rec_list[ix]) / denominator)
+                else:
+                    f1_scores_at_cutoffs.append(0)
 
             if num_relevance[query_id] > num_ret:
                 r_prec = num_rel_ret / num_relevance[query_id]
@@ -168,7 +190,7 @@ class TREQEval:
             if self.print_all_queries:
                 self._print_stats(query_id, num_ret, num_relevance[query_id],
                                   num_rel_ret, prec_at_recalls, avg_precision,
-                                  prec_at_cutoffs, r_prec)
+                                  prec_at_cutoffs, r_prec, rec_at_cutoffs, f1_scores_at_cutoffs)
 
             tot_num_ret += num_ret
             tot_num_rel += num_relevance[query_id]
@@ -176,6 +198,8 @@ class TREQEval:
 
             for ix in range(len(self._CUTOFFS)):
                 sum_prec_at_cutoffs[ix] += prec_at_cutoffs[ix]
+                sum_rec_at_cutoffs[ix] += rec_at_cutoffs[ix]
+                sum_f1_scores_at_cutoffs[ix] += f1_scores_at_cutoffs[ix]
 
             for ix in range(len(self._RECALLS)):
                 sum_prec_at_recalls[ix] += prec_at_recalls[ix]
@@ -185,6 +209,8 @@ class TREQEval:
 
         for ix in range(len(self._CUTOFFS)):
             avg_prec_at_cutoffs[ix] = sum_prec_at_cutoffs[ix] / num_topics
+            avg_rec_at_cutoffs[ix] = sum_rec_at_cutoffs[ix] / num_topics
+            avg_f1_scores_at_cutoffs[ix] = sum_f1_scores_at_cutoffs[ix] / num_topics
 
         for ix in range(len(self._RECALLS)):
             avg_prec_at_recalls[ix] = sum_prec_at_recalls[ix] / num_topics
@@ -193,7 +219,8 @@ class TREQEval:
         avg_r_prec = sum_r_prec / num_topics
 
         self._print_stats(num_topics, tot_num_ret, tot_num_rel, tot_num_rel_ret,
-                          avg_prec_at_recalls, mean_avg_prec, avg_prec_at_cutoffs, avg_r_prec)
+                          avg_prec_at_recalls, mean_avg_prec, avg_prec_at_cutoffs, avg_r_prec,
+                          avg_rec_at_cutoffs, avg_f1_scores_at_cutoffs)
 
 
 if __name__ == '__main__':
