@@ -20,7 +20,7 @@ class TREQEval:
         self.split_regex = re.compile("\\s+")
         self.enable_strong_relevance = enable_strong_relevance
 
-    def _parse_qrel_file(self) -> Tuple[Dict[str, Dict[str, bool]], Dict[str, int]]:
+    def _parse_qrel_file(self) -> Tuple[Dict[int, Dict[str, bool]], Dict[int, int]]:
         logging.info("Parsing Qrel file: {}".format(self.qrel_file_path))
         qrel = defaultdict(dict)
         num_relevance = defaultdict(int)
@@ -28,18 +28,20 @@ class TREQEval:
         with open(self.qrel_file_path, 'r', encoding='utf-8-sig') as file:
             for line in file:
                 query_id, assessor, doc_id, relevance = re.split(self.split_regex, line.strip())
+                query_id = int(query_id)
                 qrel[query_id][doc_id] = 1 if int(relevance) >= 1 else 0
-                num_relevance += qrel[query_id][doc_id]
+                num_relevance[query_id] += qrel[query_id][doc_id]
 
         logging.info("Qrel file parsed")
         return qrel, num_relevance
 
-    def _parse_treq_file(self) -> Dict[str, Dict[str, float]]:
+    def _parse_treq_file(self) -> Dict[int, Dict[str, float]]:
         logging.info("Parsing Treq file: {}".format(self.treq_file_path))
         treq = defaultdict(dict)
         with open(self.treq_file_path, 'r', encoding='utf-8-sig') as file:
             for line in file:
                 query_id, _, doc_id, _, score, _ = re.split(self.split_regex, line.strip())
+                query_id = int(query_id)
                 treq[query_id][doc_id] = float(score)
 
         logging.info("Treq file parsed")
@@ -92,10 +94,10 @@ class TREQEval:
         tot_num_ret = 0
         tot_num_rel = 0
         tot_num_rel_ret = 0
-        sum_prec_at_cutoffs = []
-        sum_prec_at_recalls = []
-        avg_prec_at_cutoffs = []
-        avg_prec_at_recalls = []
+        sum_prec_at_cutoffs = {}
+        sum_prec_at_recalls = {}
+        avg_prec_at_cutoffs = {}
+        avg_prec_at_recalls = {}
         sum_avg_prec = 0
         sum_r_prec = 0
 
