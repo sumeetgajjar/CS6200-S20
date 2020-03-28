@@ -5,6 +5,8 @@ import sys
 from collections import defaultdict
 from typing import Dict, Tuple
 
+import matplotlib.pyplot as plt
+
 from utils.utils import Utils
 
 
@@ -115,7 +117,16 @@ class TREQEval:
         ndcg = dcg / idcg
         return ndcg
 
-    def eval(self):
+    def _plot_precision_recall(self, precision, recall):
+        plt.step(recall, precision, where='post')
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.ylim([0.0, 1.05])
+        plt.xlim([0.0, 1.0])
+        plt.title('Precision Recall plot')
+        plt.show()
+
+    def eval(self, plot_precision_recall=False):
         qrel, num_relevance = self._parse_qrel_file()
         treq = self._parse_treq_file()
 
@@ -231,6 +242,9 @@ class TREQEval:
             sum_avg_prec += avg_precision
             sum_r_prec += r_prec
             sum_ndcg += ndcg
+
+            if plot_precision_recall:
+                self._plot_precision_recall(prec_list, rec_list)
 
         for ix in range(len(self._CUTOFFS)):
             avg_prec_at_cutoffs[ix] = sum_prec_at_cutoffs[ix] / num_topics
