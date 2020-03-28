@@ -1,4 +1,5 @@
 import logging
+import math
 import re
 import sys
 from collections import defaultdict
@@ -49,10 +50,10 @@ class TREQEval:
     def _get_sorted_doc_ids(cls, doc_info_dict: Dict[str, float]):
         asc_sorted_doc_ids = sorted(doc_info_dict.items(), key=lambda tup: tup[0])
         desc_sorted_scores = sorted(asc_sorted_doc_ids, key=lambda tup: tup[1], reverse=True)
-        return map(lambda tup: tup[0], desc_sorted_scores)
+        return list(map(lambda tup: tup[0], desc_sorted_scores))
 
     def _print_stats(self, query_id, ret, rel, rel_ret, prec_at_recalls, mean_avg_precision, prec_at_cutoffs, r_prec,
-                     rec_at_cutoffs, f1_scores_at_cutoffs):
+                     rec_at_cutoffs, f1_scores_at_cutoffs, ndcg):
         result_str = ''
         result_str += "\nQueryid (Num):    {}\n".format(query_id)
         result_str += "Total number of documents over all queries\n"
@@ -75,6 +76,8 @@ class TREQEval:
         result_str += "                  {0:.4f}\n".format(mean_avg_precision)
         result_str += "R-Precision (precision after R (= num_rel for a query) docs retrieved):\n"
         result_str += "    Exact:        {:.4}\n".format(r_prec)
+        result_str += "nDCG\n"
+        result_str += "                  {:.4}\n".format(ndcg)
 
         mappings = {
             'Precision': prec_at_cutoffs,
@@ -95,6 +98,23 @@ class TREQEval:
 
         logging.info(result_str)
 
+    def _calculate_ndcg(self, sorted_doc_ids, qrel):
+        dcg = 0.0
+        i = 1
+        for doc_id in sorted_doc_ids:
+            relevance = qrel.get(doc_id, 0)
+            dcg += (2 ** relevance - 1) / math.log2(i + 1)
+            i += 1
+
+        idcg = 0.0
+        for doc_id in sorted_doc_ids:
+            relevance = 1
+            idcg += (2 ** relevance - 1) / math.log2(i + 1)
+            i += 1
+
+        ndcg = dcg / idcg
+        return ndcg
+
     def eval(self):
         qrel, num_relevance = self._parse_qrel_file()
         treq = self._parse_treq_file()
@@ -112,6 +132,7 @@ class TREQEval:
         avg_prec_at_recalls = defaultdict(float)
         sum_avg_prec = 0
         sum_r_prec = 0
+        sum_ndcg = 0
 
         num_topics = 0
         for query_id in sorted(treq.keys()):
@@ -126,7 +147,8 @@ class TREQEval:
             num_rel_ret = 0
             sum_prec = 0
 
-            for doc_id in self._get_sorted_doc_ids(treq[query_id]):
+            sorted_doc_ids = self._get_sorted_doc_ids(treq[query_id])
+            for doc_id in sorted_doc_ids:
                 num_ret += 1
                 rel = qrel[query_id].get(doc_id)
                 if rel:
@@ -187,10 +209,12 @@ class TREQEval:
                 else:
                     prec_at_recalls.append(0)
 
+            ndcg = self._calculate_ndcg(sorted_doc_ids, qrel[query_id])
+
             if self.print_all_queries:
                 self._print_stats(query_id, num_ret, num_relevance[query_id],
                                   num_rel_ret, prec_at_recalls, avg_precision,
-                                  prec_at_cutoffs, r_prec, rec_at_cutoffs, f1_scores_at_cutoffs)
+                                  prec_at_cutoffs, r_prec, rec_at_cutoffs, f1_scores_at_cutoffs, ndcg)
 
             tot_num_ret += num_ret
             tot_num_rel += num_relevance[query_id]
@@ -206,6 +230,7 @@ class TREQEval:
 
             sum_avg_prec += avg_precision
             sum_r_prec += r_prec
+            sum_ndcg += ndcg
 
         for ix in range(len(self._CUTOFFS)):
             avg_prec_at_cutoffs[ix] = sum_prec_at_cutoffs[ix] / num_topics
@@ -217,10 +242,11 @@ class TREQEval:
 
         mean_avg_prec = sum_avg_prec / num_topics
         avg_r_prec = sum_r_prec / num_topics
+        avg_ndcg = sum_ndcg / num_topics
 
         self._print_stats(num_topics, tot_num_ret, tot_num_rel, tot_num_rel_ret,
                           avg_prec_at_recalls, mean_avg_prec, avg_prec_at_cutoffs, avg_r_prec,
-                          avg_rec_at_cutoffs, avg_f1_scores_at_cutoffs)
+                          avg_rec_at_cutoffs, avg_f1_scores_at_cutoffs, avg_ndcg)
 
 
 if __name__ == '__main__':
