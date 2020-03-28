@@ -28,7 +28,6 @@ class TREQEval:
         with open(self.qrel_file_path, 'r', encoding='utf-8-sig') as file:
             for line in file:
                 query_id, assessor, doc_id, relevance = re.split(self.split_regex, line.strip())
-                query_id = int(query_id)
                 qrel[query_id][doc_id] = 1 if int(relevance) >= 1 else 0
                 num_relevance[query_id] += qrel[query_id][doc_id]
 
@@ -41,7 +40,6 @@ class TREQEval:
         with open(self.treq_file_path, 'r', encoding='utf-8-sig') as file:
             for line in file:
                 query_id, _, doc_id, _, score, _ = re.split(self.split_regex, line.strip())
-                query_id = int(query_id)
                 treq[query_id][doc_id] = float(score)
 
         logging.info("Treq file parsed")
