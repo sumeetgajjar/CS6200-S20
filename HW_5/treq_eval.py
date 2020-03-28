@@ -117,16 +117,21 @@ class TREQEval:
         ndcg = dcg / idcg
         return ndcg
 
-    def _plot_precision_recall(self, precision, recall):
+    def _plot_precision_recall(self, query_id, precision, recall, plot_save_dir):
         plt.step(recall, precision, where='post')
         plt.xlabel('Recall')
         plt.ylabel('Precision')
         plt.ylim([0.0, 1.05])
         plt.xlim([0.0, 1.0])
-        plt.title('Precision Recall plot')
+        plt.title('Precision Recall plot for query: {}'.format(query_id))
+
+        if plot_save_dir:
+            plt.savefig('{}/precision-recall-curve-{}.png'.format(plot_save_dir, query_id))
+
         plt.show()
 
-    def eval(self, plot_precision_recall=False):
+
+    def eval(self, plot_precision_recall=False, plot_save_dir=None):
         qrel, num_relevance = self._parse_qrel_file()
         treq = self._parse_treq_file()
 
@@ -244,7 +249,7 @@ class TREQEval:
             sum_ndcg += ndcg
 
             if plot_precision_recall:
-                self._plot_precision_recall(prec_list, rec_list)
+                self._plot_precision_recall(query_id, prec_list, rec_list, plot_save_dir)
 
         for ix in range(len(self._CUTOFFS)):
             avg_prec_at_cutoffs[ix] = sum_prec_at_cutoffs[ix] / num_topics

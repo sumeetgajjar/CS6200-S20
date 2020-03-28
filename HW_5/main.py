@@ -1,4 +1,5 @@
 from HW_1.es_utils import EsUtils
+from HW_5.treq_eval import TREQEval
 from constants.constants import Constants
 from utils.utils import Utils
 
@@ -40,6 +41,9 @@ class HW5:
 
         file_path = 'results/hw_4_queries_result.txt'
         Utils.write_results_to_file(file_path, results_to_write)
+
+        TREQEval('results/qrel.txt', 'results/hw_4_queries_result.txt', True).eval(plot_precision_recall=True,
+                                                                                   plot_save_dir='results')
 
 
 if __name__ == '__main__':
