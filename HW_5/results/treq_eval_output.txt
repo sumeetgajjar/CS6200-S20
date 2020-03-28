@@ -1,0 +1,232 @@
+/home/sumeet/Apps/anaconda3/envs/CS6200/bin/python /home/sumeet/PycharmProjects/CS6200-S20/HW_5/main.py
+[10187] 2020-03-28 16:24:45,474 [INFO] elasticsearch: POST http://localhost:9200/crawled_data/_search [status:200 request:0.062s]
+[10187] 2020-03-28 16:24:45,544 [INFO] elasticsearch: POST http://localhost:9200/crawled_data/_search [status:200 request:0.069s]
+[10187] 2020-03-28 16:24:45,609 [INFO] elasticsearch: POST http://localhost:9200/crawled_data/_search [status:200 request:0.062s]
+[10187] 2020-03-28 16:24:45,610 [INFO] root: Writing results to: results/hw_4_queries_result.txt
+[10187] 2020-03-28 16:24:45,613 [INFO] root: Results written
+[10187] 2020-03-28 16:24:45,614 [INFO] root: Parsing Qrel file: results/qrel.txt
+[10187] 2020-03-28 16:24:45,615 [INFO] root: Qrel file parsed
+[10187] 2020-03-28 16:24:45,616 [INFO] root: Parsing Treq file: results/hw_4_queries_result.txt
+[10187] 2020-03-28 16:24:45,624 [INFO] root: Treq file parsed
+[10187] 2020-03-28 16:24:45,626 [INFO] root:
+Queryid (Num):    152101
+Total number of documents over all queries
+    Retrieved:    1000
+    Relevant:     89
+    Rel_ret:      89
+Interpolated Recall - Precision Averages:
+    at 0.00       1.0000
+    at 0.10       0.9091
+    at 0.20       0.9000
+    at 0.30       0.7500
+    at 0.40       0.7347
+    at 0.50       0.6569
+    at 0.60       0.6569
+    at 0.70       0.6569
+    at 0.80       0.5333
+    at 0.90       0.4759
+    at 1.00       0.4759
+Average precision (non-interpolated) for all rel docs(averaged over queries)
+                  0.6841
+R-Precision (precision after R (= num_rel for a query) docs retrieved):
+    Exact:        0.6292
+nDCG
+                  0.1875
+Precision:
+  At    5 docs:   1.0000
+  At   10 docs:   0.9000
+  At   15 docs:   0.8667
+  At   20 docs:   0.9000
+  At   30 docs:   0.7000
+  At  100 docs:   0.6500
+  At  200 docs:   0.4450
+  At  500 docs:   0.1780
+  At 1000 docs:   0.0890
+Recall:
+  At    5 docs:   0.0562
+  At   10 docs:   0.1011
+  At   15 docs:   0.1461
+  At   20 docs:   0.2022
+  At   30 docs:   0.2360
+  At  100 docs:   0.7303
+  At  200 docs:   1.0000
+  At  500 docs:   1.0000
+  At 1000 docs:   1.0000
+F1 Scores:
+  At    5 docs:   0.1064
+  At   10 docs:   0.1818
+  At   15 docs:   0.2500
+  At   20 docs:   0.3303
+  At   30 docs:   0.3529
+  At  100 docs:   0.6878
+  At  200 docs:   0.6159
+  At  500 docs:   0.3022
+  At 1000 docs:   0.1635
+
+[10187] 2020-03-28 16:24:45,875 [INFO] root:
+Queryid (Num):    152102
+Total number of documents over all queries
+    Retrieved:    1000
+    Relevant:     19
+    Rel_ret:      19
+Interpolated Recall - Precision Averages:
+    at 0.00       1.0000
+    at 0.10       1.0000
+    at 0.20       0.3333
+    at 0.30       0.2182
+    at 0.40       0.2182
+    at 0.50       0.2182
+    at 0.60       0.2182
+    at 0.70       0.2029
+    at 0.80       0.1569
+    at 0.90       0.1293
+    at 1.00       0.1293
+Average precision (non-interpolated) for all rel docs(averaged over queries)
+                  0.2750
+R-Precision (precision after R (= num_rel for a query) docs retrieved):
+    Exact:        0.2105
+nDCG
+                  0.04946
+Precision:
+  At    5 docs:   0.4000
+  At   10 docs:   0.3000
+  At   15 docs:   0.2667
+  At   20 docs:   0.2000
+  At   30 docs:   0.1333
+  At  100 docs:   0.1400
+  At  200 docs:   0.0950
+  At  500 docs:   0.0380
+  At 1000 docs:   0.0190
+Recall:
+  At    5 docs:   0.1053
+  At   10 docs:   0.1579
+  At   15 docs:   0.2105
+  At   20 docs:   0.2105
+  At   30 docs:   0.2105
+  At  100 docs:   0.7368
+  At  200 docs:   1.0000
+  At  500 docs:   1.0000
+  At 1000 docs:   1.0000
+F1 Scores:
+  At    5 docs:   0.1667
+  At   10 docs:   0.2069
+  At   15 docs:   0.2353
+  At   20 docs:   0.2051
+  At   30 docs:   0.1633
+  At  100 docs:   0.2353
+  At  200 docs:   0.1735
+  At  500 docs:   0.0732
+  At 1000 docs:   0.0373
+
+[10187] 2020-03-28 16:24:46,040 [INFO] root:
+Queryid (Num):    152103
+Total number of documents over all queries
+    Retrieved:    1000
+    Relevant:     101
+    Rel_ret:      101
+Interpolated Recall - Precision Averages:
+    at 0.00       1.0000
+    at 0.10       1.0000
+    at 0.20       0.8750
+    at 0.30       0.5741
+    at 0.40       0.5443
+    at 0.50       0.5287
+    at 0.60       0.5287
+    at 0.70       0.5287
+    at 0.80       0.5287
+    at 0.90       0.5217
+    at 1.00       0.5025
+Average precision (non-interpolated) for all rel docs(averaged over queries)
+                  0.6192
+R-Precision (precision after R (= num_rel for a query) docs retrieved):
+    Exact:        0.4851
+nDCG
+                  0.2016
+Precision:
+  At    5 docs:   1.0000
+  At   10 docs:   1.0000
+  At   15 docs:   0.9333
+  At   20 docs:   0.9500
+  At   30 docs:   0.7667
+  At  100 docs:   0.4900
+  At  200 docs:   0.5000
+  At  500 docs:   0.2020
+  At 1000 docs:   0.1010
+Recall:
+  At    5 docs:   0.0495
+  At   10 docs:   0.0990
+  At   15 docs:   0.1386
+  At   20 docs:   0.1881
+  At   30 docs:   0.2277
+  At  100 docs:   0.4851
+  At  200 docs:   0.9901
+  At  500 docs:   1.0000
+  At 1000 docs:   1.0000
+F1 Scores:
+  At    5 docs:   0.0943
+  At   10 docs:   0.1802
+  At   15 docs:   0.2414
+  At   20 docs:   0.3140
+  At   30 docs:   0.3511
+  At  100 docs:   0.4876
+  At  200 docs:   0.6645
+  At  500 docs:   0.3361
+  At 1000 docs:   0.1835
+
+[10187] 2020-03-28 16:24:46,214 [INFO] root:
+Queryid (Num):    3
+Total number of documents over all queries
+    Retrieved:    3000
+    Relevant:     209
+    Rel_ret:      209
+Interpolated Recall - Precision Averages:
+    at 0.00       1.0000
+    at 0.10       0.9697
+    at 0.20       0.7028
+    at 0.30       0.5141
+    at 0.40       0.4991
+    at 0.50       0.4679
+    at 0.60       0.4679
+    at 0.70       0.4628
+    at 0.80       0.4063
+    at 0.90       0.3756
+    at 1.00       0.3692
+Average precision (non-interpolated) for all rel docs(averaged over queries)
+                  0.5261
+R-Precision (precision after R (= num_rel for a query) docs retrieved):
+    Exact:        0.4416
+nDCG
+                  0.1462
+Precision:
+  At    5 docs:   0.8000
+  At   10 docs:   0.7333
+  At   15 docs:   0.6889
+  At   20 docs:   0.6833
+  At   30 docs:   0.5333
+  At  100 docs:   0.4267
+  At  200 docs:   0.3467
+  At  500 docs:   0.1393
+  At 1000 docs:   0.0697
+Recall:
+  At    5 docs:   0.0703
+  At   10 docs:   0.1193
+  At   15 docs:   0.1651
+  At   20 docs:   0.2003
+  At   30 docs:   0.2247
+  At  100 docs:   0.6508
+  At  200 docs:   0.9967
+  At  500 docs:   1.0000
+  At 1000 docs:   1.0000
+F1 Scores:
+  At    5 docs:   0.1225
+  At   10 docs:   0.1896
+  At   15 docs:   0.2422
+  At   20 docs:   0.2832
+  At   30 docs:   0.2891
+  At  100 docs:   0.4702
+  At  200 docs:   0.4846
+  At  500 docs:   0.2372
+  At 1000 docs:   0.1281
+
+
+Process finished with exit code 0
