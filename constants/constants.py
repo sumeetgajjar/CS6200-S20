@@ -19,6 +19,7 @@ class Constants:
     OTHER_LINK_GRAPH_PAGERANK_FILE_NAME = 'other_link_graph_pagerank.csv'
     AP_DATA_FILE_ENCODING = 'latin-1'
     PICKLE_PROTOCOL = 3
+    HW_1_RESULT_DIR = '{}/HW_1/results'.format(PROJECT_ROOT)
 
     # ES related configs
     CHUNK_SIZE = 10000

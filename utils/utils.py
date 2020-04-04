@@ -26,6 +26,7 @@ from utils.decorators import timing
 
 class Utils:
     _URL_CLEANER = UrlCleaner()
+    _TREQ_FILE_SPLIT_REGEX = '\\s+'
 
     @classmethod
     def get_data_dir_abs_path(cls):
@@ -61,7 +62,8 @@ class Utils:
 
     @classmethod
     def get_crawled_link_graph_HITS_authority_path(cls):
-        return '{}/HW_4/results/{}'.format(Constants.PROJECT_ROOT, Constants.CRAWLED_LINK_GRAPH_HITS_AUTHORITY_FILE_NAME)
+        return '{}/HW_4/results/{}'.format(Constants.PROJECT_ROOT,
+                                           Constants.CRAWLED_LINK_GRAPH_HITS_AUTHORITY_FILE_NAME)
 
     @classmethod
     def get_crawled_link_graph_HITS_hub_path(cls):
@@ -230,6 +232,18 @@ class Utils:
         if norm == 0:
             return v
         return v / norm
+
+    @classmethod
+    def parse_treq_file(cls, treq_file_path, encoding='utf-8') -> Dict:
+        logging.info("Parsing Treq file: {}".format(treq_file_path))
+        treq = defaultdict(dict)
+        with open(treq_file_path, 'r', encoding=encoding) as file:
+            for line in file:
+                query_id, _, doc_id, _, score, _ = re.split(cls._TREQ_FILE_SPLIT_REGEX, line.strip())
+                treq[query_id][doc_id] = float(score)
+
+        logging.info("Treq file parsed")
+        return treq
 
 
 class LinkGraph:

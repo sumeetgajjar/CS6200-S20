@@ -6,6 +6,7 @@ from typing import Dict
 import sklearn
 
 from HW_1.main import parse_queries
+from HW_6.feature_generator import FeatureGenerator
 from constants.constants import Constants
 from utils.utils import Utils
 
@@ -31,18 +32,6 @@ class HW6:
         return query_doc_id_mapping
 
     @classmethod
-    def _parse_treq_file(cls, treq_file_path) -> Dict:
-        logging.info("Parsing Treq file: {}".format(treq_file_path))
-        treq = defaultdict(dict)
-        with open(treq_file_path, 'r') as file:
-            for line in file:
-                query_id, _, doc_id, _, score, _ = re.split(cls._TREQ_FILE_SPLIT_REGEX, line.strip())
-                treq[query_id][doc_id] = float(score)
-
-        logging.info("Treq file parsed")
-        return treq
-
-    @classmethod
     def _add_non_relevant_documents(cls, query_id, query_document_mapping, treq_query_doc_id_mappings):
         if len(query_document_mapping[query_id]['non_relevant']) < 1000:
             tups = treq_query_doc_id_mappings[query_id].items()
@@ -60,7 +49,7 @@ class HW6:
         # all_documents = {doc['id']: doc for doc in get_parsed_documents(file_paths)}
 
         qrel_query_doc_id_mappings = cls._get_qrel_doc_ids()
-        treq_query_doc_id_mappings = cls._parse_treq_file(bm25_treq_file_path)
+        treq_query_doc_id_mappings = Utils.parse_treq_file(bm25_treq_file_path)
 
         query_document_mapping = defaultdict(lambda: defaultdict(list))
         for query in queries:
@@ -115,7 +104,7 @@ class HW6:
         queries = parse_queries(parse_original=True)
         bm25_file_path = '{}/HW_1/results/okapi_bm25_all.txt'.format(Constants.PROJECT_ROOT)
         query_document_mapping = cls._get_document_set_for_queries(queries, bm25_file_path)
-        feature_matrix, labels = cls._generate_features(query_document_mapping)
+        feature_matrix, labels = FeatureGenerator().generate_features(query_document_mapping)
         X_train, X_test, Y_train, Y_test = cls._split_training_testing_data(queries, feature_matrix, labels)
         cls._train_model_and_predict(X_train, X_test, Y_train, Y_test)
 
