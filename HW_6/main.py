@@ -140,8 +140,8 @@ class HW6:
             (DecisionTreeRegressor(max_depth=10), 'decision-tree-10'),
             (DecisionTreeRegressor(max_depth=15), 'decision-tree-15'),
             (DecisionTreeRegressor(max_depth=15), 'decision-tree-20'),
-            (GradientBoostingRegressor(n_estimators=400, max_depth=3, min_samples_split=2, learning_rate=0.01),
-             'boosting-trees')
+            (GradientBoostingRegressor(n_estimators=400, max_depth=3, min_samples_split=2, learning_rate=0.01,
+                                       verbose=1), 'boosting-trees')
         ]:
             cls._run_model(queries, model, model_name, X_train, X_test, train_index, Y_train, Y_test, test_index)
 
