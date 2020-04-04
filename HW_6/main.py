@@ -41,7 +41,9 @@ class HW6:
                 if len(query_document_mapping[query_id]['non_relevant']) == 1000:
                     break
 
-                query_document_mapping[query_id]['non_relevant'].append(tup[0])
+                doc_id = tup[0]
+                if doc_id not in query_document_mapping[query_id]['relevant']:
+                    query_document_mapping[query_id]['non_relevant'].append(doc_id)
 
     @classmethod
     def _get_document_set_for_queries(cls, queries, bm25_treq_file_path) -> Dict:
@@ -62,6 +64,10 @@ class HW6:
                     query_document_mapping[query_id]['non_relevant'].append(doc_id)
 
             cls._add_non_relevant_documents(query_id, query_document_mapping, treq_query_doc_id_mappings)
+
+            assert len(set(query_document_mapping[query_id]['relevant']).intersection(
+                set(query_document_mapping[query_id]['non_relevant']))) == 0, \
+                "Found common documents in relevant and non relevant list"
 
         return query_document_mapping
 

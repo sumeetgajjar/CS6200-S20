@@ -234,6 +234,7 @@ class Utils:
         return v / norm
 
     @classmethod
+    @timing
     def parse_treq_file(cls, treq_file_path, encoding='utf-8') -> Dict:
         logging.info("Parsing Treq file: {}".format(treq_file_path))
         treq = defaultdict(dict)
