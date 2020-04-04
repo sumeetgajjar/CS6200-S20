@@ -3,6 +3,8 @@ import re
 from collections import defaultdict
 from typing import Dict
 
+import sklearn
+
 from HW_1.main import parse_queries
 from constants.constants import Constants
 from utils.utils import Utils
@@ -74,10 +76,47 @@ class HW6:
         return query_document_mapping
 
     @classmethod
+    def _generate_features(cls, query_document_mapping):
+        """
+        bm25 score
+        doc length
+
+
+        :param query_document_mapping:
+        :return:
+        """
+        return [], []
+
+    @classmethod
+    def _split_training_testing_data(cls, queries, feature_matrix, labels):
+        query_ids = [query['id'] for query in queries]
+        train_query_ids, test_query_ids = sklearn.model_selection.train_test_split(query_ids, test_size=0.8)
+        X_train = [feature_matrix[query_id] for query_id in train_query_ids]
+        Y_train = [labels[query_id] for query_id in train_query_ids]
+        X_test = [feature_matrix[query_id] for query_id in test_query_ids]
+        Y_test = [labels[query_id] for query_id in test_query_ids]
+
+        return X_train, X_test, Y_train, Y_test
+
+    @classmethod
+    def _train_model(cls, X_train, Y_train):
+        pass
+
+    @classmethod
+    def _train_model_and_predict(cls, X_train, X_test, Y_train, Y_test):
+        cls._train_model(X_train, Y_train)
+
+        # TODO predict
+
+    @classmethod
     def main(cls):
+        # TODO try with edited queries
         queries = parse_queries(parse_original=True)
         bm25_file_path = '{}/HW_1/results/okapi_bm25_all.txt'.format(Constants.PROJECT_ROOT)
-        print(len(cls._get_document_set_for_queries(queries, bm25_file_path)))
+        query_document_mapping = cls._get_document_set_for_queries(queries, bm25_file_path)
+        feature_matrix, labels = cls._generate_features(query_document_mapping)
+        X_train, X_test, Y_train, Y_test = cls._split_training_testing_data(queries, feature_matrix, labels)
+        cls._train_model_and_predict(X_train, X_test, Y_train, Y_test)
 
 
 if __name__ == '__main__':
