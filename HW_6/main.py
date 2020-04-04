@@ -1,9 +1,10 @@
 import logging
-import re
+import random
 from collections import defaultdict
 from typing import Dict
 
-import sklearn
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 from HW_1.main import parse_queries
 from HW_6.feature_generator import FeatureGenerator
@@ -65,26 +66,10 @@ class HW6:
         return query_document_mapping
 
     @classmethod
-    def _generate_features(cls, query_document_mapping):
-        """
-        bm25 score
-        and all other relevance models
-        doc length
-
-
-        :param query_document_mapping:
-        :return:
-        """
-        return [], []
-
-    @classmethod
-    def _split_training_testing_data(cls, queries, feature_matrix, labels):
-        query_ids = [query['id'] for query in queries]
-        train_query_ids, test_query_ids = sklearn.model_selection.train_test_split(query_ids, test_size=0.8)
-        X_train = [feature_matrix[query_id] for query_id in train_query_ids]
-        Y_train = [labels[query_id] for query_id in train_query_ids]
-        X_test = [feature_matrix[query_id] for query_id in test_query_ids]
-        Y_test = [labels[query_id] for query_id in test_query_ids]
+    def _generate_features(cls, query_ids, query_document_mapping):
+        train_query_ids, test_query_ids = train_test_split(query_ids, test_size=0.2)
+        X_train, X_test, Y_train, Y_test = FeatureGenerator().generate_features(train_query_ids, test_query_ids,
+                                                                                query_document_mapping)
 
         return X_train, X_test, Y_train, Y_test
 
@@ -100,15 +85,19 @@ class HW6:
 
     @classmethod
     def main(cls):
-        # TODO try with edited queries
         queries = parse_queries(parse_original=True)
+        query_ids = [query['id'] for query in queries]
+
         bm25_file_path = '{}/HW_1/results/okapi_bm25_all.txt'.format(Constants.PROJECT_ROOT)
         query_document_mapping = cls._get_document_set_for_queries(queries, bm25_file_path)
-        feature_matrix, labels = FeatureGenerator().generate_features(query_document_mapping)
-        X_train, X_test, Y_train, Y_test = cls._split_training_testing_data(queries, feature_matrix, labels)
+        X_train, X_test, Y_train, Y_test = cls._generate_features(query_ids, query_document_mapping)
         cls._train_model_and_predict(X_train, X_test, Y_train, Y_test)
 
 
 if __name__ == '__main__':
+    # TODO play with this
+    np.random.seed(1)
+    random.seed(1)
+
     Utils.configure_logging()
     HW6.main()
