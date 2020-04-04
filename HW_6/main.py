@@ -4,8 +4,9 @@ from collections import defaultdict
 from typing import Dict
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
 
 from HW_1.main import parse_queries, transform_scores_for_writing_to_file
 from HW_6.feature_generator import FeatureGenerator
@@ -74,19 +75,34 @@ class HW6:
         return query_document_mapping
 
     @classmethod
-    def _generate_features(cls, query_ids, query_document_mapping):
-        train_query_ids, test_query_ids = train_test_split(query_ids, test_size=0.2)
-        X_train, X_test, train_index, Y_train, Y_test, test_index = FeatureGenerator().generate_features(
-            train_query_ids,
-            test_query_ids,
-            query_document_mapping)
+    def _generate_features(cls, query_ids, query_document_mapping, use_cached=True):
+        if not use_cached:
+            train_query_ids, test_query_ids = train_test_split(query_ids, test_size=0.2)
+            X_train, X_test, train_index, Y_train, Y_test, test_index = FeatureGenerator().generate_features(
+                train_query_ids,
+                test_query_ids,
+                query_document_mapping)
+
+            np.save('feature_matrix_cache/X_train', X_train)
+            np.save('feature_matrix_cache/Y_train', Y_train)
+            np.save('feature_matrix_cache/train_index', train_index)
+            np.save('feature_matrix_cache/X_test', X_test)
+            np.save('feature_matrix_cache/Y_test', Y_test)
+            np.save('feature_matrix_cache/test_index', test_index)
+        else:
+            X_train = np.load('feature_matrix_cache/X_train.npy')
+            Y_train = np.load('feature_matrix_cache/Y_train.npy')
+            train_index = np.load('feature_matrix_cache/train_index.npy')
+            X_test = np.load('feature_matrix_cache/X_test.npy')
+            Y_test = np.load('feature_matrix_cache/Y_test.npy')
+            test_index = np.load('feature_matrix_cache/test_index.npy')
 
         return X_train, X_test, train_index, Y_train, Y_test, test_index
 
     @classmethod
     @timing
-    def _run_linear_regression(cls, X_train, X_test, train_index, Y_train, Y_test, test_index):
-        model = LinearRegression()
+    def _run_model(cls, queries, model, model_name, X_train, X_test, train_index, Y_train, Y_test, test_index):
+        logging.info("Running {}".format(model_name))
         model.fit(X_train, Y_train)
 
         Y_test_predict = model.predict(X_test)
@@ -96,7 +112,13 @@ class HW6:
             query_id, doc_id = test_index[ix]
             rankings[query_id].append((prediction, doc_id))
 
-        return rankings
+        results_to_write = []
+        for query in queries:
+            scores = rankings[query['id']]
+            scores.sort(reverse=True)
+            results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
+
+        Utils.write_results_to_file('results/{}.txt'.format(model_name), results_to_write)
 
     @classmethod
     def main(cls):
@@ -107,15 +129,15 @@ class HW6:
         query_document_mapping = cls._get_document_set_for_queries(queries, bm25_file_path)
         X_train, X_test, train_index, Y_train, Y_test, test_index = cls._generate_features(query_ids,
                                                                                            query_document_mapping)
-        rankings = cls._run_linear_regression(X_train, X_test, train_index, Y_train, Y_test, test_index)
 
-        results_to_write = []
-        for query in queries:
-            scores = rankings[query['id']]
-            scores.sort(reverse=True)
-            results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
-
-        Utils.write_results_to_file('results/linear-regression.txt', results_to_write)
+        for model, model_name in [
+            (LinearRegression(), 'linear-regression'),
+            (LogisticRegression(), 'logistic-regression'),
+            (DecisionTreeRegressor(max_depth=2), 'decision-tree-2'),
+            (DecisionTreeRegressor(max_depth=5), 'decision-tree-5'),
+            (DecisionTreeRegressor(max_depth=10), 'decision-tree-10'),
+        ]:
+            cls._run_model(queries, model, model_name, X_train, X_test, train_index, Y_train, Y_test, test_index)
 
 
 if __name__ == '__main__':

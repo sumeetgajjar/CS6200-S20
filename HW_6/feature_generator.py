@@ -51,19 +51,18 @@ class FeatureGenerator:
     def _transform_dict_to_np_array(cls, query_ids, feature_dict, label_dict):
         feature_matrix = []
         labels = []
-        index = {}
+        index = []
 
-        ix = 0
         for query_id in query_ids:
             for doc_id, features in feature_dict[query_id].items():
                 feature_matrix.append(features)
                 labels.append(label_dict[query_id][doc_id])
 
-                index[ix] = (query_id, doc_id)
-                ix += 1
+                index.append((query_id, doc_id))
 
         X = np.array(feature_matrix)
         Y = np.array(labels)
+        index = np.array(index)
 
         np.testing.assert_(X.T.shape[0] == len(cls._IR_FEATURES), "Feature matrix shape mismatch")
         np.testing.assert_(X.shape[0] == Y.shape[0], "Feature label size mismatch")
@@ -78,4 +77,4 @@ class FeatureGenerator:
 
         X_train, Y_train, train_index = self._transform_dict_to_np_array(train_query_ids, feature_dict, label_dict)
         X_test, Y_test, test_index = self._transform_dict_to_np_array(test_query_ids, feature_dict, label_dict)
-        return X_train, X_test,train_index, Y_train, Y_test, test_index
+        return X_train, X_test, train_index, Y_train, Y_test, test_index
