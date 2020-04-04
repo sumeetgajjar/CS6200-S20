@@ -37,9 +37,12 @@ def create_ap_data_index_and_insert_documents():
     EsUtils.bulk_add_document_to_ap_data_index(parsed_documents)
 
 
-def parse_queries():
+def parse_queries(parse_original=False):
     dir_path = Utils.get_ap_data_path()
-    queries_file_path = '{}/query_desc.51-100.short-edited.txt'.format(dir_path)
+    if parse_original:
+        queries_file_path = '{}/query_desc.51-100.short.txt'.format(dir_path)
+    else:
+        queries_file_path = '{}/query_desc.51-100.short-edited.txt'.format(dir_path)
     queries = []
     with open(queries_file_path, 'r') as file:
         for line in file:
