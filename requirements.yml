@@ -19,4 +19,4 @@ dependencies:
       - mysqlclient==1.4.6
       - redisbloom==0.3.2
       - matplotlib==3.2.1
-      - sklearn==0.22.2.post1
+      - scikit-learn==0.22.2.post1
