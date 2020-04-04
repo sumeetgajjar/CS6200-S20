@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Dict
 
 import numpy as np
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
@@ -135,13 +136,17 @@ class HW6:
             (LogisticRegression(), 'logistic-regression'),
             (DecisionTreeRegressor(max_depth=2), 'decision-tree-2'),
             (DecisionTreeRegressor(max_depth=5), 'decision-tree-5'),
+            (DecisionTreeRegressor(max_depth=7), 'decision-tree-7'),
             (DecisionTreeRegressor(max_depth=10), 'decision-tree-10'),
+            (DecisionTreeRegressor(max_depth=15), 'decision-tree-15'),
+            (DecisionTreeRegressor(max_depth=15), 'decision-tree-20'),
+            (GradientBoostingRegressor(n_estimators=400, max_depth=3, min_samples_split=2, learning_rate=0.01),
+             'boosting-trees')
         ]:
             cls._run_model(queries, model, model_name, X_train, X_test, train_index, Y_train, Y_test, test_index)
 
 
 if __name__ == '__main__':
-    # TODO play with this
     np.random.seed(1234)
     random.seed(1234)
 
