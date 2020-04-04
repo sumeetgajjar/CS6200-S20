@@ -79,6 +79,7 @@ class HW6:
     def _generate_features(cls, query_document_mapping):
         """
         bm25 score
+        and all other relevance models
         doc length
 
 
