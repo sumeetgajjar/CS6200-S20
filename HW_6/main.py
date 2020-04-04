@@ -106,20 +106,26 @@ class HW6:
         logging.info("Running {}".format(model_name))
         model.fit(X_train, Y_train)
 
-        Y_test_predict = model.predict(X_test)
+        def _run_prediction_phase(phase_name, X, index):
+            logging.info("Running {} predictions".format(phase_name))
+            Y_predict = model.predict(X)
 
-        rankings = defaultdict(list)
-        for ix, prediction in enumerate(Y_test_predict):
-            query_id, doc_id = test_index[ix]
-            rankings[query_id].append((prediction, doc_id))
+            rankings = defaultdict(list)
+            for ix, prediction in enumerate(Y_predict):
+                query_id, doc_id = index[ix]
+                rankings[query_id].append((prediction, doc_id))
 
-        results_to_write = []
-        for query in queries:
-            scores = rankings[query['id']]
-            scores.sort(reverse=True)
-            results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
+            results_to_write = []
+            for query in queries:
+                scores = rankings[query['id']]
+                scores.sort(reverse=True)
+                results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
 
-        Utils.write_results_to_file('results/{}.txt'.format(model_name), results_to_write)
+            Utils.write_results_to_file('results/{}-performance/{}.txt'.format(phase_name, model_name),
+                                        results_to_write)
+
+        _run_prediction_phase('training', X_train, train_index)
+        _run_prediction_phase('testing', X_test, test_index)
 
     @classmethod
     def main(cls):
