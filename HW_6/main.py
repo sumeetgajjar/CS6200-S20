@@ -4,11 +4,13 @@ from collections import defaultdict
 from typing import Dict
 
 import numpy as np
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 
-from HW_1.main import parse_queries
+from HW_1.main import parse_queries, transform_scores_for_writing_to_file
 from HW_6.feature_generator import FeatureGenerator
 from constants.constants import Constants
+from utils.decorators import timing
 from utils.utils import Utils
 
 
@@ -74,20 +76,27 @@ class HW6:
     @classmethod
     def _generate_features(cls, query_ids, query_document_mapping):
         train_query_ids, test_query_ids = train_test_split(query_ids, test_size=0.2)
-        X_train, X_test, Y_train, Y_test = FeatureGenerator().generate_features(train_query_ids, test_query_ids,
-                                                                                query_document_mapping)
+        X_train, X_test, train_index, Y_train, Y_test, test_index = FeatureGenerator().generate_features(
+            train_query_ids,
+            test_query_ids,
+            query_document_mapping)
 
-        return X_train, X_test, Y_train, Y_test
-
-    @classmethod
-    def _train_model(cls, X_train, Y_train):
-        pass
+        return X_train, X_test, train_index, Y_train, Y_test, test_index
 
     @classmethod
-    def _train_model_and_predict(cls, X_train, X_test, Y_train, Y_test):
-        cls._train_model(X_train, Y_train)
+    @timing
+    def _run_linear_regression(cls, X_train, X_test, train_index, Y_train, Y_test, test_index):
+        model = LinearRegression()
+        model.fit(X_train, Y_train)
 
-        # TODO predict
+        Y_test_predict = model.predict(X_test)
+
+        rankings = defaultdict(list)
+        for ix, prediction in enumerate(Y_test_predict):
+            query_id, doc_id = test_index[ix]
+            rankings[query_id].append((prediction, doc_id))
+
+        return rankings
 
     @classmethod
     def main(cls):
@@ -96,14 +105,23 @@ class HW6:
 
         bm25_file_path = '{}/HW_1/results/okapi_bm25_all.txt'.format(Constants.PROJECT_ROOT)
         query_document_mapping = cls._get_document_set_for_queries(queries, bm25_file_path)
-        X_train, X_test, Y_train, Y_test = cls._generate_features(query_ids, query_document_mapping)
-        cls._train_model_and_predict(X_train, X_test, Y_train, Y_test)
+        X_train, X_test, train_index, Y_train, Y_test, test_index = cls._generate_features(query_ids,
+                                                                                           query_document_mapping)
+        rankings = cls._run_linear_regression(X_train, X_test, train_index, Y_train, Y_test, test_index)
+
+        results_to_write = []
+        for query in queries:
+            scores = rankings[query['id']]
+            scores.sort(reverse=True)
+            results_to_write.extend(transform_scores_for_writing_to_file(scores, query))
+
+        Utils.write_results_to_file('results/linear-regression.txt', results_to_write)
 
 
 if __name__ == '__main__':
     # TODO play with this
-    np.random.seed(1)
-    random.seed(1)
+    np.random.seed(1234)
+    random.seed(1234)
 
     Utils.configure_logging()
     HW6.main()
