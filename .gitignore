@@ -177,4 +177,4 @@ fabric.properties
 
 data/
 !data/AP_DATA/query_desc.51-100.short-edited.txt
-*.npy
+*/feature_matrix_cache/*

@@ -1,8 +1,10 @@
+import json
 import logging
 from collections import defaultdict
 from typing import Dict, List
 
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from constants.constants import Constants
 from utils.decorators import timing
@@ -15,6 +17,10 @@ class FeatureGenerator:
 
     _IR_FEATURE_INDEXES = {feature: ix for ix, feature in enumerate(_IR_FEATURES)}
     _TREQ_FILE_PATHS = {ir_func: '{}/{}_all.txt'.format(Constants.HW_1_RESULT_DIR, ir_func) for ir_func in _IR_FEATURES}
+    _CACHE_PATH = {
+        'features': 'feature_matrix_cache/features.json',
+        'labels': 'feature_matrix_cache/labels.json'
+    }
 
     @timing
     def _generate_IR_features(self, query_document_mapping) -> Dict[str, Dict[str, List[float]]]:
@@ -69,12 +75,22 @@ class FeatureGenerator:
         return X, Y, index
 
     @timing
-    def generate_features(self, train_query_ids, test_query_ids,
-                          query_document_mapping: Dict[str, Dict[str, List[str]]]):
+    def generate_features(self, query_ids, query_document_mapping: Dict[str, Dict[str, List[str]]], use_cached=True):
+        if use_cached:
+            with open(self._CACHE_PATH['features'], 'r') as features_file, \
+                    open(self._CACHE_PATH['labels'], 'r') as labels_file:
+                feature_dict = json.load(features_file)
+                label_dict = json.load(labels_file)
+        else:
+            feature_dict = self._generate_IR_features(query_document_mapping)
+            label_dict = self._generate_labels(query_document_mapping)
 
-        feature_dict = self._generate_IR_features(query_document_mapping)
-        label_dict = self._generate_labels(query_document_mapping)
+            with open(self._CACHE_PATH['features'], 'w') as features_file, \
+                    open(self._CACHE_PATH['labels'], 'w') as labels_file:
+                json.dump(feature_dict, features_file)
+                json.dump(label_dict, labels_file)
 
+        train_query_ids, test_query_ids = train_test_split(query_ids, test_size=0.2)
         X_train, Y_train, train_index = self._transform_dict_to_np_array(train_query_ids, feature_dict, label_dict)
         X_test, Y_test, test_index = self._transform_dict_to_np_array(test_query_ids, feature_dict, label_dict)
         return X_train, X_test, train_index, Y_train, Y_test, test_index

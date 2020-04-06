@@ -267,6 +267,8 @@ class TREQEval:
                           avg_prec_at_recalls, mean_avg_prec, avg_prec_at_cutoffs, avg_r_prec,
                           avg_rec_at_cutoffs, avg_f1_scores_at_cutoffs, avg_ndcg)
 
+        return mean_avg_prec
+
 
 if __name__ == '__main__':
     Utils.configure_logging()
