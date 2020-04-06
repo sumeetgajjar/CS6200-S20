@@ -79,7 +79,7 @@ class FeatureGenerator:
         if len(query_document_mapping[query_id]['non_relevant']) < 1000:
             tups = treq_query_doc_id_mappings[query_id].items()
 
-            for tup in sorted(tups, key=lambda x: x[1], reverse=True):
+            for tup in sorted(tups, key=lambda x: x[1], reverse=False):
                 if len(query_document_mapping[query_id]['non_relevant']) == 1000:
                     break
 

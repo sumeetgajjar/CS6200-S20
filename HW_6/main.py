@@ -3,7 +3,9 @@ import random
 from collections import defaultdict
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression, LogisticRegression, ElasticNet
+from sklearn.tree import DecisionTreeRegressor
 
 from HW_1.main import parse_queries, transform_scores_for_writing_to_file
 from HW_5.treq_eval import TREQEval
@@ -40,8 +42,10 @@ class HW6:
             treq_file = 'results/{}-performance/{}-{}.txt'.format(phase_name, model_name, fold_num)
             Utils.write_results_to_file(treq_file,
                                         results_to_write)
+            treqEval = TREQEval(Utils.get_qrel_file_path(), treq_file, False)
+            treqEval._print_stats = lambda *args, **kwargs: None
+            map = treqEval.eval()
 
-            map = TREQEval(Utils.get_qrel_file_path(), treq_file, False).eval()
             return map
 
         training_map = _run_prediction_phase('training', X_train, train_index)
@@ -55,16 +59,16 @@ class HW6:
         mean_MAP = {}
         for model, model_name in [
             (LinearRegression(normalize=True), 'linear-regression'),
-            # (LogisticRegression(), 'logistic-regression'),
-            # (ElasticNet(), 'elastic-net'),
-            # (DecisionTreeRegressor(max_depth=2), 'decision-tree-2'),
-            # (DecisionTreeRegressor(max_depth=5), 'decision-tree-5'),
-            # (DecisionTreeRegressor(max_depth=7), 'decision-tree-7'),
-            # (DecisionTreeRegressor(max_depth=10), 'decision-tree-10'),
-            # (DecisionTreeRegressor(max_depth=15), 'decision-tree-15'),
-            # (DecisionTreeRegressor(max_depth=20), 'decision-tree-20'),
-            # (GradientBoostingRegressor(n_estimators=400, max_depth=3, min_samples_split=2, learning_rate=0.01,
-            #                            verbose=1), 'boosting-trees')
+            (LogisticRegression(), 'logistic-regression'),
+            (ElasticNet(), 'elastic-net'),
+            (DecisionTreeRegressor(max_depth=2), 'decision-tree-2'),
+            (DecisionTreeRegressor(max_depth=5), 'decision-tree-5'),
+            (DecisionTreeRegressor(max_depth=7), 'decision-tree-7'),
+            (DecisionTreeRegressor(max_depth=10), 'decision-tree-10'),
+            (DecisionTreeRegressor(max_depth=15), 'decision-tree-15'),
+            (DecisionTreeRegressor(max_depth=20), 'decision-tree-20'),
+            (GradientBoostingRegressor(n_estimators=400, max_depth=3, min_samples_split=2, learning_rate=0.01,
+                                       verbose=1), 'boosting-trees')
         ]:
             k_folds = 5
             sum_training_map, sum_testing_map = 0, 0
@@ -84,8 +88,8 @@ class HW6:
 
 
 if __name__ == '__main__':
-    np.random.seed(134)
-    random.seed(134)
-
     Utils.configure_logging()
+    seed = 1234
+    np.random.seed(seed)
+    random.seed(seed)
     HW6.main()
