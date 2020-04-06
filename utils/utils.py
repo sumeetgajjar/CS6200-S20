@@ -246,6 +246,10 @@ class Utils:
         logging.info("Treq file parsed")
         return treq
 
+    @classmethod
+    def get_qrel_file_path(cls):
+        return '{}/{}'.format(cls.get_ap_data_path(), 'qrels.adhoc.51-100.AP89.txt')
+
 
 class LinkGraph:
 
