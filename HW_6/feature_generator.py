@@ -151,7 +151,6 @@ class FeatureGenerator:
 
         query_ids = [query['id'] for query in queries]
         train_query_ids, test_query_ids = train_test_split(query_ids, test_size=0.2)
-        logging.info("split:{}, {}".format(train_query_ids, test_query_ids))
 
         X_train, Y_train, train_index = self._transform_dict_to_np_array(train_query_ids, feature_dict, label_dict)
         X_test, Y_test, test_index = self._transform_dict_to_np_array(test_query_ids, feature_dict, label_dict)
