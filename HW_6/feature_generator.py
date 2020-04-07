@@ -16,7 +16,7 @@ class FeatureGenerator:
                     'unigram_lm_with_laplace_smoothing']
 
     _IR_FEATURE_INDEXES = {feature: ix for ix, feature in enumerate(_IR_FEATURES)}
-    _TREQ_FILE_PATHS = {ir_func: '{}/{}_all.txt'.format(Constants.HW_1_RESULT_DIR, ir_func) for ir_func in _IR_FEATURES}
+    _TREQ_FILE_PATHS = {ir_func: '{}/{}-all-without-modification.txt'.format(Constants.HW_1_RESULT_DIR, ir_func) for ir_func in _IR_FEATURES}
     _CACHE_PATH = {
         'features': 'feature_matrix_cache/features.json',
         'labels': 'feature_matrix_cache/labels.json'
@@ -138,7 +138,7 @@ class FeatureGenerator:
                 feature_dict = json.load(features_file)
                 label_dict = json.load(labels_file)
         else:
-            bm25_file_path = '{}/HW_1/results/okapi_bm25_all.txt'.format(Constants.PROJECT_ROOT)
+            bm25_file_path = self._TREQ_FILE_PATHS['okapi_bm25']
             query_document_mapping = self._get_document_set_for_queries(queries, bm25_file_path)
 
             feature_dict = self._generate_IR_features(query_document_mapping)
