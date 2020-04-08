@@ -8,7 +8,7 @@ from typing import Dict
 
 import numpy as np
 from bs4 import BeautifulSoup
-from nltk import SnowballStemmer
+from nltk import PorterStemmer, SnowballStemmer
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
@@ -21,10 +21,13 @@ class Email:
     def __init__(self) -> None:
         self.subject = ''
         self.body = ''
+        self.cleaned_subject_tokens = None
+        self.cleaned_body_tokens = None
         self.file_name = None
 
     def __repr__(self) -> str:
-        return "File: {file_name}, Subject: {subject}, Body: {body}".format(**self.__dict__)
+        return "File: {file_name}, Subject: {subject}, Body: {body}" \
+               "C_Subject:{cleaned_subject_tokens}, C_Body:{cleaned_body_tokens}".format(**self.__dict__)
 
     def __str__(self):
         return self.__repr__()
@@ -72,11 +75,9 @@ class HW7:
 
             return stemmed_tokens
 
-        cleaned_email = Email()
-        cleaned_email.file_name = raw_email.file_name
-        cleaned_email.subject = _helper(cleaned_email.subject)
-        cleaned_email.body = _helper(cleaned_email.body)
-        return cleaned_email
+        raw_email.cleaned_subject_tokens = _helper(raw_email.subject)
+        raw_email.cleaned_body_tokens = _helper(raw_email.body)
+        return raw_email
 
     @classmethod
     def _get_emails(cls) -> Email:
