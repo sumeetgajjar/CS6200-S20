@@ -1,4 +1,5 @@
 import email
+import json
 import logging
 import os
 import random
@@ -11,6 +12,10 @@ from bs4 import BeautifulSoup
 from nltk import SnowballStemmer
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from scipy.sparse import csr_matrix
+from sklearn.datasets import dump_svmlight_file
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
 
 from utils.decorators import timing
 from utils.utils import Utils
@@ -63,26 +68,25 @@ class HW7:
         return labels_dict
 
     @classmethod
+    def _text_cleaning_helper(cls, text_to_clean):
+        cleaned_tokens = []
+        tokens = word_tokenize(text_to_clean)
+        for token in tokens:
+            lowered_token = token.lower()
+            stripped_token = lowered_token.translate(cls._PUNCTUATION_TABLE)
+            if stripped_token.isalpha() and stripped_token not in cls._STOPWORDS_SET:
+                cleaned_tokens.append(cls._STEMMER.stem(stripped_token))
+
+        return cleaned_tokens
+
+    @classmethod
     def _clean_email(cls, raw_email: Email) -> Email:
-
-        def _helper(text_to_clean):
-            tokens = word_tokenize(text_to_clean)
-            lowered_tokens = [token.lower() for token in tokens]
-            stripped_tokens = [token.translate(cls._PUNCTUATION_TABLE) for token in lowered_tokens]
-            word_tokens = [token for token in stripped_tokens if token.isalpha()]
-            final_tokens = [token for token in word_tokens if token not in cls._STOPWORDS_SET]
-            stemmed_tokens = [cls._STEMMER.stem(token) for token in final_tokens]
-
-            return set(stemmed_tokens)
-
-        raw_email.cleaned_subject_tokens = _helper(raw_email.subject)
-        raw_email.cleaned_body_tokens = _helper(raw_email.body)
+        raw_email.cleaned_subject_tokens = cls._text_cleaning_helper(raw_email.subject)
+        raw_email.cleaned_body_tokens = cls._text_cleaning_helper(raw_email.body)
         return raw_email
 
     @classmethod
-    def _get_emails(cls) -> Email:
-        email_files = os.listdir(cls._SPAM_EMAIL_DATA_DIR_PATH)
-        logging.info("{} email files found".format(len(email_files)))
+    def _get_emails(cls, email_files):
         for email_file in email_files:
             email_file_path = '{}/{}'.format(cls._SPAM_EMAIL_DATA_DIR_PATH, email_file)
             with open(email_file_path, 'r', encoding='ISO-8859-1') as email_file_fp:
@@ -108,9 +112,6 @@ class HW7:
                 parsed_email.body += str(email_body.get_payload())
             elif content_type == 'text/html' and 'attachment' not in content_disposition:
                 parsed_email.body += cls._parse_email_payload_from_html(str(email_body.get_payload()))
-            else:
-                raise ValueError('Unknown content-type: {}, content-disposition:{}'.format(content_type,
-                                                                                           content_disposition))
 
         body = email.message_from_file(email_file_fp)
         parsed_email = Email()
@@ -127,9 +128,57 @@ class HW7:
         return parsed_email
 
     @classmethod
+    def _get_email_contents_and_labels(cls, email_files, labels_dict, token_filter=lambda x: True):
+        ix = 1
+        email_contents = []
+        labels = []
+        for cleaned_email in cls._get_emails(email_files):
+            ix += 1
+            text = " ".join(filter(token_filter,
+                                   cleaned_email.cleaned_subject_tokens + cleaned_email.cleaned_body_tokens))
+            email_contents.append(text)
+
+            file_name = cleaned_email.file_name
+            labels.append(labels_dict[file_name])
+
+            if ix % 1000 == 0:
+                logging.info("Emails Read :{}".format(ix))
+
+        return email_contents, labels
+
+    @classmethod
+    @timing
+    def _generate_features(cls, labels_dict):
+
+        all_email_files = os.listdir(cls._SPAM_EMAIL_DATA_DIR_PATH)
+        results = Utils.run_tasks_parallelly_in_chunks(cls._get_email_contents_and_labels, all_email_files, 12,
+                                                       labels_dict=labels_dict)
+
+        corpus = []
+        all_labels = []
+        for email_contents, labels in results:
+            corpus.extend(email_contents)
+            all_labels.extend(labels)
+
+        vectorizer = CountVectorizer(ngram_range=(1, 1), min_df=0.02, max_df=0.95)
+        X = vectorizer.fit_transform(corpus)
+        #
+        rows = list(range(len(all_labels)))
+        cols = [0] * len(all_labels)
+        y = csr_matrix((all_labels, (rows, cols)), shape=(len(rows), 1))
+
+        feature_index = vectorizer.get_feature_names()
+        dump_svmlight_file(X, y, f='feature_matrix_cache/features.txt')
+        with open('feature_matrix_cache/feature_index.json', 'w') as file:
+            json.dump(feature_index, file)
+
+        X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2)
+        return X_train, X_test, Y_train, Y_test, feature_index
+
+    @classmethod
     def main(cls):
         labels_dict = cls._parse_labels()
-        print(next(cls._get_emails()))
+        X_train, X_test, Y_train, Y_test, feature_index = cls._generate_features(labels_dict)
 
 
 if __name__ == '__main__':
