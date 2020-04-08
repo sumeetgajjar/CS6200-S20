@@ -194,7 +194,6 @@ class HW7:
         return X_train, X_test, Y_train, Y_test, feature_name_index
 
     @classmethod
-    @timing
     def _run_model(cls, model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index):
         model.fit(X_train, Y_train)
 
@@ -204,7 +203,7 @@ class HW7:
             auc_score = roc_auc_score(Y_true, Y_probs)
             logging.info("AUC score for {} for {} phase:{}".format(model_name, phase_name, auc_score))
 
-        _run_prediction_phase('training', X_train, Y_train)
+        # _run_prediction_phase('training', X_train, Y_train)
         _run_prediction_phase('testing', X_test, Y_test)
 
     @classmethod
@@ -237,17 +236,17 @@ class HW7:
             logging.info("Using token filter:{}".format(token_filter.__name__))
 
             X_train, X_test, Y_train, Y_test, feature_name_index = cls._generate_features(token_filter=token_filter,
-                                                                                          ngram_range=[(1, 3)])
-
+                                                                                          ngram_range=(1, 1))
             for model, model_name in [
                 (LogisticRegression(solver='newton-cg', fit_intercept=True), "LogisticRegression"),
-                (DecisionTreeClassifier(max_depth=5), "DecisionTree-5"),
-                (DecisionTreeClassifier(max_depth=10), "DecisionTree-10"),
-                (DecisionTreeClassifier(max_depth=15), "DecisionTree-15"),
-                (DecisionTreeClassifier(max_depth=20), "DecisionTree-20"),
+                (DecisionTreeClassifier(), "DecisionTree"),
+                # (DecisionTreeClassifier(max_depth=5), "DecisionTree-5"),
+                # (DecisionTreeClassifier(max_depth=10), "DecisionTree-10"),
+                # (DecisionTreeClassifier(max_depth=15), "DecisionTree-15"),
                 (BernoulliNB(), "BernoulliNB")
             ]:
                 cls._run_model(model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index)
+
 
 
 if __name__ == '__main__':
