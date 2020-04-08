@@ -199,8 +199,6 @@ class HW7:
             auc_score = roc_auc_score(Y_true, Y_probs)
             logging.info("AUC score for {} for {} phase:{}".format(model_name, phase_name, auc_score))
 
-        logging.info("Feature importance")
-
         _run_prediction_phase('training', X_train, Y_train)
         _run_prediction_phase('testing', X_test, Y_test)
 
