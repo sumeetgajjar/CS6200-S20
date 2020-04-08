@@ -44,8 +44,8 @@ class Email:
 class HW7:
     _SPAM_EMAIL_DATA_DIR_PATH = '{}/SPAM_DATA/trec07p/data'.format(Utils.get_data_dir_abs_path(), )
     _SPAM_EMAIL_LABELS_PATH = '{}/SPAM_DATA/trec07p/full/index'.format(Utils.get_data_dir_abs_path())
-    _CACHED_FEATURE_INDEX_NAME_TEMPLATE = 'feature_matrix_cache/{}-feature_index.json'
-    _CACHED_FEATURES_FILE_PATH_TEMPLATE = 'feature_matrix_cache/{}-features.txt'
+    _CACHED_FEATURE_INDEX_NAME_TEMPLATE = 'feature_matrix_cache/{}-{}-feature_index.json'
+    _CACHED_FEATURES_FILE_PATH_TEMPLATE = 'feature_matrix_cache/{}-{}-features.txt'
     _SPLIT_REGEX = re.compile("\\s+")
     _PUNCTUATION_TABLE = str.maketrans('', '', string.punctuation)
     _STOPWORDS_SET = set(stopwords.words('english'))
@@ -158,9 +158,10 @@ class HW7:
 
     @classmethod
     @timing
-    def _generate_features(cls, token_filter, use_cached=True):
-        feature_file_path = cls._CACHED_FEATURES_FILE_PATH_TEMPLATE.format(token_filter.__name__)
-        feature_name_index_file_path = cls._CACHED_FEATURE_INDEX_NAME_TEMPLATE.format(token_filter.__name__)
+    def _generate_features(cls, token_filter, use_cached=True, ngram_range=(1, 1)):
+        feature_file_path = cls._CACHED_FEATURES_FILE_PATH_TEMPLATE.format(token_filter.__name__, ngram_range)
+        feature_name_index_file_path = cls._CACHED_FEATURE_INDEX_NAME_TEMPLATE.format(token_filter.__name__,
+                                                                                      ngram_range)
 
         if use_cached:
             X, y = load_svmlight_file(feature_file_path)
@@ -180,7 +181,7 @@ class HW7:
                 corpus.extend(email_contents)
                 all_labels.extend(labels)
 
-            vectorizer = CountVectorizer(ngram_range=(1, 1), min_df=0.02, max_df=0.95)
+            vectorizer = CountVectorizer(ngram_range=ngram_range, min_df=0.02, max_df=0.95)
             X = vectorizer.fit_transform(corpus)
             y = np.array(all_labels)
 
@@ -235,7 +236,8 @@ class HW7:
         for token_filter in [cls._part_1_trial_a_filter, cls._part_1_trial_b_filter, cls._part_2_token_filter]:
             logging.info("Using token filter:{}".format(token_filter.__name__))
 
-            X_train, X_test, Y_train, Y_test, feature_name_index = cls._generate_features(token_filter=token_filter)
+            X_train, X_test, Y_train, Y_test, feature_name_index = cls._generate_features(token_filter=token_filter,
+                                                                                          ngram_range=[(1, 3)])
 
             for model, model_name in [
                 (LogisticRegression(solver='newton-cg', fit_intercept=True), "LogisticRegression"),
