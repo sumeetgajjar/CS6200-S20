@@ -3,10 +3,14 @@ import logging
 import os
 import random
 import re
+import string
 from typing import Dict
 
 import numpy as np
 from bs4 import BeautifulSoup
+from nltk import SnowballStemmer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
 from utils.decorators import timing
 from utils.utils import Utils
@@ -30,6 +34,9 @@ class HW7:
     _SPAM_EMAIL_DATA_DIR_PATH = '{}/SPAM_DATA/trec07p/data'.format(Utils.get_data_dir_abs_path(), )
     _SPAM_EMAIL_LABELS_PATH = '{}/SPAM_DATA/trec07p/full/index'.format(Utils.get_data_dir_abs_path())
     _SPLIT_REGEX = re.compile("\\s+")
+    _PUNCTUATION_TABLE = str.maketrans('', '', string.punctuation)
+    _STOPWORDS_SET = set(stopwords.words('english'))
+    _STEMMER = SnowballStemmer('english')
 
     @classmethod
     @timing
@@ -53,15 +60,37 @@ class HW7:
         return labels_dict
 
     @classmethod
-    def _get_raw_emails(cls) -> Email:
+    def _clean_email(cls, raw_email: Email) -> Email:
+
+        def _helper(text_to_clean):
+            tokens = word_tokenize(text_to_clean)
+            lowered_tokens = [token.lower() for token in tokens]
+            stripped_tokens = [token.translate(cls._PUNCTUATION_TABLE) for token in lowered_tokens]
+            word_tokens = [token for token in stripped_tokens if token.isalpha()]
+            final_tokens = [token for token in word_tokens if token not in cls._STOPWORDS_SET]
+            stemmed_tokens = [cls._STEMMER.stem(token) for token in final_tokens]
+
+            return stemmed_tokens
+
+        cleaned_email = Email()
+        cleaned_email.file_name = raw_email.file_name
+        cleaned_email.subject = _helper(cleaned_email.subject)
+        cleaned_email.body = _helper(cleaned_email.body)
+        return cleaned_email
+
+    @classmethod
+    def _get_emails(cls) -> Email:
         email_files = os.listdir(cls._SPAM_EMAIL_DATA_DIR_PATH)
         logging.info("{} email files found".format(len(email_files)))
         for email_file in email_files:
             email_file_path = '{}/{}'.format(cls._SPAM_EMAIL_DATA_DIR_PATH, email_file)
             with open(email_file_path, 'r', encoding='ISO-8859-1') as email_file_fp:
-                parsed_email = cls._parse_raw_email(email_file_fp)
-                parsed_email.file_name = email_file
-                yield parsed_email
+                parsed_raw_email = cls._parse_raw_email(email_file_fp)
+                parsed_raw_email.file_name = email_file
+
+                cleaned_email = cls._clean_email(parsed_raw_email)
+
+                yield cleaned_email
 
     @classmethod
     def _parse_email_payload_from_html(cls, raw_html) -> str:
@@ -99,7 +128,7 @@ class HW7:
     @classmethod
     def main(cls):
         labels_dict = cls._parse_labels()
-        print(next(cls._get_raw_emails()))
+        print(next(cls._get_emails()))
 
 
 if __name__ == '__main__':
