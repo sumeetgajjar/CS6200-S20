@@ -8,7 +8,7 @@ from typing import Dict
 
 import numpy as np
 from bs4 import BeautifulSoup
-from nltk import PorterStemmer, SnowballStemmer
+from nltk import SnowballStemmer
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
@@ -73,7 +73,7 @@ class HW7:
             final_tokens = [token for token in word_tokens if token not in cls._STOPWORDS_SET]
             stemmed_tokens = [cls._STEMMER.stem(token) for token in final_tokens]
 
-            return stemmed_tokens
+            return set(stemmed_tokens)
 
         raw_email.cleaned_subject_tokens = _helper(raw_email.subject)
         raw_email.cleaned_body_tokens = _helper(raw_email.body)
