@@ -12,7 +12,6 @@ from bs4 import BeautifulSoup
 from nltk import SnowballStemmer
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from scipy.sparse import csr_matrix
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -45,12 +44,15 @@ class Email:
 class HW7:
     _SPAM_EMAIL_DATA_DIR_PATH = '{}/SPAM_DATA/trec07p/data'.format(Utils.get_data_dir_abs_path(), )
     _SPAM_EMAIL_LABELS_PATH = '{}/SPAM_DATA/trec07p/full/index'.format(Utils.get_data_dir_abs_path())
-    _CACHED_FEATURE_INDEX_NAME = 'feature_matrix_cache/feature_index.json'
-    _CACHED_FEATURES_FILE_PATH = 'feature_matrix_cache/features.txt'
+    _CACHED_FEATURE_INDEX_NAME_TEMPLATE = 'feature_matrix_cache/{}-feature_index.json'
+    _CACHED_FEATURES_FILE_PATH_TEMPLATE = 'feature_matrix_cache/{}-features.txt'
     _SPLIT_REGEX = re.compile("\\s+")
     _PUNCTUATION_TABLE = str.maketrans('', '', string.punctuation)
     _STOPWORDS_SET = set(stopwords.words('english'))
     _STEMMER = SnowballStemmer('english')
+
+    _PART_1_TRIAL_A_TOKENS_SET = None
+    _PART_1_TRIAL_B_TOKENS_SET = None
 
     @classmethod
     @timing
@@ -134,7 +136,7 @@ class HW7:
         return parsed_email
 
     @classmethod
-    def _get_email_contents_and_labels(cls, email_files, labels_dict, token_filter=lambda x: True):
+    def _get_email_contents_and_labels(cls, email_files, labels_dict, token_filter):
         ix = 1
         email_contents = []
         labels = []
@@ -142,10 +144,12 @@ class HW7:
             ix += 1
             text = " ".join(filter(token_filter,
                                    cleaned_email.cleaned_subject_tokens + cleaned_email.cleaned_body_tokens))
-            email_contents.append(text)
 
-            file_name = cleaned_email.file_name
-            labels.append(labels_dict[file_name])
+            if text:
+                email_contents.append(text)
+
+                file_name = cleaned_email.file_name
+                labels.append(labels_dict[file_name])
 
             if ix % 1000 == 0:
                 logging.info("Emails Read :{}".format(ix))
@@ -154,16 +158,21 @@ class HW7:
 
     @classmethod
     @timing
-    def _generate_features(cls, use_cached=True):
+    def _generate_features(cls, token_filter, use_cached=True):
+        feature_file_path = cls._CACHED_FEATURES_FILE_PATH_TEMPLATE.format(token_filter.__name__)
+        feature_name_index_file_path = cls._CACHED_FEATURE_INDEX_NAME_TEMPLATE.format(token_filter.__name__)
+
         if use_cached:
-            X, y = load_svmlight_file(cls._CACHED_FEATURES_FILE_PATH)
-            with open(cls._CACHED_FEATURE_INDEX_NAME, 'r') as file:
+            X, y = load_svmlight_file(feature_file_path)
+            with open(feature_name_index_file_path, 'r') as file:
                 feature_name_index = json.load(file)
         else:
             labels_dict = cls._parse_labels()
             all_email_files = os.listdir(cls._SPAM_EMAIL_DATA_DIR_PATH)
             results = Utils.run_tasks_parallelly_in_chunks(cls._get_email_contents_and_labels, all_email_files, 12,
-                                                           labels_dict=labels_dict)
+                                                           # multi_process=False,
+                                                           labels_dict=labels_dict,
+                                                           token_filter=token_filter)
 
             corpus = []
             all_labels = []
@@ -173,14 +182,11 @@ class HW7:
 
             vectorizer = CountVectorizer(ngram_range=(1, 1), min_df=0.02, max_df=0.95)
             X = vectorizer.fit_transform(corpus)
-            #
-            rows = list(range(len(all_labels)))
-            cols = [0] * len(all_labels)
-            y = csr_matrix((all_labels, (rows, cols)), shape=(len(rows), 1))
+            y = np.array(all_labels)
 
             feature_name_index = vectorizer.get_feature_names()
-            dump_svmlight_file(X, y, f=cls._CACHED_FEATURES_FILE_PATH)
-            with open(cls._CACHED_FEATURE_INDEX_NAME, 'w') as file:
+            dump_svmlight_file(X, y, f=feature_file_path)
+            with open(feature_name_index_file_path, 'w') as file:
                 json.dump(feature_name_index, file)
 
         X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2)
@@ -189,11 +195,9 @@ class HW7:
     @classmethod
     @timing
     def _run_model(cls, model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index):
-        logging.info("Running {}".format(model_name))
         model.fit(X_train, Y_train)
 
         def _run_prediction_phase(phase_name, X, Y_true):
-            logging.info("Running {} predictions".format(phase_name))
             Y_predict = model.predict(X)
             Y_probs = model.predict_proba(X)[:, 1]
             auc_score = roc_auc_score(Y_true, Y_probs)
@@ -203,17 +207,45 @@ class HW7:
         _run_prediction_phase('testing', X_test, Y_test)
 
     @classmethod
+    def _part_1_trial_a_filter(cls, token):
+        return token in cls._PART_1_TRIAL_A_TOKENS_SET
+
+    @classmethod
+    def _part_1_trial_b_filter(cls, token):
+        return token in cls._PART_1_TRIAL_B_TOKENS_SET
+
+    @classmethod
+    def _part_2_token_filter(cls, token):
+        return True
+
+    @classmethod
     def main(cls):
-        X_train, X_test, Y_train, Y_test, feature_name_index = cls._generate_features()
-        for model, model_name in [
-            (LogisticRegression(solver='newton-cg', fit_intercept=True), "LogisticRegression"),
-            (DecisionTreeClassifier(max_depth=5), "DecisionTree-5"),
-            (DecisionTreeClassifier(max_depth=10), "DecisionTree-10"),
-            (DecisionTreeClassifier(max_depth=15), "DecisionTree-15"),
-            (DecisionTreeClassifier(max_depth=20), "DecisionTree-20"),
-            (BernoulliNB(), "BernoulliNB")
-        ]:
-            cls._run_model(model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index)
+        cls._PART_1_TRIAL_A_TOKENS_SET = cls._text_cleaning_helper(
+            "free win porn click here hookups lottery trip tickets clearance meet singles biz credit fast cash off "
+            "prize Congratulations urgent")
+
+        cls._PART_1_TRIAL_B_TOKENS_SET = cls._text_cleaning_helper(
+            "free spam click buy clearance shopper order earn cash extra money double collect credit check affordable "
+            "fast price loans profit refinance hidden freedom chance miracle lose home remove success virus malware ad "
+            "subscribe sales performance viagra valium medicine diagnostics million join deal unsolicited trial prize "
+            "now legal bonus limited instant luxury legal celebrity only compare win viagra $$$ $discount click here "
+            "meet singles incredible deal lose weight act now 100% free fast cash million dollars lower interest rate "
+            "visit our website no credit check")
+
+        for token_filter in [cls._part_1_trial_a_filter, cls._part_1_trial_b_filter, cls._part_2_token_filter]:
+            logging.info("Using token filter:{}".format(token_filter.__name__))
+
+            X_train, X_test, Y_train, Y_test, feature_name_index = cls._generate_features(token_filter=token_filter)
+
+            for model, model_name in [
+                (LogisticRegression(solver='newton-cg', fit_intercept=True), "LogisticRegression"),
+                (DecisionTreeClassifier(max_depth=5), "DecisionTree-5"),
+                (DecisionTreeClassifier(max_depth=10), "DecisionTree-10"),
+                (DecisionTreeClassifier(max_depth=15), "DecisionTree-15"),
+                (DecisionTreeClassifier(max_depth=20), "DecisionTree-20"),
+                (BernoulliNB(), "BernoulliNB")
+            ]:
+                cls._run_model(model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index)
 
 
 if __name__ == '__main__':
