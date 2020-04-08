@@ -46,6 +46,7 @@ class HW7:
     _SPAM_EMAIL_LABELS_PATH = '{}/SPAM_DATA/trec07p/full/index'.format(Utils.get_data_dir_abs_path())
     _CACHED_FEATURE_INDEX_NAME_TEMPLATE = 'feature_matrix_cache/{}-{}-feature_index.json'
     _CACHED_FEATURES_FILE_PATH_TEMPLATE = 'feature_matrix_cache/{}-{}-features.txt'
+    _CACHED_FILENAME_PATH_TEMPLATE = 'feature_matrix_cache/{}-{}-filename_index.txt'
     _SPLIT_REGEX = re.compile("\\s+")
     _PUNCTUATION_TABLE = str.maketrans('', '', string.punctuation)
     _STOPWORDS_SET = set(stopwords.words('english'))
@@ -149,7 +150,7 @@ class HW7:
                 email_contents.append(text)
 
                 file_name = cleaned_email.file_name
-                labels.append(labels_dict[file_name])
+                labels.append((labels_dict[file_name], file_name))
 
             if ix % 1000 == 0:
                 logging.info("Emails Read :{}".format(ix))
@@ -162,11 +163,13 @@ class HW7:
         feature_file_path = cls._CACHED_FEATURES_FILE_PATH_TEMPLATE.format(token_filter.__name__, ngram_range)
         feature_name_index_file_path = cls._CACHED_FEATURE_INDEX_NAME_TEMPLATE.format(token_filter.__name__,
                                                                                       ngram_range)
+        filename_index_path = cls._CACHED_FILENAME_PATH_TEMPLATE.format(token_filter.__name__, ngram_range)
 
         if use_cached:
             X, y = load_svmlight_file(feature_file_path)
-            with open(feature_name_index_file_path, 'r') as file:
+            with open(feature_name_index_file_path, 'r') as file, open(filename_index_path, 'r') as filename_index_file:
                 feature_name_index = json.load(file)
+                filename_index = json.load(filename_index_file)
         else:
             labels_dict = cls._parse_labels()
             all_email_files = os.listdir(cls._SPAM_EMAIL_DATA_DIR_PATH)
@@ -183,18 +186,26 @@ class HW7:
 
             vectorizer = CountVectorizer(ngram_range=ngram_range, min_df=0.02, max_df=0.95)
             X = vectorizer.fit_transform(corpus)
-            y = np.array(all_labels)
+            y = np.array([label[0] for label in all_labels])
+            filename_index = [label[1] for label in all_labels]
 
             feature_name_index = vectorizer.get_feature_names()
             dump_svmlight_file(X, y, f=feature_file_path)
-            with open(feature_name_index_file_path, 'w') as file:
+            with open(feature_name_index_file_path, 'w') as file, open(filename_index_path, 'w') as filename_index_file:
                 json.dump(feature_name_index, file)
+                json.dump(filename_index, filename_index_file)
 
-        X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2)
-        return X_train, X_test, Y_train, Y_test, feature_name_index
+        indices = np.arange(len(y))
+        train_ix, test_ix = train_test_split(indices, test_size=0.2, shuffle=True)
+        filename_index = np.array(filename_index)
+
+        X_train, X_test, Y_train, Y_test, test_filename_index = \
+            X[train_ix, :], X[test_ix, :], y[train_ix], y[test_ix], filename_index[test_ix]
+
+        return X_train, X_test, Y_train, Y_test, feature_name_index, test_filename_index
 
     @classmethod
-    def _run_model(cls, model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index):
+    def _run_model(cls, model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index, test_filename_index):
         model.fit(X_train, Y_train)
 
         def _run_prediction_phase(phase_name, X, Y_true):
@@ -202,9 +213,11 @@ class HW7:
             Y_probs = model.predict_proba(X)[:, 1]
             auc_score = roc_auc_score(Y_true, Y_probs)
             logging.info("AUC score for {} for {} phase:{}".format(model_name, phase_name, auc_score))
+            return Y_probs
 
         # _run_prediction_phase('training', X_train, Y_train)
-        _run_prediction_phase('testing', X_test, Y_test)
+        scores = _run_prediction_phase('testing', X_test, Y_test)
+        logging.info("Top 10 spam documents:{}".format(test_filename_index[np.argsort(scores)[::-1][:10]]))
 
     @classmethod
     def _part_1_trial_a_filter(cls, token):
@@ -235,8 +248,10 @@ class HW7:
         for token_filter in [cls._part_1_trial_a_filter, cls._part_1_trial_b_filter, cls._part_2_token_filter]:
             logging.info("Using token filter:{}".format(token_filter.__name__))
 
-            X_train, X_test, Y_train, Y_test, feature_name_index = cls._generate_features(token_filter=token_filter,
-                                                                                          ngram_range=(1, 1))
+            X_train, X_test, Y_train, Y_test, feature_name_index, test_filename_index = cls._generate_features(
+                token_filter=token_filter,
+                ngram_range=(1, 1))
+
             for model, model_name in [
                 (LogisticRegression(solver='newton-cg', fit_intercept=True), "LogisticRegression"),
                 (DecisionTreeClassifier(), "DecisionTree"),
@@ -245,7 +260,8 @@ class HW7:
                 # (DecisionTreeClassifier(max_depth=15), "DecisionTree-15"),
                 (BernoulliNB(), "BernoulliNB")
             ]:
-                cls._run_model(model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index)
+                cls._run_model(model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index,
+                               test_filename_index)
 
 
 
