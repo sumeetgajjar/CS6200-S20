@@ -5,6 +5,7 @@ import os
 import random
 import re
 import string
+from collections import defaultdict
 from typing import Dict
 
 import numpy as np
@@ -12,6 +13,7 @@ from bs4 import BeautifulSoup
 from nltk import SnowballStemmer
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from scipy.sparse import csr_matrix
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -20,6 +22,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.tree import DecisionTreeClassifier
 
+from HW_1.es_utils import EsUtils
+from constants.constants import Constants
 from utils.decorators import timing
 from utils.utils import Utils
 
@@ -42,8 +46,8 @@ class Email:
 
 
 class HW7:
-    _SPAM_EMAIL_DATA_DIR_PATH = '{}/SPAM_DATA/trec07p/data'.format(Utils.get_data_dir_abs_path(), )
-    _SPAM_EMAIL_LABELS_PATH = '{}/SPAM_DATA/trec07p/full/index'.format(Utils.get_data_dir_abs_path())
+    _SPAM_EMAIL_DATA_DIR_PATH = '{}/SPAM_DATA/trec07p/data'.format("/media/sumeet/147A710C7A70EBBC")
+    _SPAM_EMAIL_LABELS_PATH = '{}/SPAM_DATA/trec07p/full/index'.format("/media/sumeet/147A710C7A70EBBC")
     _CACHED_FEATURE_INDEX_NAME_TEMPLATE = 'feature_matrix_cache/{}-{}-feature_index.json'
     _CACHED_FEATURES_FILE_PATH_TEMPLATE = 'feature_matrix_cache/{}-{}-features.txt'
     _CACHED_FILENAME_PATH_TEMPLATE = 'feature_matrix_cache/{}-{}-filename_index.txt'
@@ -158,8 +162,69 @@ class HW7:
         return email_contents, labels
 
     @classmethod
+    def _generate_ngrams_using_ES(cls, corpus, all_labels):
+        def _mtermvector_query_helper(text_chunks):
+            return {
+                "docs": [
+                    {"doc": {"text": text}} for text in text_chunks
+                ]
+            }
+
+        def _get_valid_ngrams(min_df=0.02, max_df=0.95):
+            min_df_value = int(min_df * len(corpus))
+            max_df_value = int(max_df * len(corpus))
+            _valid_ngrams = set()
+            for ngram, no_of_documents in all_ngrams.items():
+                if min_df_value < no_of_documents < max_df_value:
+                    _valid_ngrams.add(ngram)
+
+            return _valid_ngrams
+
+        es_client = EsUtils.get_es_client()
+        all_ngrams = defaultdict(int)
+        docs = []
+
+        indptr = [0]
+        indices = []
+        data = []
+        vocabulary = {}
+        labels = []
+
+        ix = 0
+        for email_content_chunks in Utils.split_list_into_sub_lists(corpus, sub_list_size=5000):
+            response = es_client.mtermvectors(index=Constants.AP_DATA_INDEX_NAME,
+                                              body=_mtermvector_query_helper(email_content_chunks))
+
+            for response_obj in response['docs']:
+                ngrams = {}
+                termvectors = response_obj['term_vectors']
+                if 'text' in termvectors:
+                    for term, term_info in termvectors['text']['terms'].items():
+                        ngrams[term] = term_info['term_freq']
+                        all_ngrams[term] += 1
+
+                    docs.append(ngrams)
+                    labels.append(all_labels[ix])
+
+                ix += 1
+
+        valid_ngrams = _get_valid_ngrams()
+
+        for d in docs:
+            for term, count in d.items():
+                if term in valid_ngrams:
+                    index = vocabulary.setdefault(term, len(vocabulary))
+                    indices.append(index)
+                    data.append(count)
+            indptr.append(len(indices))
+
+        features = csr_matrix((data, indices, indptr), dtype=int)
+        np.testing.assert_equal(features.shape[0], len(labels))
+        return features, labels, list(vocabulary.keys())
+
+    @classmethod
     @timing
-    def _generate_features(cls, token_filter, use_cached=True, ngram_range=(1, 1)):
+    def _generate_features(cls, token_filter, use_cached=True, ngram_range=(1, 1), virgil_replies_yes=False):
         feature_file_path = cls._CACHED_FEATURES_FILE_PATH_TEMPLATE.format(token_filter.__name__, ngram_range)
         feature_name_index_file_path = cls._CACHED_FEATURE_INDEX_NAME_TEMPLATE.format(token_filter.__name__,
                                                                                       ngram_range)
@@ -184,12 +249,16 @@ class HW7:
                 corpus.extend(email_contents)
                 all_labels.extend(labels)
 
-            vectorizer = CountVectorizer(ngram_range=ngram_range, min_df=0.02, max_df=0.95)
-            X = vectorizer.fit_transform(corpus)
+            if virgil_replies_yes:
+                vectorizer = CountVectorizer(ngram_range=ngram_range, min_df=0.02, max_df=0.95)
+                X = vectorizer.fit_transform(corpus)
+                feature_name_index = vectorizer.get_feature_names()
+            else:
+                X, all_labels, feature_name_index = cls._generate_ngrams_using_ES(corpus, all_labels)
+
             y = np.array([label[0] for label in all_labels])
             filename_index = [label[1] for label in all_labels]
 
-            feature_name_index = vectorizer.get_feature_names()
             dump_svmlight_file(X, y, f=feature_file_path)
             with open(feature_name_index_file_path, 'w') as file, open(filename_index_path, 'w') as filename_index_file:
                 json.dump(feature_name_index, file)
@@ -245,7 +314,7 @@ class HW7:
             "meet singles incredible deal lose weight act now 100% free fast cash million dollars lower interest rate "
             "visit our website no credit check")
 
-        for token_filter in [cls._part_1_trial_a_filter, cls._part_1_trial_b_filter, cls._part_2_token_filter]:
+        for token_filter in [cls._part_2_token_filter]:
             logging.info("Using token filter:{}".format(token_filter.__name__))
 
             X_train, X_test, Y_train, Y_test, feature_name_index, test_filename_index = cls._generate_features(
@@ -262,7 +331,6 @@ class HW7:
             ]:
                 cls._run_model(model, model_name, X_train, X_test, Y_train, Y_test, feature_name_index,
                                test_filename_index)
-
 
 
 if __name__ == '__main__':
