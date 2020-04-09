@@ -319,7 +319,6 @@ class HW7:
 
             X_train, X_test, Y_train, Y_test, feature_name_index, test_filename_index = cls._generate_features(
                 token_filter=token_filter,
-                use_cached=False,
                 ngram_range=(1, 1))
 
             for model, model_name in [
