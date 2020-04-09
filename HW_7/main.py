@@ -304,7 +304,7 @@ class HW7:
     def main(cls):
         cls._PART_1_TRIAL_A_TOKENS_SET = cls._text_cleaning_helper(
             "free win porn click here hookups lottery trip tickets clearance meet singles biz credit fast cash off "
-            "prize Congratulations urgent")
+            "prize Congratulations urgent nudes money vacation penis boobs enlargement")
 
         cls._PART_1_TRIAL_B_TOKENS_SET = cls._text_cleaning_helper(
             "free spam click buy clearance shopper order earn cash extra money double collect credit check affordable "
@@ -319,6 +319,7 @@ class HW7:
 
             X_train, X_test, Y_train, Y_test, feature_name_index, test_filename_index = cls._generate_features(
                 token_filter=token_filter,
+                use_cached=False,
                 ngram_range=(1, 1))
 
             for model, model_name in [
