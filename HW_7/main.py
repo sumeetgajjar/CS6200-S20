@@ -314,7 +314,7 @@ class HW7:
             "meet singles incredible deal lose weight act now 100% free fast cash million dollars lower interest rate "
             "visit our website no credit check")
 
-        for token_filter in [cls._part_2_token_filter]:
+        for token_filter in [cls._part_1_trial_a_filter, cls._part_1_trial_b_filter, cls._part_2_token_filter]:
             logging.info("Using token filter:{}".format(token_filter.__name__))
 
             X_train, X_test, Y_train, Y_test, feature_name_index, test_filename_index = cls._generate_features(
